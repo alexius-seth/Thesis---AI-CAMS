@@ -1,0 +1,856 @@
+<UserControl x:Class="ACPAMS.Views.Faculty.Tabs.MonitoringTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F4F5F7"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+
+        <!-- ═══════════════════════════════
+             DESIGN TOKENS
+        ═══════════════════════════════ -->
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.TableHeader"   Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Status.Live"      Color="#2E7D32"/>
+        <SolidColorBrush x:Key="Status.LiveBg"    Color="#F0FDF4"/>
+        <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
+        <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Status.Danger"    Color="#C62828"/>
+        <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEF2F2"/>
+        <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
+        <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
+
+        <!-- ═══════════════════════════════
+             TYPOGRAPHY
+        ═══════════════════════════════ -->
+
+        <Style x:Key="T.SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Muted}"/>
+        </Style>
+
+        <Style x:Key="T.KpiNumber" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="30"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        </Style>
+
+        <Style x:Key="T.KpiLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"     Value="12"/>
+            <Setter Property="Foreground"   Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="T.CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        </Style>
+
+        <Style x:Key="T.TableHeader" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="11"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.TableCell" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Primary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.TableCell.Muted" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.Timestamp" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="FontFamily"        Value="Consolas"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             CARD SURFACE
+        ═══════════════════════════════ -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="8"/>
+        </Style>
+
+        <!-- KPI: Active Stations — blue stripe -->
+        <Style x:Key="Card.Kpi.Blue" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <!-- KPI: Total Flags — amber stripe -->
+        <Style x:Key="Card.Kpi.Amber" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Warning}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <!-- KPI: High Risk — red stripe -->
+        <Style x:Key="Card.Kpi.Red" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <!-- Investigation pane — red left stripe (critical) -->
+        <Style x:Key="Card.Investigation" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="24,20"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             BADGES
+        ═══════════════════════════════ -->
+        <Style x:Key="Badge.Success" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.SuccessBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Success}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Warning" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.WarningBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Warning}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Danger" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.DangerBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Blue" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Accent.PrimaryBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Muted" TargetType="Border">
+            <Setter Property="Background"      Value="#F1F5F9"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             TABLE ROW
+        ═══════════════════════════════ -->
+        <Style x:Key="TableRow" TargetType="Border">
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding"         Value="14,11"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             ACTION BUTTONS
+        ═══════════════════════════════ -->
+        <Style x:Key="Btn.Danger" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Status.Danger}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="16,9"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#B71C1C"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#7F0000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Outlined" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="Padding"         Value="16,8"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- ═══════════════════════════════════════════
+         PAGE BODY
+    ═══════════════════════════════════════════ -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,24,32,40">
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 1 — LIVE SESSION METRICS KPIs
+            ───────────────────────────────────────── -->
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="0,0,0,10">
+                <TextBlock Text="LIVE SESSION METRICS"
+                           Style="{StaticResource T.SectionLabel}"
+                           VerticalAlignment="Center"/>
+                <Border Background="{StaticResource Status.LiveBg}"
+                        BorderBrush="{StaticResource Status.Live}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="10,3"
+                        Margin="12,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="6" Height="6"
+                                 Fill="{StaticResource Status.Live}"
+                                 Margin="0,0,5,0"
+                                 VerticalAlignment="Center"/>
+                        <TextBlock Text="CS101 — MIDTERMS  ·  Now"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Status.Live}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- KPI 1: Active Stations -->
+                <Border Grid.Column="0" Style="{StaticResource Card.Kpi.Blue}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="&#xE7F4;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14"
+                                       Foreground="{StaticResource Accent.Primary}"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Active Stations"
+                                       Style="{StaticResource T.KpiLabel}"/>
+                        </StackPanel>
+                        <TextBlock Text="44"
+                                   Style="{StaticResource T.KpiNumber}"/>
+                        <TextBlock Text="Students currently testing"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 2: Total Flags -->
+                <Border Grid.Column="2" Style="{StaticResource Card.Kpi.Amber}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="&#xE7BA;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14"
+                                       Foreground="{StaticResource Status.Warning}"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Total Flags"
+                                       Style="{StaticResource T.KpiLabel}"/>
+                        </StackPanel>
+                        <TextBlock Text="12"
+                                   Style="{StaticResource T.KpiNumber}"/>
+                        <TextBlock Text="Across all active stations"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 3: High Risk Flags -->
+                <Border Grid.Column="4" Style="{StaticResource Card.Kpi.Red}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="&#xE730;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14"
+                                       Foreground="{StaticResource Status.Danger}"
+                                       Margin="0,0,6,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="High Risk Flags"
+                                       Style="{StaticResource T.KpiLabel}"/>
+                        </StackPanel>
+                        <TextBlock Text="3"
+                                   Style="{StaticResource T.KpiNumber}"
+                                   Foreground="{StaticResource Status.Danger}"/>
+                        <TextBlock Text="Require immediate review"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Status.Danger}"
+                                   Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 2 — TRACKER + BEHAVIORAL FEED
+            ───────────────────────────────────────── -->
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- LEFT: Live Assessment Tracker -->
+                <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0">
+                    <StackPanel>
+
+                        <!-- Card header -->
+                        <Border BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="0,0,0,1"
+                                Padding="16,12">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Live Assessment Tracker"
+                                           Style="{StaticResource T.CardTitle}"
+                                           VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource Accent.PrimaryBg}"
+                                        BorderBrush="{StaticResource Accent.Primary}"
+                                        BorderThickness="1" CornerRadius="10"
+                                        Padding="8,2" Margin="10,0,0,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="44 Active"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Accent.Primary}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Table header -->
+                        <Border Background="{StaticResource Bg.TableHeader}"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="0,0,0,1"
+                                Padding="14,9">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="STUDENT"
+                                           Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="1" Text="STATION"
+                                           Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="2" Text="STATUS"
+                                           Style="{StaticResource T.TableHeader}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Row 1: J. Doe — Testing -->
+                        <Border Style="{StaticResource TableRow}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Border Width="26" Height="26" CornerRadius="13"
+                                            Background="#E2E8F0" Margin="0,0,8,0">
+                                        <TextBlock Text="JD"
+                                                   FontSize="9" FontWeight="Bold"
+                                                   Foreground="{StaticResource Text.Secondary}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="J. Doe"
+                                               Style="{StaticResource T.TableCell}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="PC-04"
+                                           Style="{StaticResource T.TableCell.Muted}"/>
+                                <Border Grid.Column="2" Style="{StaticResource Badge.Blue}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="5" Height="5"
+                                                 Fill="{StaticResource Accent.Primary}"
+                                                 Margin="0,0,4,0"
+                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Text="Testing"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Accent.Primary}"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Row 2: A. Smith — Flagged -->
+                        <Border Style="{StaticResource TableRow}"
+                                Background="#FFF8F8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Border Width="26" Height="26" CornerRadius="13"
+                                            Background="{StaticResource Status.DangerBg}"
+                                            Margin="0,0,8,0">
+                                        <TextBlock Text="AS"
+                                                   FontSize="9" FontWeight="Bold"
+                                                   Foreground="{StaticResource Status.Danger}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="A. Smith"
+                                               Style="{StaticResource T.TableCell}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="PC-07"
+                                           Style="{StaticResource T.TableCell.Muted}"/>
+                                <Border Grid.Column="2" Style="{StaticResource Badge.Danger}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⚠  Flagged"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Status.Danger}"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Row 3: B. Wayne — Testing -->
+                        <Border Padding="14,11">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Border Width="26" Height="26" CornerRadius="13"
+                                            Background="#E2E8F0" Margin="0,0,8,0">
+                                        <TextBlock Text="BW"
+                                                   FontSize="9" FontWeight="Bold"
+                                                   Foreground="{StaticResource Text.Secondary}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="B. Wayne"
+                                               Style="{StaticResource T.TableCell}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="PC-12"
+                                           Style="{StaticResource T.TableCell.Muted}"/>
+                                <Border Grid.Column="2" Style="{StaticResource Badge.Blue}"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="5" Height="5"
+                                                 Fill="{StaticResource Accent.Primary}"
+                                                 Margin="0,0,4,0"
+                                                 VerticalAlignment="Center"/>
+                                        <TextBlock Text="Testing"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Accent.Primary}"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- RIGHT: Real-Time Behavioral Feed -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0">
+                    <StackPanel>
+
+                        <!-- Card header -->
+                        <Border BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="0,0,0,1"
+                                Padding="16,12">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Real-Time Behavioral Feed"
+                                           Style="{StaticResource T.CardTitle}"
+                                           VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource Status.WarningBg}"
+                                        BorderBrush="{StaticResource Status.Warning}"
+                                        BorderThickness="1" CornerRadius="10"
+                                        Padding="8,2" Margin="10,0,0,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="12 Flags"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Status.Warning}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Table header -->
+                        <Border Background="{StaticResource Bg.TableHeader}"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="0,0,0,1"
+                                Padding="14,9">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="44"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="TIME"
+                                           Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="1" Text="STUDENT"
+                                           Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="2" Text="ALERT TYPE"
+                                           Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="3" Text="RISK"
+                                           Style="{StaticResource T.TableHeader}"
+                                           HorizontalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Feed Row 1: High -->
+                        <Border Style="{StaticResource TableRow}" Background="#FFF8F8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="44"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="10:14"
+                                           Style="{StaticResource T.Timestamp}"/>
+                                <TextBlock Grid.Column="1" Text="A. Smith"
+                                           Style="{StaticResource T.TableCell}"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE72E;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="11"
+                                               Foreground="{StaticResource Status.Danger}"
+                                               Margin="0,0,4,0"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="Window Switch"
+                                               Style="{StaticResource T.TableCell.Muted}"
+                                               FontSize="12"/>
+                                </StackPanel>
+                                <Border Grid.Column="3" Style="{StaticResource Badge.Danger}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="H"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Danger}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Feed Row 2: Medium -->
+                        <Border Style="{StaticResource TableRow}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="44"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="10:12"
+                                           Style="{StaticResource T.Timestamp}"/>
+                                <TextBlock Grid.Column="1" Text="J. Doe"
+                                           Style="{StaticResource T.TableCell}"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE7B3;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="11"
+                                               Foreground="{StaticResource Status.Warning}"
+                                               Margin="0,0,4,0"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="Gaze Deviation"
+                                               Style="{StaticResource T.TableCell.Muted}"
+                                               FontSize="12"/>
+                                </StackPanel>
+                                <Border Grid.Column="3" Style="{StaticResource Badge.Warning}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="M"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Warning}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Feed Row 3: Low -->
+                        <Border Padding="14,11">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="44"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="10:05"
+                                           Style="{StaticResource T.Timestamp}"/>
+                                <TextBlock Grid.Column="1" Text="B. Wayne"
+                                           Style="{StaticResource T.TableCell}"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE8C8;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="11"
+                                               Foreground="{StaticResource Status.Success}"
+                                               Margin="0,0,4,0"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="Paste Attempt"
+                                               Style="{StaticResource T.TableCell.Muted}"
+                                               FontSize="12"/>
+                                </StackPanel>
+                                <Border Grid.Column="3" Style="{StaticResource Badge.Success}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="L"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Success}"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 3 — FOCUSED INVESTIGATION PANE
+            ───────────────────────────────────────── -->
+            <TextBlock Text="FOCUSED INVESTIGATION &amp; ACTION PANE"
+                       Style="{StaticResource T.SectionLabel}"
+                       Margin="0,0,0,10"/>
+
+            <Border Style="{StaticResource Card.Investigation}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="24"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Snapshot image placeholder -->
+                    <Border Grid.Column="0"
+                            Background="{StaticResource Bg.Base}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Height="180"
+                            VerticalAlignment="Top">
+                        <Grid>
+                            <!-- Wireframe X -->
+                            <Line X1="0" Y1="0" X2="100" Y2="100"
+                                  Stroke="{StaticResource Border.Medium}"
+                                  StrokeThickness="1.5"
+                                  Stretch="Fill"
+                                  Margin="30"/>
+                            <Line X1="100" Y1="0" X2="0" Y2="100"
+                                  Stroke="{StaticResource Border.Medium}"
+                                  StrokeThickness="1.5"
+                                  Stretch="Fill"
+                                  Margin="30"/>
+                            <Rectangle Stroke="{StaticResource Border.Medium}"
+                                       StrokeThickness="1.5"
+                                       Fill="Transparent"
+                                       Margin="30"/>
+                            <Border Background="#FEF2F2"
+                                    BorderBrush="{StaticResource Status.Danger}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8,3"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Bottom"
+                                    Margin="8">
+                                <TextBlock Text="Snapshot · 10:14 AM"
+                                           FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Danger}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Detail + actions -->
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+
+                        <!-- Student + risk badge row -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Border Width="40" Height="40" CornerRadius="20"
+                                    Background="{StaticResource Status.DangerBg}"
+                                    Margin="0,0,12,0">
+                                <TextBlock Text="AS"
+                                           FontSize="13" FontWeight="Bold"
+                                           Foreground="{StaticResource Status.Danger}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="A. Smith"
+                                           FontSize="16" FontWeight="Bold"
+                                           Foreground="{StaticResource Text.Primary}"/>
+                                <TextBlock Text="PC-07  ·  BSIT"
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Secondary}"/>
+                            </StackPanel>
+                            <Border Style="{StaticResource Badge.Danger}"
+                                    Margin="16,0,0,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="Cumulative Risk: HIGH"
+                                           FontSize="11" FontWeight="Bold"
+                                           Foreground="{StaticResource Status.Danger}"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Event details grid -->
+                        <Border Background="{StaticResource Bg.Base}"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="16,12"
+                                Margin="0,0,0,20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="12"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Row 0 -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock Text="TIMESTAMP"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Text.Muted}"/>
+                                    <TextBlock Text="10:14 AM"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Text.Primary}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1">
+                                    <TextBlock Text="TRIGGER EVENT"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Text.Muted}"/>
+                                    <TextBlock Text="Alt+Tab Attempt Blocked"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Status.Danger}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+
+                                <!-- Row 2 -->
+                                <StackPanel Grid.Row="2" Grid.Column="0">
+                                    <TextBlock Text="STATION"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Text.Muted}"/>
+                                    <TextBlock Text="PC-07"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Text.Primary}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1">
+                                    <TextBlock Text="TOTAL FLAGS THIS SESSION"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Text.Muted}"/>
+                                    <TextBlock Text="5 flags"
+                                               FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Status.Danger}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+
+                            </Grid>
+                        </Border>
+
+                        <!-- Action buttons -->
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource Btn.Danger}"
+                                    Margin="0,0,12,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7BA;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13"
+                                               Foreground="White"
+                                               Margin="0,0,6,0"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="Issue Kiosk Warning"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn.Outlined}"
+                                    Content="Dismiss Flag"/>
+                        </StackPanel>
+
+                    </StackPanel>
+
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

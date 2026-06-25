@@ -1,0 +1,980 @@
+<UserControl x:Class="ACPAMS.Views.Faculty.Tabs.ReportsTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F4F5F7"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+
+        <!-- ═══════════════════════════════
+             DESIGN TOKENS
+        ═══════════════════════════════ -->
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.TableHeader"   Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
+        <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
+        <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Status.Danger"    Color="#C62828"/>
+        <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEF2F2"/>
+        <SolidColorBrush x:Key="AI.Text"          Color="#5B21B6"/>
+        <SolidColorBrush x:Key="AI.Bg"            Color="#F5F3FF"/>
+        <SolidColorBrush x:Key="AI.Border"        Color="#7C3AED"/>
+
+        <!-- Chart palette -->
+        <SolidColorBrush x:Key="Chart.Blue"       Color="#1976D2"/>
+        <SolidColorBrush x:Key="Chart.Purple"     Color="#7C3AED"/>
+        <SolidColorBrush x:Key="Chart.Green"      Color="#15803D"/>
+        <SolidColorBrush x:Key="Chart.Amber"      Color="#B45309"/>
+        <SolidColorBrush x:Key="Chart.Red"        Color="#C62828"/>
+        <SolidColorBrush x:Key="Chart.Teal"       Color="#0F766E"/>
+        <SolidColorBrush x:Key="Chart.BgBlue"     Color="#DBEAFE"/>
+        <SolidColorBrush x:Key="Chart.BgPurple"   Color="#EDE9FE"/>
+        <SolidColorBrush x:Key="Chart.BgGreen"    Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="Chart.BgAmber"    Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Chart.BgRed"      Color="#FEE2E2"/>
+
+        <!-- ═══════════════════════════════
+             TYPOGRAPHY
+        ═══════════════════════════════ -->
+
+        <Style x:Key="T.SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Muted}"/>
+        </Style>
+
+        <Style x:Key="T.KpiNumber" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="26"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        </Style>
+
+        <Style x:Key="T.KpiLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"     Value="12"/>
+            <Setter Property="Foreground"   Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="T.CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        </Style>
+
+        <Style x:Key="T.CardSubtitle" TargetType="TextBlock">
+            <Setter Property="FontSize"     Value="11"/>
+            <Setter Property="Foreground"   Value="{StaticResource Text.Muted}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin"       Value="0,3,0,0"/>
+        </Style>
+
+        <Style x:Key="T.TableHeader" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="11"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.TableCell" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Primary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.TableCell.Muted" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             CARD SURFACES
+        ═══════════════════════════════ -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="8"/>
+        </Style>
+
+        <Style x:Key="Card.Kpi.Blue" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <Style x:Key="Card.Kpi.Green" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Success}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <Style x:Key="Card.Kpi.Purple" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource AI.Border}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <Style x:Key="Card.Kpi.Teal" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="BorderBrush"     Value="{StaticResource Chart.Teal}"/>
+            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+            <Setter Property="Padding"         Value="18,16"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             BADGES
+        ═══════════════════════════════ -->
+        <Style x:Key="Badge.Success" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.SuccessBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Success}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="10"/>
+            <Setter Property="Padding"         Value="7,2"/>
+        </Style>
+
+        <Style x:Key="Badge.Warning" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.WarningBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Warning}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="10"/>
+            <Setter Property="Padding"         Value="7,2"/>
+        </Style>
+
+        <Style x:Key="Badge.Danger" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.DangerBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="10"/>
+            <Setter Property="Padding"         Value="7,2"/>
+        </Style>
+
+        <Style x:Key="Badge.Muted" TargetType="Border">
+            <Setter Property="Background"      Value="#F1F5F9"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="10"/>
+            <Setter Property="Padding"         Value="7,2"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             TABLE ROW
+        ═══════════════════════════════ -->
+        <Style x:Key="TableRow" TargetType="Border">
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding"         Value="16,12"/>
+        </Style>
+
+        <!-- ═══════════════════════════════
+             BUTTONS
+        ═══════════════════════════════ -->
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="14,7"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Outlined" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Padding"         Value="12,6"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background"
+                                        Value="{StaticResource Accent.PrimaryBg}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Student search/select dropdown style -->
+        <Style x:Key="Btn.StudentSearch" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="14,10"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F8FAFC"/>
+                                <Setter TargetName="Bg" Property="BorderBrush"
+                                        Value="{StaticResource Accent.Primary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- ═══════════════════════════════════════════
+         PAGE BODY
+    ═══════════════════════════════════════════ -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,24,32,40">
+
+            <!-- ─────────────────────────────────────────
+                 STUDENT SELECTOR
+            ───────────────────────────────────────── -->
+            <Button Style="{StaticResource Btn.StudentSearch}"
+                    Margin="0,0,0,24">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="&#xE721;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="14"
+                               Foreground="{StaticResource Text.Muted}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="1"
+                               Text="Search and select a specific student to view their individual report..."
+                               FontSize="13"
+                               Foreground="{StaticResource Text.Muted}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2"
+                               Text="&#xE70D;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="11"
+                               Foreground="{StaticResource Text.Muted}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 1 — AGGREGATE CLASS METRICS
+            ───────────────────────────────────────── -->
+            <TextBlock Text="AGGREGATE CLASS METRICS"
+                       Style="{StaticResource T.SectionLabel}"
+                       Margin="0,0,0,10"/>
+
+            <Grid Margin="0,0,0,28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- KPI 1: Class Average -->
+                <Border Grid.Column="0" Style="{StaticResource Card.Kpi.Blue}">
+                    <StackPanel>
+                        <TextBlock Text="Class Average"
+                                   Style="{StaticResource T.KpiLabel}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock Text="85.4"
+                                   Style="{StaticResource T.KpiNumber}"/>
+                        <TextBlock Text="out of 100"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 2: Integrity Index -->
+                <Border Grid.Column="2" Style="{StaticResource Card.Kpi.Green}">
+                    <StackPanel>
+                        <TextBlock Text="Integrity Index"
+                                   Style="{StaticResource T.KpiLabel}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock Text="92%"
+                                   Style="{StaticResource T.KpiNumber}"
+                                   Foreground="{StaticResource Status.Success}"/>
+                        <TextBlock Text="Low anomaly rate"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Status.Success}"
+                                   Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 3: AI Accuracy Rate -->
+                <Border Grid.Column="4" Style="{StaticResource Card.Kpi.Purple}">
+                    <StackPanel>
+                        <TextBlock Text="AI Accuracy Rate"
+                                   Style="{StaticResource T.KpiLabel}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock Text="88%"
+                                   Style="{StaticResource T.KpiNumber}"
+                                   Foreground="{StaticResource AI.Text}"/>
+                        <TextBlock Text="AI vs instructor match"
+                                   FontSize="11"
+                                   Foreground="{StaticResource AI.Text}"
+                                   Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- KPI 4: Completion -->
+                <Border Grid.Column="6" Style="{StaticResource Card.Kpi.Teal}">
+                    <StackPanel>
+                        <TextBlock Text="Completion Rate"
+                                   Style="{StaticResource T.KpiLabel}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock Text="100%"
+                                   Style="{StaticResource T.KpiNumber}"
+                                   Foreground="{StaticResource Chart.Teal}"/>
+                        <TextBlock Text="All students submitted"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Chart.Teal}"
+                                   Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 2 — VISUAL INSIGHTS
+            ───────────────────────────────────────── -->
+            <TextBlock Text="VISUAL INSIGHTS &amp; DATA VISUALIZATION"
+                       Style="{StaticResource T.SectionLabel}"
+                       Margin="0,0,0,10"/>
+
+            <Grid Margin="0,0,0,28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- CHART 1: AI vs Human Override (Donut) -->
+                <Border Grid.Column="0" Style="{StaticResource Card}" Padding="20,18">
+                    <StackPanel>
+                        <TextBlock Text="AI vs. Instructor Override"
+                                   Style="{StaticResource T.CardTitle}"
+                                   Margin="0,0,0,3"/>
+                        <TextBlock Text="Grade shifts made by instructor vs. AI baseline"
+                                   Style="{StaticResource T.CardSubtitle}"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- Donut chart simulation -->
+                        <Grid Height="140" Margin="0,0,0,16">
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="Transparent"
+                                     Stroke="{StaticResource Chart.BgBlue}"
+                                     StrokeThickness="20"/>
+                            <!-- Simulated arc segments using rotation -->
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="Transparent"
+                                     Stroke="{StaticResource Chart.Blue}"
+                                     StrokeThickness="20"
+                                     StrokeDashArray="2.2 1"/>
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="Transparent"
+                                     Stroke="{StaticResource Chart.Purple}"
+                                     StrokeThickness="20"
+                                     StrokeDashArray="0.88 3.12">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform Angle="198"
+                                                     CenterX="60"
+                                                     CenterY="60"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- Center label -->
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="88%"
+                                           FontSize="18" FontWeight="Bold"
+                                           Foreground="{StaticResource Text.Primary}"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Match"
+                                           FontSize="10"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Legend -->
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Border Width="10" Height="10" CornerRadius="2"
+                                        Background="{StaticResource Chart.Blue}"
+                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="AI Score Accepted"
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Secondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="88%"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Blue}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="10" CornerRadius="2"
+                                        Background="{StaticResource Chart.Purple}"
+                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Instructor Override"
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Secondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="12%"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Purple}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- CHART 2: Infraction Breakdown (Pie) -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,18">
+                    <StackPanel>
+                        <TextBlock Text="Infraction Breakdown"
+                                   Style="{StaticResource T.CardTitle}"
+                                   Margin="0,0,0,3"/>
+                        <TextBlock Text="Gaze deviation, window switching, clipboard use"
+                                   Style="{StaticResource T.CardSubtitle}"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- Pie chart simulation using stacked arcs -->
+                        <Grid Height="140" Margin="0,0,0,16">
+                            <!-- Base circle -->
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="{StaticResource Chart.BgAmber}"/>
+                            <!-- Segment 1: Gaze ~50% -->
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="Transparent"
+                                     Stroke="{StaticResource Chart.Amber}"
+                                     StrokeThickness="40"
+                                     StrokeDashArray="1.57 3.14">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform Angle="-90"
+                                                     CenterX="60" CenterY="60"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- Segment 2: Window ~33% -->
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="Transparent"
+                                     Stroke="{StaticResource Chart.Red}"
+                                     StrokeThickness="40"
+                                     StrokeDashArray="1.04 3.67">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform Angle="90"
+                                                     CenterX="60" CenterY="60"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- Segment 3: Clipboard ~17% -->
+                            <Ellipse Width="120" Height="120"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="Transparent"
+                                     Stroke="{StaticResource Chart.Blue}"
+                                     StrokeThickness="40"
+                                     StrokeDashArray="0.534 4.21">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform Angle="208"
+                                                     CenterX="60" CenterY="60"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- White center hole -->
+                            <Ellipse Width="56" Height="56"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     Fill="{StaticResource Bg.Surface}"/>
+                            <TextBlock Text="12"
+                                       FontSize="16" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Legend -->
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <Border Width="10" Height="10" CornerRadius="2"
+                                        Background="{StaticResource Chart.Amber}"
+                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Gaze Deviation"
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Secondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="6"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Amber}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <Border Width="10" Height="10" CornerRadius="2"
+                                        Background="{StaticResource Chart.Red}"
+                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Window Switch"
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Secondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="4"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Red}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="10" CornerRadius="2"
+                                        Background="{StaticResource Chart.Blue}"
+                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Clipboard / Paste"
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Secondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="2"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Blue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- CHART 3: Class Mastery Radar -->
+                <Border Grid.Column="4" Style="{StaticResource Card}" Padding="20,18">
+                    <StackPanel>
+                        <TextBlock Text="Class Mastery Profile"
+                                   Style="{StaticResource T.CardTitle}"
+                                   Margin="0,0,0,3"/>
+                        <TextBlock Text="Competency across assessed skill areas"
+                                   Style="{StaticResource T.CardSubtitle}"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- Radar chart simulation using a Canvas -->
+                        <Canvas Height="140" Width="140"
+                                HorizontalAlignment="Center"
+                                Margin="0,0,0,16">
+                            <!-- Background rings -->
+                            <Ellipse Canvas.Left="10" Canvas.Top="10"
+                                     Width="120" Height="120"
+                                     Stroke="{StaticResource Border.Subtle}"
+                                     StrokeThickness="1" Fill="Transparent"/>
+                            <Ellipse Canvas.Left="25" Canvas.Top="25"
+                                     Width="90" Height="90"
+                                     Stroke="{StaticResource Border.Subtle}"
+                                     StrokeThickness="1" Fill="Transparent"/>
+                            <Ellipse Canvas.Left="40" Canvas.Top="40"
+                                     Width="60" Height="60"
+                                     Stroke="{StaticResource Border.Subtle}"
+                                     StrokeThickness="1" Fill="Transparent"/>
+                            <!-- Axis lines from center -->
+                            <Line X1="70" Y1="70" X2="70" Y2="10"
+                                  Stroke="{StaticResource Border.Subtle}"
+                                  StrokeThickness="1"/>
+                            <Line X1="70" Y1="70" X2="124" Y2="43"
+                                  Stroke="{StaticResource Border.Subtle}"
+                                  StrokeThickness="1"/>
+                            <Line X1="70" Y1="70" X2="103" Y2="123"
+                                  Stroke="{StaticResource Border.Subtle}"
+                                  StrokeThickness="1"/>
+                            <Line X1="70" Y1="70" X2="37" Y2="123"
+                                  Stroke="{StaticResource Border.Subtle}"
+                                  StrokeThickness="1"/>
+                            <Line X1="70" Y1="70" X2="16" Y2="43"
+                                  Stroke="{StaticResource Border.Subtle}"
+                                  StrokeThickness="1"/>
+                            <!-- Data polygon (filled, semi-transparent) -->
+                            <Polygon Points="70,22 112,52 96,108 44,108 28,52"
+                                     Fill="#3B1976D2"
+                                     Stroke="{StaticResource Accent.Primary}"
+                                     StrokeThickness="1.5"/>
+                            <!-- Axis labels -->
+                            <TextBlock Canvas.Left="58" Canvas.Top="0"
+                                       Text="Logic" FontSize="9"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                            <TextBlock Canvas.Left="118" Canvas.Top="38"
+                                       Text="Syntax" FontSize="9"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                            <TextBlock Canvas.Left="100" Canvas.Top="124"
+                                       Text="Design" FontSize="9"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                            <TextBlock Canvas.Left="22" Canvas.Top="124"
+                                       Text="Debug" FontSize="9"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                            <TextBlock Canvas.Left="0" Canvas.Top="38"
+                                       Text="OOP" FontSize="9"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                        </Canvas>
+
+                        <!-- Skill score bars -->
+                        <StackPanel>
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Logic"
+                                           FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                                <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                        Background="{StaticResource Chart.BgBlue}"
+                                        VerticalAlignment="Center">
+                                    <Border HorizontalAlignment="Left" Width="170"
+                                            Height="6" CornerRadius="3"
+                                            Background="{StaticResource Chart.Blue}"
+                                            MaxWidth="200"/>
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="85%"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Blue}"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Syntax"
+                                           FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                                <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                        Background="{StaticResource Chart.BgBlue}"
+                                        VerticalAlignment="Center">
+                                    <Border HorizontalAlignment="Left" Width="156"
+                                            Height="6" CornerRadius="3"
+                                            Background="{StaticResource Chart.Blue}"
+                                            MaxWidth="200"/>
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="78%"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Blue}"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="52"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Design"
+                                           FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                                <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                        Background="{StaticResource Chart.BgBlue}"
+                                        VerticalAlignment="Center">
+                                    <Border HorizontalAlignment="Left" Width="144"
+                                            Height="6" CornerRadius="3"
+                                            Background="{StaticResource Chart.Blue}"
+                                            MaxWidth="200"/>
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="72%"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Chart.Blue}"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 3 — DETAILED PERFORMANCE TABLE
+            ───────────────────────────────────────── -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="DETAILED PERFORMANCE DATA"
+                           Style="{StaticResource T.SectionLabel}"
+                           VerticalAlignment="Center"/>
+                <Border Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="1" CornerRadius="4"
+                        Padding="8,2" Margin="12,0,0,0">
+                    <TextBlock Text="Exportable"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"/>
+                </Border>
+            </StackPanel>
+
+            <Border Style="{StaticResource Card}" Padding="0">
+                <StackPanel>
+
+                    <!-- Table Header -->
+                    <Border Background="{StaticResource Bg.TableHeader}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="STUDENT"
+                                       Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="1" Text="AI SCORE"
+                                       Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="2" Text="FINAL GRADE"
+                                       Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="3" Text="AI CONF."
+                                       Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="4" Text="ANOMALIES"
+                                       Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="5" Text="ACTION"
+                                       Style="{StaticResource T.TableHeader}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Row 1: J. Doe — clean -->
+                    <Border Style="{StaticResource TableRow}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <Border Width="28" Height="28" CornerRadius="14"
+                                        Background="#E2E8F0" Margin="0,0,8,0">
+                                    <TextBlock Text="JD" FontSize="9" FontWeight="Bold"
+                                               Foreground="{StaticResource Text.Secondary}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="J. Doe"
+                                           Style="{StaticResource T.TableCell}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="85 / 100"
+                                       Style="{StaticResource T.TableCell.Muted}"/>
+                            <TextBlock Grid.Column="2" Text="85 / 100"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Status.Success}"
+                                       VerticalAlignment="Center"/>
+                            <!-- AI confidence bar -->
+                            <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                <TextBlock Text="92%"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Success}"
+                                           Margin="0,0,0,3"/>
+                                <Border Height="4" CornerRadius="2"
+                                        Background="{StaticResource Chart.BgGreen}">
+                                    <Border HorizontalAlignment="Left"
+                                            Width="74" Height="4" CornerRadius="2"
+                                            Background="{StaticResource Status.Success}"
+                                            MaxWidth="80"/>
+                                </Border>
+                            </StackPanel>
+                            <Border Grid.Column="4" Style="{StaticResource Badge.Success}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <TextBlock Text="0 anomalies"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Success}"/>
+                            </Border>
+                            <Button Grid.Column="5"
+                                    Style="{StaticResource Btn.Outlined}"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Content="View Report"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Row 2: A. Smith — high risk -->
+                    <Border Style="{StaticResource TableRow}" Background="#FFFBFB">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <Border Width="28" Height="28" CornerRadius="14"
+                                        Background="{StaticResource Status.DangerBg}"
+                                        Margin="0,0,8,0">
+                                    <TextBlock Text="AS" FontSize="9" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Danger}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="A. Smith"
+                                           Style="{StaticResource T.TableCell}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="40 / 100"
+                                       FontSize="13"
+                                       Foreground="{StaticResource Status.Danger}"
+                                       VerticalAlignment="Center"/>
+                            <!-- Override indicator -->
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock Text="65 / 100"
+                                           FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Warning}"/>
+                                <TextBlock Text="↑ Instructor override"
+                                           FontSize="10"
+                                           Foreground="{StaticResource AI.Text}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                <TextBlock Text="65%"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Warning}"
+                                           Margin="0,0,0,3"/>
+                                <Border Height="4" CornerRadius="2"
+                                        Background="{StaticResource Chart.BgAmber}">
+                                    <Border HorizontalAlignment="Left"
+                                            Width="52" Height="4" CornerRadius="2"
+                                            Background="{StaticResource Status.Warning}"
+                                            MaxWidth="80"/>
+                                </Border>
+                            </StackPanel>
+                            <Border Grid.Column="4" Style="{StaticResource Badge.Danger}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <TextBlock Text="3  ·  High"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Danger}"/>
+                            </Border>
+                            <Button Grid.Column="5"
+                                    Style="{StaticResource Btn.Primary}"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Content="View Report"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Row 3: B. Wayne — clean -->
+                    <Border Padding="16,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <Border Width="28" Height="28" CornerRadius="14"
+                                        Background="#E2E8F0" Margin="0,0,8,0">
+                                    <TextBlock Text="BW" FontSize="9" FontWeight="Bold"
+                                               Foreground="{StaticResource Text.Secondary}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="B. Wayne"
+                                           Style="{StaticResource T.TableCell}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="95 / 100"
+                                       Style="{StaticResource T.TableCell.Muted}"/>
+                            <TextBlock Grid.Column="2" Text="95 / 100"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Status.Success}"
+                                       VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                <TextBlock Text="88%"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Success}"
+                                           Margin="0,0,0,3"/>
+                                <Border Height="4" CornerRadius="2"
+                                        Background="{StaticResource Chart.BgGreen}">
+                                    <Border HorizontalAlignment="Left"
+                                            Width="70" Height="4" CornerRadius="2"
+                                            Background="{StaticResource Status.Success}"
+                                            MaxWidth="80"/>
+                                </Border>
+                            </StackPanel>
+                            <Border Grid.Column="4" Style="{StaticResource Badge.Warning}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <TextBlock Text="1  ·  Low"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Warning}"/>
+                            </Border>
+                            <Button Grid.Column="5"
+                                    Style="{StaticResource Btn.Outlined}"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Content="View Report"/>
+                        </Grid>
+                    </Border>
+
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

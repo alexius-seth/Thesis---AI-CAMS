@@ -1,0 +1,152 @@
+<UserControl x:Class="ACPAMS.Views.Student.Canvas.EnumerationCanvas"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F8FAFC"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="QType.Enum"       Color="#B45309"/>
+        <SolidColorBrush x:Key="QType.EnumBg"     Color="#FEF3C7"/>
+
+        <Style x:Key="Input.EnumItem" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="14"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="14,11"/>
+            <Setter Property="Height"                   Value="44"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush"
+                                        Value="{StaticResource Accent.Primary}"/>
+                                <Setter TargetName="Root" Property="BorderThickness"
+                                        Value="1.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,28,32,20">
+
+            <!-- Question header -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <Border Background="{StaticResource QType.EnumBg}"
+                        BorderBrush="{StaticResource QType.Enum}"
+                        BorderThickness="1" CornerRadius="4" Padding="8,3"
+                        Margin="0,0,10,0">
+                    <TextBlock Text="Enumeration" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource QType.Enum}"/>
+                </Border>
+                <Border Background="{StaticResource Accent.PrimaryBg}"
+                        BorderBrush="{StaticResource Accent.Primary}"
+                        BorderThickness="1" CornerRadius="4" Padding="8,3">
+                    <TextBlock Text="10 pts" FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource Accent.Primary}"/>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Text="Question 1 of 3"
+                       FontSize="11" Foreground="{StaticResource Text.Muted}"
+                       Margin="0,0,0,10"/>
+
+            <Border Height="1" Background="{StaticResource Border.Subtle}"
+                    Margin="0,0,0,16"/>
+
+            <!-- Question text -->
+            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8"
+                       FontSize="16" LineHeight="26"
+                       Foreground="{StaticResource Text.Primary}"
+                       Text="List three core principles of Object-Oriented Programming."/>
+            <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}"
+                       Margin="0,0,0,24"
+                       Text="List them in any order. Each correct item is worth 3.3 pts."/>
+
+            <!-- Enumeration items -->
+            <TextBlock Text="YOUR ANSWERS"
+                       FontSize="11" FontWeight="Bold"
+                       Foreground="{StaticResource Text.Muted}"
+                       Margin="0,0,0,14"/>
+
+            <!-- Item 1 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="36"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
+                        Background="{StaticResource Accent.Primary}"
+                        VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="1" FontSize="13" FontWeight="Bold"
+                               Foreground="White" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <TextBox Grid.Column="1" Style="{StaticResource Input.EnumItem}"
+                         Text="Encapsulation"/>
+            </Grid>
+
+            <!-- Item 2 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="36"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
+                        Background="{StaticResource Accent.Primary}"
+                        VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="2" FontSize="13" FontWeight="Bold"
+                               Foreground="White" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <TextBox Grid.Column="1" Style="{StaticResource Input.EnumItem}"
+                         Text="Polymorphism"/>
+            </Grid>
+
+            <!-- Item 3 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="36"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
+                        Background="{StaticResource Accent.Primary}"
+                        VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="3" FontSize="13" FontWeight="Bold"
+                               Foreground="White" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <TextBox Grid.Column="1" Style="{StaticResource Input.EnumItem}"
+                         Text="Inheritance"/>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

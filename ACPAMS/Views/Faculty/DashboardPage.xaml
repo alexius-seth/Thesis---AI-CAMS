@@ -1,0 +1,437 @@
+<Window x:Class="ACPAMS.Views.Faculty.DashboardPage"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:tabs="clr-namespace:ACPAMS.Views.Faculty.Tabs"
+        Title="ACPAMS — Dashboard"
+        WindowState="Maximized"
+        Background="#F4F5F7"
+        FontFamily="Segoe UI"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+
+        <SolidColorBrush x:Key="Bg.Base"        Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Bg.Surface"     Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Border.Subtle"  Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"  Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"   Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary" Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"     Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary" Color="#1976D2"/>
+
+        <!-- Nav button -->
+        <Style x:Key="Btn.Nav" TargetType="Button">
+            <Setter Property="Background"                 Value="Transparent"/>
+            <Setter Property="BorderThickness"            Value="0"/>
+            <Setter Property="Padding"                    Value="0"/>
+            <Setter Property="Cursor"                     Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="Transparent"
+                                BorderThickness="3,0,0,0"
+                                BorderBrush="Transparent"
+                                Padding="18,11">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F4F5F7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Nav.Active" TargetType="Button" BasedOn="{StaticResource Btn.Nav}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="#EFF6FF"
+                                BorderThickness="3,0,0,0"
+                                BorderBrush="{StaticResource Accent.Primary}"
+                                Padding="18,11">
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Icon button -->
+        <Style x:Key="Btn.Icon" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width"           Value="34"/>
+            <Setter Property="Height"          Value="34"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F4F5F7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Search box -->
+        <Style x:Key="SearchBox" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"              Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="34,8,12,8"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid>
+                                <TextBlock Text="&#xE721;"
+                                           FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           VerticalAlignment="Center"
+                                           Margin="11,0,0,0"
+                                           IsHitTestVisible="False"/>
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom tab button — inactive -->
+        <Style x:Key="Btn.Tab" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush"     Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="Padding"         Value="4,10"/>
+            <Setter Property="Margin"          Value="0,0,28,0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="BorderBrush"
+                                        Value="{StaticResource Border.Medium}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Active tab button -->
+        <Style x:Key="Btn.Tab.Active" TargetType="Button" BasedOn="{StaticResource Btn.Tab}">
+            <Setter Property="BorderBrush" Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"  Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="FontWeight"  Value="SemiBold"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Background="{StaticResource Bg.Base}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ══════════════════
+             SIDEBAR
+        ══════════════════ -->
+        <Border Grid.Column="0"
+                Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Subtle}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+
+                <!-- Brand -->
+                <Border DockPanel.Dock="Top"
+                        Padding="20,18,20,16"
+                        BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34"
+                                Background="#1A202C"
+                                CornerRadius="6"
+                                Margin="0,0,10,0">
+                            <TextBlock Text="&#xE715;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="ACPAMS"
+                                       FontSize="15" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"/>
+                            <TextBlock Text="Computer Studies"
+                                       FontSize="10"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- User widget -->
+                <Border DockPanel.Dock="Top"
+                        Padding="16,12"
+                        BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="17"
+                                Background="#E2E8F0" Margin="0,0,6,0">
+                            <TextBlock Text="&#xE77B;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <Button Style="{StaticResource Btn.Icon}" Margin="0,0,4,0">
+                            <TextBlock Text="&#xE713;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                        </Button>
+                        <Grid>
+                            <Button Style="{StaticResource Btn.Icon}">
+                                <TextBlock Text="&#xEA8F;"
+                                           FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="{StaticResource Text.Secondary}"/>
+                            </Button>
+                            <Border Width="16" Height="16" CornerRadius="8"
+                                    Background="#E53E3E"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="0,-4,-4,0">
+                                <TextBlock Text="1" FontSize="9" FontWeight="Bold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Sidebar search -->
+                <Border DockPanel.Dock="Top" Padding="14,10">
+                    <TextBox Style="{StaticResource SearchBox}" Height="34"/>
+                </Border>
+
+                <!-- Nav links -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,2,0,0">
+
+                    <Button Style="{StaticResource Btn.Nav}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE80F;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Home"
+                                       FontSize="13"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Dashboard is active -->
+                    <Button Style="{StaticResource Btn.Nav.Active}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xF246;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Accent.Primary}"
+                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Dashboard"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Accent.Primary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource Btn.Nav}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A5;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Create Exam"
+                                       FontSize="13"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                </StackPanel>
+
+            </DockPanel>
+        </Border>
+
+        <!-- ══════════════════
+             MAIN CONTENT
+        ══════════════════ -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Header bar -->
+                <RowDefinition Height="Auto"/>   <!-- Tab bar -->
+                <RowDefinition Height="*"/>      <!-- Tab content -->
+            </Grid.RowDefinitions>
+
+            <!-- HEADER BAR -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1"
+                    Padding="32,0"
+                    Height="64">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="300"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="Dashboard"
+                               FontSize="22" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Primary}"
+                               VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1"
+                             Style="{StaticResource SearchBox}"
+                             Height="36"
+                             VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- TAB BAR -->
+            <Border Grid.Row="1"
+                    Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1"
+                    Padding="32,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Tab buttons -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+
+                        <!-- Overview — active -->
+                        <Button Style="{StaticResource Btn.Tab.Active}"
+                                Content="Overview"/>
+
+                        <!-- Monitoring with badge -->
+                        <Button Style="{StaticResource Btn.Tab}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Monitoring"
+                                           VerticalAlignment="Center"/>
+                                <Border Width="18" Height="18" CornerRadius="9"
+                                        Background="#FEF3C7"
+                                        BorderBrush="#B45309"
+                                        BorderThickness="1"
+                                        Margin="6,0,0,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="7"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="#B45309"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Grading with badge -->
+                        <Button Style="{StaticResource Btn.Tab}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Grading"
+                                           VerticalAlignment="Center"/>
+                                <Border Width="18" Height="18" CornerRadius="9"
+                                        Background="#EFF6FF"
+                                        BorderBrush="#1976D2"
+                                        BorderThickness="1"
+                                        Margin="6,0,0,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="2"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="#1976D2"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource Btn.Tab}"
+                                Content="Reports"/>
+
+                    </StackPanel>
+
+                    <!-- Status chip -->
+                    <Border Grid.Column="1"
+                            Background="#F0FDF4"
+                            BorderBrush="#2E7D32"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,5"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7"
+                                     Fill="#2E7D32"
+                                     Margin="0,0,6,0"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="Live Session Active"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#2E7D32"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="  ·  CS101 Midterms"
+                                       FontSize="12"
+                                       Foreground="#2E7D32"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                </Grid>
+            </Border>
+
+            <!-- TAB CONTENT — Overview is shown by default -->
+            <!-- Replace this ContentControl with your tab switching logic -->
+            <ContentControl Grid.Row="2">
+                <tabs:OverviewTab/>
+            </ContentControl>
+
+        </Grid>
+
+    </Grid>
+</Window>
