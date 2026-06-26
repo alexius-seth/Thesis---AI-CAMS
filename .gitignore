@@ -4,6 +4,5 @@ obj/
 *.user
 *.vsidx
 *.suo
-*.slnx
 *.db
 *.opendb
