@@ -61,7 +61,7 @@ namespace ACPAMS.Data
             {
                 entity.HasKey(e => e.UserId);
                 entity.Property(e => e.UserId).HasDefaultValueSql("NEWID()");
-                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.Username).IsUnique(); // username must be unique
                 entity.Property(e => e.Role)
                       .HasConversion<string>()
                       .HasMaxLength(20);
