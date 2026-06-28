@@ -69,7 +69,7 @@ namespace ACPAMS.Views.Auth
                     CreatedAt = DateTime.Now
                 };
 
-                // Create student profile
+                // Create student profileS
                 var student = new StudentModel
                 {
                     StudentId = studentId,
