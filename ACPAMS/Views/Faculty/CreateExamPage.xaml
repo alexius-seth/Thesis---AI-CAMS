@@ -694,17 +694,21 @@
                                 </Border>
                             </Grid>
                         </Button>
+                        
+                        <!--Dynamic Sections Container-->
+                        <StackPanel x:Name="SectionsContainer" Margin="0,0,0,10"/>
+                        
                         <!-- Add Section -->
                         <Border Margin="14,10"
-                                BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1">
-                            <Button Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left">
+        BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1">
+                            <Button x:Name="AddSectionBtn" Click="AddSection_Click" Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                               Foreground="{StaticResource Accent.Primary}"
-                                               Margin="0,0,6,0" VerticalAlignment="Center"/>
+                       Foreground="{StaticResource Accent.Primary}"
+                       Margin="0,0,6,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Add Section" FontSize="12" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Accent.Primary}"
-                                               VerticalAlignment="Center"/>
+                       Foreground="{StaticResource Accent.Primary}"
+                       VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </Border>
@@ -852,7 +856,7 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
                           Background="{StaticResource Bg.Canvas}">
-                <StackPanel Margin="28,24,28,16">
+                <StackPanel x:Name="QuestionsContainer" Margin="28,24,28,16">
 
                     <!-- Q1: CODING -->
                     <Border Style="{StaticResource Card}">

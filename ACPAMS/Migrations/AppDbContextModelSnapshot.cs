@@ -922,12 +922,6 @@ namespace ACPAMS.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("email");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
@@ -944,10 +938,16 @@ namespace ACPAMS.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("role");
 
+                    b.Property<string>("Username")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("username");
+
                     b.HasKey("UserId");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
+                    b.HasIndex("Username")
+                        .IsUnique()
+                        .HasFilter("[username] IS NOT NULL");
 
                     b.ToTable("users");
                 });

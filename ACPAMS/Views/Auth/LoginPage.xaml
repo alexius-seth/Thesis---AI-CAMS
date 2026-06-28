@@ -32,70 +32,22 @@
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
             <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
-            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
-            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
-            <Setter Property="BorderThickness"          Value="1"/>
-            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
             <Setter Property="Height"                   Value="42"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
-                                <Setter TargetName="Root" Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <Style x:Key="Input.Password" TargetType="PasswordBox">
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
             <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
-            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
-            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
-            <Setter Property="BorderThickness"          Value="1"/>
-            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
             <Setter Property="Height"                   Value="42"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="PasswordBox">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
-                                <Setter TargetName="Root" Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <!-- ═══════════════════════════════
@@ -234,44 +186,54 @@
 
                 <!-- Username -->
                 <TextBlock Text="User" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{StaticResource Text.Secondary}"
-                           Margin="0,0,0,6"/>
-                <TextBox x:Name="UsernameBox"
-                         Style="{StaticResource Input.Field}"
-                         Margin="0,0,0,16"/>
-
+               Foreground="{StaticResource Text.Secondary}"
+               Margin="0,0,0,6"/>
+                <Border Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Medium}"
+                BorderThickness="1" CornerRadius="6"
+                Height="42" Margin="0,0,0,16">
+                    <TextBox x:Name="UsernameBox"
+                 Style="{StaticResource Input.Field}"/>
+                </Border>
                 <!-- Password -->
                 <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{StaticResource Text.Secondary}"
-                           Margin="0,0,0,6"/>
+           Foreground="{StaticResource Text.Secondary}"
+           Margin="0,0,0,6"/>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <PasswordBox x:Name="PasswordBox"
-                                 Grid.Column="0"
-                                 Style="{StaticResource Input.Password}"/>
-                    <Button Grid.Column="2"
-                            Style="{StaticResource Btn.EyeToggle}"
-                            x:Name="TogglePasswordBtn">
+                    <Border Grid.Column="0"
+            Background="{StaticResource Bg.Surface}"
+            BorderBrush="{StaticResource Border.Medium}"
+            BorderThickness="1" CornerRadius="6"
+            Height="42">
+                        <Grid>
+                            <PasswordBox x:Name="PasswordBox"
+                         Style="{StaticResource Input.Password}"/>
+                            <TextBox x:Name="PasswordVisibleBox"
+                     Style="{StaticResource Input.Field}"
+                     Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+                    <Button x:Name="TogglePasswordBtn"
+            Grid.Column="2"
+            Style="{StaticResource Btn.EyeToggle}"
+            Click="TogglePasswordBtn_Click">
                         <TextBlock Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14" Foreground="{StaticResource Text.Muted}"/>
+                   FontSize="14" Foreground="{StaticResource Text.Muted}"/>
                     </Button>
                 </Grid>
 
-                <!-- Forgot password -->
-                <Button Style="{StaticResource Btn.Link}"
-                        Content="Forgot Password?"
-                        HorizontalAlignment="Right"
-                        Margin="0,0,0,20"/>
-
                 <!-- Log In button -->
-                <Button Style="{StaticResource Btn.Primary}"
+                <Button x:Name="LogInBtn"
+                        Style="{StaticResource Btn.Primary}"
                         HorizontalAlignment="Stretch"
                         Margin="0,0,0,20"
-                        Content="Log In"/>
+                        Click="LogInButton_Click"
+                        Content="Log In"/>  
 
                 <!-- Divider -->
                 <Grid Margin="0,0,0,16">
@@ -298,7 +260,8 @@
                                VerticalAlignment="Center"/>
                     <Button Style="{StaticResource Btn.Link}"
                             Content="Sign Up"
-                            FontWeight="SemiBold"/>
+                            FontWeight="SemiBold"
+                            Click="SignUpBtn_Click"/>       
                 </StackPanel>
 
             </StackPanel>

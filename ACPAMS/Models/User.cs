@@ -19,12 +19,12 @@ namespace ACPAMS.Models
         [MaxLength(20)]
         [Column("role")]
         public string Role { get; set; } = string.Empty;
-        // Values: "student" | "instructor" | "admin"
 
-        [Required]
         [MaxLength(100)]
-        [Column("email")]
-        public string Email { get; set; } = string.Empty;
+        [Column("username")]
+        public string? Username { get; set; }
+        // For faculty: their chosen username
+        // For students: their Student ID (e.g. 12-3456-789)
 
         [Required]
         [MaxLength(255)]
@@ -41,4 +41,5 @@ namespace ACPAMS.Models
         public Student? Student { get; set; }
         public Instructor? Instructor { get; set; }
     }
+
 }
