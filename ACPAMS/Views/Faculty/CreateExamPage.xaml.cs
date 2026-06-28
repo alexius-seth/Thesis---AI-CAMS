@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace ACPAMS.Views.Faculty
 {
@@ -10,6 +13,10 @@ namespace ACPAMS.Views.Faculty
     {
         private List<ExamSection> _sections = new List<ExamSection>();
         private ExamSection _selectedSection;
+        private string _selectedQuestionType = string.Empty;
+
+        // Supported programming languages
+        private readonly string[] _supportedLanguages = new[] { "Java", "C", "C#", "C++", "Python" };
 
         public class ExamSection
         {
@@ -17,7 +24,7 @@ namespace ACPAMS.Views.Faculty
             public string Name { get; set; }
             public string Type { get; set; }
             public string Instructions { get; set; }
-            public int QuestionCount { get; set; } = 0;
+            public int QuestionCount => Questions.Count;
             public bool IsActive { get; set; }
             public List<QuestionItem> Questions { get; set; } = new List<QuestionItem>();
         }
@@ -38,6 +45,7 @@ namespace ACPAMS.Views.Faculty
             public bool? IsTrue { get; set; }
             public string ProgrammingLanguage { get; set; }
             public string SectionId { get; set; }
+            public string ExpectedAnswers { get; set; } // comma-separated for enumeration
         }
 
         public CreateExamPage()
@@ -83,7 +91,7 @@ namespace ACPAMS.Views.Faculty
                 new ExamSection {
                     Id = "default4",
                     Name = "Test IV",
-                    Type = "Coding (Java)",
+                    Type = "Coding",
                     IsActive = true,
                     Questions = new List<QuestionItem>()
                 }
@@ -308,20 +316,21 @@ namespace ACPAMS.Views.Faculty
 
             foreach (var q in _selectedSection.Questions)
             {
-                var border = new Border
+                var cardBorder = new Border
                 {
                     Style = (Style)FindResource("Card")
                 };
 
-                var innerBorder = new Border
+                var accentBorder = new Border
                 {
                     BorderBrush = GetTypeColor(q.Type),
                     BorderThickness = new System.Windows.Thickness(4, 0, 0, 0),
                     CornerRadius = new CornerRadius(0, 8, 8, 0)
                 };
 
-                var stack = new StackPanel();
+                var mainStack = new StackPanel();
 
+                // ---- Header ----
                 var headerBorder = new Border
                 {
                     BorderBrush = (Brush)FindResource("Border.Subtle"),
@@ -347,8 +356,8 @@ namespace ACPAMS.Views.Faculty
 
                 var typeBadge = new Border
                 {
-                    Background = (Brush)FindResource("Status.SuccessBg"),
-                    BorderBrush = (Brush)FindResource("Status.Success"),
+                    Background = GetTypeBadgeBackground(q.Type),
+                    BorderBrush = GetTypeBadgeBorder(q.Type),
                     BorderThickness = new System.Windows.Thickness(1),
                     CornerRadius = new CornerRadius(4),
                     Padding = new System.Windows.Thickness(7, 2, 7, 2)
@@ -358,7 +367,7 @@ namespace ACPAMS.Views.Faculty
                     Text = q.Type,
                     FontSize = 10,
                     FontWeight = FontWeights.SemiBold,
-                    Foreground = (Brush)FindResource("Status.Success")
+                    Foreground = GetTypeBadgeForeground(q.Type)
                 };
                 typeBadge.Child = typeBadgeText;
                 leftStack.Children.Add(typeBadge);
@@ -380,7 +389,14 @@ namespace ACPAMS.Views.Faculty
                     Text = q.Points.ToString(),
                     Style = (Style)FindResource("Input.Points"),
                     Width = 60,
-                    IsReadOnly = true
+                    Tag = q
+                };
+                pointsBox.TextChanged += (s, e) =>
+                {
+                    if (int.TryParse(pointsBox.Text, out int val))
+                    {
+                        (pointsBox.Tag as QuestionItem).Points = val;
+                    }
                 };
                 rightStack.Children.Add(pointsBox);
 
@@ -403,90 +419,656 @@ namespace ACPAMS.Views.Faculty
                 headerGrid.Children.Add(leftStack);
                 headerGrid.Children.Add(rightStack);
                 headerBorder.Child = headerGrid;
-                stack.Children.Add(headerBorder);
+                mainStack.Children.Add(headerBorder);
 
+                // ---- Body ----
                 var bodyStack = new StackPanel { Margin = new System.Windows.Thickness(18, 16, 18, 16) };
 
-                var questionText = new TextBlock
+                // Editable question text
+                var questionTextBox = new TextBox
                 {
                     Text = q.Text,
-                    FontSize = 13,
-                    Foreground = (Brush)FindResource("Text.Primary"),
+                    Style = (Style)FindResource("Input.Text"),
+                    Height = 60,
                     TextWrapping = TextWrapping.Wrap,
-                    Margin = new System.Windows.Thickness(0, 0, 0, 8)
+                    AcceptsReturn = true,
+                    VerticalContentAlignment = VerticalAlignment.Top,
+                    Tag = q
                 };
-                bodyStack.Children.Add(questionText);
-
-                if (!string.IsNullOrEmpty(q.CorrectAnswer))
+                questionTextBox.TextChanged += (s, e) =>
                 {
-                    var answerText = new TextBlock
-                    {
-                        Text = $"Correct Answer: {q.CorrectAnswer}",
-                        FontSize = 12,
-                        Foreground = (Brush)FindResource("Text.Secondary")
-                    };
-                    bodyStack.Children.Add(answerText);
-                }
+                    (questionTextBox.Tag as QuestionItem).Text = questionTextBox.Text;
+                };
+                bodyStack.Children.Add(questionTextBox);
 
-                if (!string.IsNullOrEmpty(q.ExpectedAnswer))
+                switch (q.Type)
                 {
-                    var answerText = new TextBlock
-                    {
-                        Text = $"Expected Answer: {q.ExpectedAnswer}",
-                        FontSize = 12,
-                        Foreground = (Brush)FindResource("Text.Secondary")
-                    };
-                    bodyStack.Children.Add(answerText);
-                }
-
-                if (!string.IsNullOrEmpty(q.OptionA))
-                {
-                    var options = new List<string>();
-                    if (!string.IsNullOrEmpty(q.OptionA)) options.Add($"A: {q.OptionA}");
-                    if (!string.IsNullOrEmpty(q.OptionB)) options.Add($"B: {q.OptionB}");
-                    if (!string.IsNullOrEmpty(q.OptionC)) options.Add($"C: {q.OptionC}");
-                    if (!string.IsNullOrEmpty(q.OptionD)) options.Add($"D: {q.OptionD}");
-
-                    if (options.Count > 0)
-                    {
-                        var optionsText = new TextBlock
+                    case "Identification":
+                        var idLabel = new TextBlock
                         {
-                            Text = string.Join("  |  ", options),
-                            FontSize = 12,
-                            Foreground = (Brush)FindResource("Text.Secondary")
+                            Text = "Correct Answer",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 8, 0, 6)
                         };
-                        bodyStack.Children.Add(optionsText);
-                    }
+                        bodyStack.Children.Add(idLabel);
+
+                        // 🔽 CHANGE HEIGHT/FONT HERE (Identification)
+                        var idAnswer = new TextBox
+                        {
+                            Text = q.ExpectedAnswer,
+                            Style = (Style)FindResource("Input.AnswerOption"),
+                            Height = 50,
+                            FontSize = 15,
+                            AcceptsReturn = false,
+                            Tag = q
+                        };
+                        idAnswer.TextChanged += (s, e) =>
+                        {
+                            (idAnswer.Tag as QuestionItem).ExpectedAnswer = idAnswer.Text;
+                        };
+                        bodyStack.Children.Add(idAnswer);
+                        break;
+
+                    case "Multiple Choice":
+                        var mcLabel = new TextBlock
+                        {
+                            Text = "Answer Options (click letter to mark correct)",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 8, 0, 6)
+                        };
+                        bodyStack.Children.Add(mcLabel);
+
+                        // 🔽 CHANGE HEIGHT HERE (Multiple Choice)
+                        bodyStack.Children.Add(CreateEditableOptionRow("A", q, 50));
+                        bodyStack.Children.Add(CreateEditableOptionRow("B", q, 50));
+                        bodyStack.Children.Add(CreateEditableOptionRow("C", q, 50));
+                        bodyStack.Children.Add(CreateEditableOptionRow("D", q, 50));
+                        break;
+
+                    case "True or False":
+                        var tfLabel = new TextBlock
+                        {
+                            Text = "Correct Answer (click to toggle)",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 8, 0, 6)
+                        };
+                        bodyStack.Children.Add(tfLabel);
+
+                        var tfPanel = new StackPanel { Orientation = Orientation.Horizontal };
+
+                        // True button
+                        var trueBorder = new Border
+                        {
+                            Background = q.IsTrue == true ? (Brush)FindResource("Status.SuccessBg") : (Brush)FindResource("Bg.Base"),
+                            BorderBrush = q.IsTrue == true ? (Brush)FindResource("Status.Success") : (Brush)FindResource("Border.Medium"),
+                            BorderThickness = new System.Windows.Thickness(q.IsTrue == true ? 2 : 1),
+                            CornerRadius = new CornerRadius(6),
+                            Padding = q.IsTrue == true ? new System.Windows.Thickness(18, 10, 18, 10) : new System.Windows.Thickness(28, 10, 18, 10),
+                            Margin = new System.Windows.Thickness(0, 0, 10, 0),
+                            Cursor = Cursors.Hand,
+                            Tag = q
+                        };
+                        var trueText = new TextBlock
+                        {
+                            Text = q.IsTrue == true ? "✓ True" : "True",
+                            FontSize = 14,
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = q.IsTrue == true ? (Brush)FindResource("Status.Success") : (Brush)FindResource("Text.Secondary")
+                        };
+                        trueBorder.Child = trueText;
+                        trueBorder.MouseLeftButtonDown += (s, e) =>
+                        {
+                            var qItem = (trueBorder.Tag as QuestionItem);
+                            qItem.IsTrue = true;
+                            UpdateQuestionsDisplay();
+                        };
+                        tfPanel.Children.Add(trueBorder);
+
+                        // False button
+                        var falseBorder = new Border
+                        {
+                            Background = q.IsTrue == false ? (Brush)FindResource("Status.SuccessBg") : (Brush)FindResource("Bg.Base"),
+                            BorderBrush = q.IsTrue == false ? (Brush)FindResource("Status.Success") : (Brush)FindResource("Border.Medium"),
+                            BorderThickness = new System.Windows.Thickness(q.IsTrue == false ? 2 : 1),
+                            CornerRadius = new CornerRadius(6),
+                            Padding = q.IsTrue == false ? new System.Windows.Thickness(18, 10, 18, 10) : new System.Windows.Thickness(28, 10, 18, 10),
+                            Cursor = Cursors.Hand,
+                            Tag = q
+                        };
+                        var falseText = new TextBlock
+                        {
+                            Text = q.IsTrue == false ? "✓ False" : "False",
+                            FontSize = 14,
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = q.IsTrue == false ? (Brush)FindResource("Status.Success") : (Brush)FindResource("Text.Secondary")
+                        };
+                        falseBorder.Child = falseText;
+                        falseBorder.MouseLeftButtonDown += (s, e) =>
+                        {
+                            var qItem = (falseBorder.Tag as QuestionItem);
+                            qItem.IsTrue = false;
+                            UpdateQuestionsDisplay();
+                        };
+                        tfPanel.Children.Add(falseBorder);
+
+                        bodyStack.Children.Add(tfPanel);
+                        break;
+
+                    case "Essay":
+                        var wordLimitPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 12, 0, 0) };
+                        wordLimitPanel.Children.Add(new TextBlock
+                        {
+                            Text = "Word Limit: 150 to 500 words (editable in future)",
+                            FontSize = 12,
+                            Foreground = (Brush)FindResource("Text.Secondary"),
+                            VerticalAlignment = VerticalAlignment.Center
+                        });
+                        bodyStack.Children.Add(wordLimitPanel);
+                        bodyStack.Children.Add(CreateAIRubricSection());
+                        break;
+
+                    case "Enumeration":
+                        var enumLabel = new TextBlock
+                        {
+                            Text = "Accepted Answers (one per line)",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 8, 0, 6)
+                        };
+                        bodyStack.Children.Add(enumLabel);
+
+                        var enumItemsPanel = new StackPanel();
+                        var answers = q.ExpectedAnswers?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(a => a.Trim()).ToList() ?? new List<string>();
+                        if (answers.Count == 0) answers = new List<string> { "Item 1", "Item 2", "Item 3", "Item 4" };
+
+                        q.ExpectedAnswers = string.Join(",", answers);
+
+                        RebuildEnumerationItems(enumItemsPanel, q);
+
+                        bodyStack.Children.Add(enumItemsPanel);
+
+                        // Add item button
+                        var addItemBtn = new Button
+                        {
+                            Style = (Style)FindResource("Btn.Ghost"),
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                            Tag = q,
+                            Content = new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Children = {
+                                    new TextBlock { Text = "➕", FontSize = 12, Foreground = (Brush)FindResource("Accent.Primary"), Margin = new System.Windows.Thickness(0,0,5,0), VerticalAlignment = VerticalAlignment.Center },
+                                    new TextBlock { Text = "Add answer item", FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = (Brush)FindResource("Accent.Primary"), VerticalAlignment = VerticalAlignment.Center }
+                                }
+                            }
+                        };
+                        addItemBtn.Click += (s, e) =>
+                        {
+                            var qItem = (addItemBtn.Tag as QuestionItem);
+                            var list = qItem.ExpectedAnswers?.Split(',').ToList() ?? new List<string>();
+                            list.Add($"Item {list.Count + 1}");
+                            qItem.ExpectedAnswers = string.Join(",", list);
+                            UpdateQuestionsDisplay();
+                        };
+                        bodyStack.Children.Add(addItemBtn);
+                        break;
+
+                    case "Coding":
+                        // Language selector
+                        var langLabel = new TextBlock
+                        {
+                            Text = "Target Language",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 8, 0, 6)
+                        };
+                        bodyStack.Children.Add(langLabel);
+
+                        var langPanel = new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            Margin = new System.Windows.Thickness(0, 0, 0, 16)
+                        };
+
+                        foreach (var lang in _supportedLanguages)
+                        {
+                            bool isSelected = (q.ProgrammingLanguage ?? "Java") == lang;
+                            var border = new Border
+                            {
+                                Background = isSelected ? (Brush)FindResource("Accent.PrimaryBg") : (Brush)FindResource("Bg.Base"),
+                                BorderBrush = isSelected ? (Brush)FindResource("Accent.Primary") : (Brush)FindResource("Border.Medium"),
+                                BorderThickness = new System.Windows.Thickness(1),
+                                CornerRadius = new CornerRadius(6),
+                                Padding = new System.Windows.Thickness(14, 7, 14, 7),
+                                Margin = new System.Windows.Thickness(0, 0, 8, 0),
+                                Cursor = Cursors.Hand,
+                                Tag = new { Question = q, Language = lang }
+                            };
+
+                            var innerStack = new StackPanel { Orientation = Orientation.Horizontal };
+                            var dotGrid = new Grid { Width = 16, Height = 16, Margin = new System.Windows.Thickness(0, 0, 6, 0) };
+                            dotGrid.Children.Add(new Ellipse
+                            {
+                                Width = 16,
+                                Height = 16,
+                                Stroke = isSelected ? (Brush)FindResource("Accent.Primary") : (Brush)FindResource("Border.Medium"),
+                                Fill = System.Windows.Media.Brushes.Transparent
+                            });
+                            if (isSelected)
+                            {
+                                dotGrid.Children.Add(new Ellipse
+                                {
+                                    Width = 8,
+                                    Height = 8,
+                                    Fill = (Brush)FindResource("Accent.Primary"),
+                                    HorizontalAlignment = HorizontalAlignment.Center,
+                                    VerticalAlignment = VerticalAlignment.Center
+                                });
+                            }
+                            innerStack.Children.Add(dotGrid);
+
+                            var langText = new TextBlock
+                            {
+                                Text = lang,
+                                FontSize = 13,
+                                FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal,
+                                Foreground = isSelected ? (Brush)FindResource("Accent.Primary") : (Brush)FindResource("Text.Secondary"),
+                                VerticalAlignment = VerticalAlignment.Center
+                            };
+                            innerStack.Children.Add(langText);
+                            border.Child = innerStack;
+
+                            border.MouseLeftButtonDown += (s, e) =>
+                            {
+                                var data = (dynamic)((Border)s).Tag;
+                                var qItem = data.Question as QuestionItem;
+                                qItem.ProgrammingLanguage = data.Language;
+                                UpdateQuestionsDisplay();
+                            };
+
+                            langPanel.Children.Add(border);
+                        }
+
+                        bodyStack.Children.Add(langPanel);
+
+                        // Starter code stub placeholder
+                        var stubLabel = new TextBlock
+                        {
+                            Text = "Starter Code Stub (pre-populates student IDE)",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 8, 0, 6)
+                        };
+                        bodyStack.Children.Add(stubLabel);
+
+                        var stubBox = new TextBox
+                        {
+                            Text = "// Write your code here",
+                            Style = (Style)FindResource("Input.Text"),
+                            Height = 60,
+                            FontFamily = new FontFamily("Consolas"),
+                            AcceptsReturn = true,
+                            IsReadOnly = true
+                        };
+                        bodyStack.Children.Add(stubBox);
+
+                        bodyStack.Children.Add(CreateAIRubricSection());
+                        break;
                 }
 
-                if (q.IsTrue.HasValue)
-                {
-                    var answerText = new TextBlock
-                    {
-                        Text = $"Answer: {(q.IsTrue.Value ? "True" : "False")}",
-                        FontSize = 12,
-                        Foreground = (Brush)FindResource("Text.Secondary")
-                    };
-                    bodyStack.Children.Add(answerText);
-                }
+                accentBorder.Child = bodyStack;
+                mainStack.Children.Add(accentBorder);
 
-                if (!string.IsNullOrEmpty(q.ProgrammingLanguage))
-                {
-                    var langText = new TextBlock
-                    {
-                        Text = $"Language: {q.ProgrammingLanguage}",
-                        FontSize = 12,
-                        Foreground = (Brush)FindResource("Text.Secondary")
-                    };
-                    bodyStack.Children.Add(langText);
-                }
-
-                innerBorder.Child = bodyStack;
-                stack.Children.Add(innerBorder);
-
-                border.Child = stack;
-                container.Children.Add(border);
+                cardBorder.Child = mainStack;
+                container.Children.Add(cardBorder);
             }
+        }
+
+        // Helper: rebuild enumeration items from QuestionItem.ExpectedAnswers
+        private void RebuildEnumerationItems(StackPanel panel, QuestionItem q)
+        {
+            panel.Children.Clear();
+            var answers = q.ExpectedAnswers?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(a => a.Trim()).ToList() ?? new List<string>();
+
+            for (int i = 0; i < answers.Count; i++)
+            {
+                int idx = i;
+                var grid = new Grid { Margin = new System.Windows.Thickness(0, 0, 0, 8) };
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                // Number badge
+                var numBorder = new Border
+                {
+                    Width = 22,
+                    Height = 22,
+                    CornerRadius = new CornerRadius(11),
+                    Background = (Brush)FindResource("Accent.PrimaryBg"),
+                    BorderBrush = (Brush)FindResource("Accent.Primary"),
+                    BorderThickness = new System.Windows.Thickness(1),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                numBorder.Child = new TextBlock
+                {
+                    Text = (idx + 1).ToString(),
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)FindResource("Accent.Primary"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(numBorder, 0);
+                grid.Children.Add(numBorder);
+
+                // 🔽 CHANGE HEIGHT/FONT HERE (Enumeration)
+                var answerBox = new TextBox
+                {
+                    Text = answers[idx],
+                    Style = (Style)FindResource("Input.AnswerOption"),
+                    Height = 50,
+                    FontSize = 15,
+                    AcceptsReturn = false,
+                    Tag = new { Question = q, Index = idx }
+                };
+                answerBox.TextChanged += (s, e) =>
+                {
+                    var data = (dynamic)((TextBox)s).Tag;
+                    var qItem = data.Question as QuestionItem;
+                    int index = data.Index;
+                    var list = qItem.ExpectedAnswers?.Split(',').ToList() ?? new List<string>();
+                    if (index < list.Count)
+                    {
+                        list[index] = ((TextBox)s).Text;
+                        qItem.ExpectedAnswers = string.Join(",", list);
+                    }
+                };
+                Grid.SetColumn(answerBox, 1);
+                grid.Children.Add(answerBox);
+
+                // Remove button (X) — only if more than one item
+                if (answers.Count > 1)
+                {
+                    var removeBtn = new Button
+                    {
+                        Style = (Style)FindResource("Btn.Ghost"),
+                        Padding = new System.Windows.Thickness(4, 0, 4, 0),
+                        Margin = new System.Windows.Thickness(8, 0, 0, 0),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Tag = new { Question = q, Index = idx },
+                        Content = new TextBlock
+                        {
+                            Text = "✕",
+                            FontSize = 14,
+                            Foreground = (Brush)FindResource("Text.Muted")
+                        }
+                    };
+                    removeBtn.Click += (s, e) =>
+                    {
+                        var data = (dynamic)((Button)s).Tag;
+                        var qItem = data.Question as QuestionItem;
+                        int index = data.Index;
+                        var list = qItem.ExpectedAnswers?.Split(',').ToList() ?? new List<string>();
+                        if (list.Count > 1 && index < list.Count)
+                        {
+                            list.RemoveAt(index);
+                            qItem.ExpectedAnswers = string.Join(",", list);
+                            UpdateQuestionsDisplay();
+                        }
+                    };
+                    Grid.SetColumn(removeBtn, 2);
+                    grid.Children.Add(removeBtn);
+                }
+
+                panel.Children.Add(grid);
+            }
+        }
+
+        // Create editable option row for Multiple Choice with adjustable height
+        private StackPanel CreateEditableOptionRow(string letter, QuestionItem q, int height = 34)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 8) };
+
+            string optionText = GetOptionText(q, letter);
+            bool isCorrect = (q.CorrectAnswer == letter);
+
+            var toggleBtn = new Button
+            {
+                Style = isCorrect ? (Style)FindResource("Btn.AnswerToggle.Correct") : (Style)FindResource("Btn.AnswerToggle"),
+                Width = 30,
+                Tag = new { Question = q, Letter = letter }
+            };
+            toggleBtn.Content = new TextBlock { Text = letter, FontSize = 12, FontWeight = FontWeights.Bold };
+            toggleBtn.Click += (s, e) =>
+            {
+                var data = (dynamic)((Button)s).Tag;
+                var qItem = data.Question as QuestionItem;
+                qItem.CorrectAnswer = data.Letter;
+                UpdateQuestionsDisplay();
+            };
+            row.Children.Add(toggleBtn);
+
+            // 🔽 FONT SIZE IS SET HERE (Multiple Choice) – height passed from caller
+            var optionBox = new TextBox
+            {
+                Text = optionText,
+                Style = (Style)FindResource("Input.AnswerOption"),
+                Height = height,
+                FontSize = 15,
+                AcceptsReturn = false,
+                Tag = new { Question = q, Letter = letter }
+            };
+            optionBox.TextChanged += (s, e) =>
+            {
+                var data = (dynamic)((TextBox)s).Tag;
+                var qItem = data.Question as QuestionItem;
+                string l = data.Letter;
+                SetOptionText(qItem, l, optionBox.Text);
+            };
+            row.Children.Add(optionBox);
+
+            if (isCorrect)
+            {
+                var badge = new Border
+                {
+                    Background = (Brush)FindResource("Status.SuccessBg"),
+                    BorderBrush = (Brush)FindResource("Status.Success"),
+                    BorderThickness = new System.Windows.Thickness(1),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new System.Windows.Thickness(8, 4, 8, 4),
+                    Margin = new System.Windows.Thickness(8, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                badge.Child = new TextBlock
+                {
+                    Text = "✓ Correct",
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)FindResource("Status.Success")
+                };
+                row.Children.Add(badge);
+            }
+            else
+            {
+                var spacer = new Border { Width = 70, Margin = new System.Windows.Thickness(8, 0, 0, 0) };
+                row.Children.Add(spacer);
+            }
+
+            return row;
+        }
+
+        private string GetOptionText(QuestionItem q, string letter)
+        {
+            switch (letter)
+            {
+                case "A": return q.OptionA;
+                case "B": return q.OptionB;
+                case "C": return q.OptionC;
+                case "D": return q.OptionD;
+                default: return "";
+            }
+        }
+
+        private void SetOptionText(QuestionItem q, string letter, string value)
+        {
+            switch (letter)
+            {
+                case "A": q.OptionA = value; break;
+                case "B": q.OptionB = value; break;
+                case "C": q.OptionC = value; break;
+                case "D": q.OptionD = value; break;
+            }
+        }
+
+        // ---- Add/remove question handlers ----
+        private void AddQuestionByType_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button == null) return;
+
+            var questionType = button.Tag?.ToString();
+            if (string.IsNullOrEmpty(questionType)) return;
+
+            if (_selectedSection == null)
+            {
+                MessageBox.Show("Please select a section first.",
+                    "No Section Selected",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            ResetTypeButtons();
+
+            button.Background = (Brush)FindResource("Accent.PrimaryBg");
+            button.BorderBrush = (Brush)FindResource("Accent.Primary");
+            button.BorderThickness = new System.Windows.Thickness(2);
+            _selectedQuestionType = questionType;
+
+            var newQuestion = new QuestionItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                Text = $"New {questionType} Question - Edit me!",
+                Points = 1,
+                Type = questionType,
+                Order = _selectedSection.Questions.Count + 1
+            };
+
+            switch (questionType)
+            {
+                case "Identification":
+                    newQuestion.ExpectedAnswer = "final";
+                    break;
+                case "Multiple Choice":
+                    newQuestion.OptionA = "Option A";
+                    newQuestion.OptionB = "Option B";
+                    newQuestion.OptionC = "Option C";
+                    newQuestion.OptionD = "Option D";
+                    newQuestion.CorrectAnswer = "A";
+                    break;
+                case "True or False":
+                    newQuestion.IsTrue = true;
+                    break;
+                case "Essay":
+                    break;
+                case "Enumeration":
+                    newQuestion.ExpectedAnswers = "Item 1, Item 2, Item 3, Item 4";
+                    break;
+                case "Coding":
+                    newQuestion.ProgrammingLanguage = "Java";
+                    break;
+            }
+
+            _selectedSection.Questions.Add(newQuestion);
+
+            UpdateQuestionsDisplay();
+            UpdateSectionList();
+
+            MessageBox.Show($"New {questionType} question added to '{_selectedSection.Name}'!",
+                "Question Added",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private void ResetTypeButtons()
+        {
+            var typeButtons = new[]
+            {
+                FindName("AddIdentificationBtn") as Button,
+                FindName("AddMultipleChoiceBtn") as Button,
+                FindName("AddTrueFalseBtn") as Button,
+                FindName("AddEssayBtn") as Button,
+                FindName("AddEnumerationBtn") as Button,
+                FindName("AddCodingBtn") as Button
+            };
+
+            foreach (var btn in typeButtons)
+            {
+                if (btn != null)
+                {
+                    btn.Background = (Brush)FindResource("Bg.Surface");
+                    btn.BorderBrush = (Brush)FindResource("Border.Subtle");
+                    btn.BorderThickness = new System.Windows.Thickness(1);
+                }
+            }
+        }
+
+        private void AddNewQuestion_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedSection == null)
+            {
+                MessageBox.Show("Please select a section first.",
+                    "No Section Selected",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            // Always use the type of the currently active section
+            var questionType = _selectedSection.Type;
+
+            var newQuestion = new QuestionItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                Text = $"New {questionType} Question - Edit me!",
+                Points = 1,
+                Type = questionType,
+                Order = _selectedSection.Questions.Count + 1
+            };
+
+            switch (questionType)
+            {
+                case "Identification":
+                    newQuestion.ExpectedAnswer = "final";
+                    break;
+                case "Multiple Choice":
+                    newQuestion.OptionA = "Option A";
+                    newQuestion.OptionB = "Option B";
+                    newQuestion.OptionC = "Option C";
+                    newQuestion.OptionD = "Option D";
+                    newQuestion.CorrectAnswer = "A";
+                    break;
+                case "True or False":
+                    newQuestion.IsTrue = true;
+                    break;
+                case "Essay":
+                    break;
+                case "Enumeration":
+                    newQuestion.ExpectedAnswers = "Item 1, Item 2, Item 3, Item 4";
+                    break;
+                case "Coding":
+                    newQuestion.ProgrammingLanguage = "Java";
+                    break;
+            }
+
+            _selectedSection.Questions.Add(newQuestion);
+
+            UpdateQuestionsDisplay();
+            UpdateSectionList();
+
+            MessageBox.Show($"New {questionType} question added to '{_selectedSection.Name}'!",
+                "Question Added",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         private void DeleteQuestion_Click(object sender, RoutedEventArgs e)
@@ -520,34 +1102,47 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        private void AddQuestion_Click(object sender, RoutedEventArgs e)
+        // ---- Helper methods ----
+        private Brush GetTypeBadgeBackground(string type)
         {
-            if (_selectedSection == null)
+            return type switch
             {
-                MessageBox.Show("Please select a section first.",
-                    "No Section Selected",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            var newQuestion = new QuestionItem
-            {
-                Id = Guid.NewGuid().ToString(),
-                Text = "New Question - Edit me!",
-                Points = 1,
-                Type = _selectedSection.Type,
-                Order = _selectedSection.Questions.Count + 1
+                "Coding" => (Brush)FindResource("Status.SuccessBg"),
+                "Identification" => (Brush)FindResource("Bg.Base"),
+                "Multiple Choice" => (Brush)FindResource("Accent.PrimaryBg"),
+                "True or False" => (Brush)FindResource("Status.SuccessBg"),
+                "Essay" => (Brush)FindResource("AI.Bg"),
+                "Enumeration" => (Brush)FindResource("Status.WarningBg"),
+                _ => (Brush)FindResource("Bg.Base")
             };
+        }
 
-            _selectedSection.Questions.Add(newQuestion);
-            UpdateQuestionsDisplay();
-            UpdateSectionList();
+        private Brush GetTypeBadgeBorder(string type)
+        {
+            return type switch
+            {
+                "Coding" => (Brush)FindResource("Status.Success"),
+                "Identification" => (Brush)FindResource("Border.Medium"),
+                "Multiple Choice" => (Brush)FindResource("Accent.Primary"),
+                "True or False" => (Brush)FindResource("Status.Success"),
+                "Essay" => (Brush)FindResource("AI.Border"),
+                "Enumeration" => (Brush)FindResource("Status.Warning"),
+                _ => (Brush)FindResource("Border.Medium")
+            };
+        }
 
-            MessageBox.Show($"Question added to '{_selectedSection.Name}'!\n\nEdit the question text and points.",
-                "Question Added",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+        private Brush GetTypeBadgeForeground(string type)
+        {
+            return type switch
+            {
+                "Coding" => (Brush)FindResource("Status.Success"),
+                "Identification" => (Brush)FindResource("Text.Secondary"),
+                "Multiple Choice" => (Brush)FindResource("Accent.Primary"),
+                "True or False" => (Brush)FindResource("Status.Success"),
+                "Essay" => (Brush)FindResource("AI.Text"),
+                "Enumeration" => (Brush)FindResource("Status.Warning"),
+                _ => (Brush)FindResource("Text.Secondary")
+            };
         }
 
         private Brush GetTypeColor(string type)
@@ -571,6 +1166,82 @@ namespace ACPAMS.Views.Faculty
             return (Brush)FindResource("QType.Identification");
         }
 
+        private Border CreateAIRubricSection()
+        {
+            var border = new Border
+            {
+                Background = (Brush)FindResource("AI.Bg"),
+                BorderBrush = (Brush)FindResource("AI.Border"),
+                BorderThickness = new System.Windows.Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new System.Windows.Thickness(14, 12, 14, 12),
+                Margin = new System.Windows.Thickness(0, 16, 0, 0)
+            };
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var leftStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(leftStack, 0);
+            var titleStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 3) };
+            titleStack.Children.Add(new TextBlock
+            {
+                Text = "🤖",
+                FontSize = 13,
+                Foreground = (Brush)FindResource("AI.Border"),
+                Margin = new System.Windows.Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            titleStack.Children.Add(new TextBlock
+            {
+                Text = "AI Auto-Grading Configuration",
+                FontSize = 12,
+                FontWeight = FontWeights.Bold,
+                Foreground = (Brush)FindResource("AI.Text")
+            });
+            leftStack.Children.Add(titleStack);
+            leftStack.Children.Add(new TextBlock
+            {
+                Text = "Set rubric criteria the AI uses to evaluate and score this question.",
+                FontSize = 11,
+                Foreground = (Brush)FindResource("AI.Text"),
+                TextWrapping = TextWrapping.Wrap
+            });
+
+            var btn = new Button
+            {
+                Style = (Style)FindResource("Btn.AIRubric"),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var btnStack = new StackPanel { Orientation = Orientation.Horizontal };
+            btnStack.Children.Add(new TextBlock
+            {
+                Text = "➕",
+                FontSize = 11,
+                Foreground = (Brush)FindResource("AI.Border"),
+                Margin = new System.Windows.Thickness(0, 0, 5, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            btnStack.Children.Add(new TextBlock
+            {
+                Text = "Configure AI Rubric",
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            btn.Content = btnStack;
+            btn.Click += (s, e) =>
+            {
+                var rubricModal = new AIRubricModal { Owner = Application.Current.MainWindow };
+                rubricModal.ShowDialog();
+            };
+            Grid.SetColumn(btn, 1);
+            grid.Children.Add(btn);
+
+            border.Child = grid;
+            return border;
+        }
+
+        // ---- Navigation ----
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
             var mainWindow = Application.Current.MainWindow as Window1;
@@ -585,7 +1256,7 @@ namespace ACPAMS.Views.Faculty
 
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)
         {
-            // Already here - do nothing
+            // Already here
         }
     }
 }
