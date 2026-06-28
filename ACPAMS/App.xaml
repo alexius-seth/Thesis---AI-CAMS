@@ -4,6 +4,5 @@
              xmlns:local="clr-namespace:ACPAMS"
              StartupUri="Views/Faculty/Window1.xaml">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>
