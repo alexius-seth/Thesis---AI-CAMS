@@ -441,6 +441,7 @@ namespace ACPAMS.Views.Faculty
                 };
                 bodyStack.Children.Add(questionTextBox);
 
+                // Render based on question type
                 switch (q.Type)
                 {
                     case "Identification":
@@ -452,13 +453,11 @@ namespace ACPAMS.Views.Faculty
                         };
                         bodyStack.Children.Add(idLabel);
 
-                        // 🔽 CHANGE HEIGHT/FONT HERE (Identification)
                         var idAnswer = new TextBox
                         {
                             Text = q.ExpectedAnswer,
                             Style = (Style)FindResource("Input.AnswerOption"),
-                            Height = 50,
-                            FontSize = 15,
+                            Height = 34,
                             AcceptsReturn = false,
                             Tag = q
                         };
@@ -478,11 +477,10 @@ namespace ACPAMS.Views.Faculty
                         };
                         bodyStack.Children.Add(mcLabel);
 
-                        // 🔽 CHANGE HEIGHT HERE (Multiple Choice)
-                        bodyStack.Children.Add(CreateEditableOptionRow("A", q, 50));
-                        bodyStack.Children.Add(CreateEditableOptionRow("B", q, 50));
-                        bodyStack.Children.Add(CreateEditableOptionRow("C", q, 50));
-                        bodyStack.Children.Add(CreateEditableOptionRow("D", q, 50));
+                        bodyStack.Children.Add(CreateEditableOptionRow("A", q));
+                        bodyStack.Children.Add(CreateEditableOptionRow("B", q));
+                        bodyStack.Children.Add(CreateEditableOptionRow("C", q));
+                        bodyStack.Children.Add(CreateEditableOptionRow("D", q));
                         break;
 
                     case "True or False":
@@ -496,7 +494,6 @@ namespace ACPAMS.Views.Faculty
 
                         var tfPanel = new StackPanel { Orientation = Orientation.Horizontal };
 
-                        // True button
                         var trueBorder = new Border
                         {
                             Background = q.IsTrue == true ? (Brush)FindResource("Status.SuccessBg") : (Brush)FindResource("Bg.Base"),
@@ -524,7 +521,6 @@ namespace ACPAMS.Views.Faculty
                         };
                         tfPanel.Children.Add(trueBorder);
 
-                        // False button
                         var falseBorder = new Border
                         {
                             Background = q.IsTrue == false ? (Brush)FindResource("Status.SuccessBg") : (Brush)FindResource("Bg.Base"),
@@ -558,7 +554,7 @@ namespace ACPAMS.Views.Faculty
                         var wordLimitPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 12, 0, 0) };
                         wordLimitPanel.Children.Add(new TextBlock
                         {
-                            Text = "Word Limit: 150 to 500 words (editable in future)",
+                            Text = "Word Limit: 150 to 500 words",
                             FontSize = 12,
                             Foreground = (Brush)FindResource("Text.Secondary"),
                             VerticalAlignment = VerticalAlignment.Center
@@ -587,7 +583,6 @@ namespace ACPAMS.Views.Faculty
 
                         bodyStack.Children.Add(enumItemsPanel);
 
-                        // Add item button
                         var addItemBtn = new Button
                         {
                             Style = (Style)FindResource("Btn.Ghost"),
@@ -614,7 +609,6 @@ namespace ACPAMS.Views.Faculty
                         break;
 
                     case "Coding":
-                        // Language selector
                         var langLabel = new TextBlock
                         {
                             Text = "Target Language",
@@ -690,7 +684,6 @@ namespace ACPAMS.Views.Faculty
 
                         bodyStack.Children.Add(langPanel);
 
-                        // Starter code stub placeholder
                         var stubLabel = new TextBlock
                         {
                             Text = "Starter Code Stub (pre-populates student IDE)",
@@ -722,7 +715,6 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        // Helper: rebuild enumeration items from QuestionItem.ExpectedAnswers
         private void RebuildEnumerationItems(StackPanel panel, QuestionItem q)
         {
             panel.Children.Clear();
@@ -737,7 +729,6 @@ namespace ACPAMS.Views.Faculty
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-                // Number badge
                 var numBorder = new Border
                 {
                     Width = 22,
@@ -760,13 +751,11 @@ namespace ACPAMS.Views.Faculty
                 Grid.SetColumn(numBorder, 0);
                 grid.Children.Add(numBorder);
 
-                // 🔽 CHANGE HEIGHT/FONT HERE (Enumeration)
                 var answerBox = new TextBox
                 {
                     Text = answers[idx],
                     Style = (Style)FindResource("Input.AnswerOption"),
-                    Height = 50,
-                    FontSize = 15,
+                    Height = 34,
                     AcceptsReturn = false,
                     Tag = new { Question = q, Index = idx }
                 };
@@ -785,7 +774,6 @@ namespace ACPAMS.Views.Faculty
                 Grid.SetColumn(answerBox, 1);
                 grid.Children.Add(answerBox);
 
-                // Remove button (X) — only if more than one item
                 if (answers.Count > 1)
                 {
                     var removeBtn = new Button
@@ -823,8 +811,7 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        // Create editable option row for Multiple Choice with adjustable height
-        private StackPanel CreateEditableOptionRow(string letter, QuestionItem q, int height = 34)
+        private StackPanel CreateEditableOptionRow(string letter, QuestionItem q)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 8) };
 
@@ -847,13 +834,11 @@ namespace ACPAMS.Views.Faculty
             };
             row.Children.Add(toggleBtn);
 
-            // 🔽 FONT SIZE IS SET HERE (Multiple Choice) – height passed from caller
             var optionBox = new TextBox
             {
                 Text = optionText,
                 Style = (Style)FindResource("Input.AnswerOption"),
-                Height = height,
-                FontSize = 15,
+                Height = 34,
                 AcceptsReturn = false,
                 Tag = new { Question = q, Letter = letter }
             };
@@ -919,7 +904,6 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        // ---- Add/remove question handlers ----
         private void AddQuestionByType_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
@@ -1012,6 +996,7 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
+        // ========== FIXED: Uses the selected type from sidebar ==========
         private void AddNewQuestion_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedSection == null)
@@ -1023,8 +1008,13 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Always use the type of the currently active section
-            var questionType = _selectedSection.Type;
+            // Use the type selected from the sidebar (the one with the filled dot)
+            // If none selected, fallback to the section's type
+            var questionType = string.IsNullOrEmpty(_selectedQuestionType)
+                ? _selectedSection.Type
+                : _selectedQuestionType;
+
+            MessageBox.Show($"Adding question of type: {questionType} to section: {_selectedSection.Name}");
 
             var newQuestion = new QuestionItem
             {
@@ -1102,7 +1092,6 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        // ---- Helper methods ----
         private Brush GetTypeBadgeBackground(string type)
         {
             return type switch
@@ -1241,7 +1230,6 @@ namespace ACPAMS.Views.Faculty
             return border;
         }
 
-        // ---- Navigation ----
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
             var mainWindow = Application.Current.MainWindow as Window1;

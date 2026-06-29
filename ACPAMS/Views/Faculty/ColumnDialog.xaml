@@ -1,0 +1,280 @@
+﻿<Window x:Class="ACPAMS.Views.Faculty.ColumnDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add/Edit Column"
+        Width="440"
+        Height="280"
+        MinWidth="400"
+        MinHeight="260"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        FontFamily="Segoe UI"
+        SizeToContent="Height">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Overlay.Bg"       Color="#1A202C"/>
+
+        <Style x:Key="Input.Field" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="14"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="14,12"/>
+            <Setter Property="Height"                   Value="48"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="IsEnabled"                Value="True"/>
+            <Setter Property="IsReadOnly"               Value="False"/>
+            <Setter Property="Focusable"                Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid>
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center"
+                                              HorizontalScrollBarVisibility="Disabled"
+                                              VerticalScrollBarVisibility="Auto"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush"
+                                        Value="{StaticResource Accent.Primary}"/>
+                                <Setter TargetName="Root" Property="BorderThickness"
+                                        Value="2"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{StaticResource Bg.Base}"/>
+                                <Setter TargetName="Root" Property="Opacity"
+                                        Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Points field - SAME as Input.Field but with accent background -->
+        <Style x:Key="Input.Points" TargetType="TextBox" BasedOn="{StaticResource Input.Field}">
+            <Setter Property="Width"                    Value="120"/>
+            <Setter Property="HorizontalAlignment"      Value="Left"/>
+            <Setter Property="TextAlignment"            Value="Center"/>
+            <Setter Property="FontWeight"               Value="SemiBold"/>
+            <Setter Property="FontSize"                 Value="16"/>
+            <Setter Property="Background"               Value="{StaticResource Accent.PrimaryBg}"/>
+            <Setter Property="BorderBrush"              Value="{StaticResource Accent.Primary}"/>
+            <!-- Foreground is inherited from Input.Field (Text.Primary) which is dark -->
+        </Style>
+
+        <Style x:Key="Input.SimpleField" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="14"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="14,12"/>
+            <Setter Property="Height"                   Value="48"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="IsEnabled"                Value="True"/>
+            <Setter Property="IsReadOnly"               Value="False"/>
+            <Setter Property="Focusable"                Value="True"/>
+        </Style>
+
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height"          Value="44"/>
+            <Setter Property="Padding"         Value="24,0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Outlined" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="Height"          Value="44"/>
+            <Setter Property="Padding"         Value="24,0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Close" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width"           Value="32"/>
+            <Setter Property="Height"          Value="32"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#FEE2E2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Border Background="{StaticResource Overlay.Bg}" Opacity="0.45"/>
+
+        <Border Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Subtle}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Width="400"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center">
+
+            <Border.Effect>
+                <DropShadowEffect Color="#1A202C" Opacity="0.18"
+                                  BlurRadius="32" ShadowDepth="8"/>
+            </Border.Effect>
+
+            <StackPanel>
+                <Border BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1"
+                        Padding="24,18,18,18">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock x:Name="TitleText"
+                                       Text="Add Column"
+                                       FontSize="18" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock Text="Enter the column name and points value."
+                                       FontSize="12"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Btn.Close}"
+                                VerticalAlignment="Top"
+                                Click="CancelButton_Click">
+                            <TextBlock Text="&#xE711;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <StackPanel Margin="24,20,24,16">
+                    <TextBlock Text="Column Name"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,6"/>
+                    <TextBox x:Name="NameBox"
+                             Style="{StaticResource Input.SimpleField}"
+                             Margin="0,0,0,18"/>
+
+                    <TextBlock Text="Points"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,6"/>
+                    <TextBox x:Name="PointsBox"
+                              Style="{StaticResource Input.SimpleField}"
+                              Margin="0,0,0,18"/>
+                    <TextBlock Text="Enter a numeric value for this tier's points."
+                               FontSize="11"
+                               Foreground="{StaticResource Text.Muted}"/>
+                </StackPanel>
+
+                <Border BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,1,0,0"
+                        Padding="24,14">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+                        <Button Style="{StaticResource Btn.Outlined}"
+                                Content="Cancel"
+                                Margin="0,0,10,0"
+                                Click="CancelButton_Click"/>
+                        <Button x:Name="SaveBtn"
+                                Style="{StaticResource Btn.Primary}"
+                                Content="Save"
+                                Click="SaveButton_Click"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
