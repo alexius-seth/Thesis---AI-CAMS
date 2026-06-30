@@ -95,7 +95,6 @@ namespace ACPAMS.Views.Faculty
             var trimmed = type.Trim();
             var lowerType = trimmed.ToLower();
 
-            // Handle all variations
             if (lowerType.Contains("identification") || lowerType == "id")
                 return "Identification";
             if (lowerType.Contains("multiple") && lowerType.Contains("choice"))
@@ -130,17 +129,47 @@ namespace ACPAMS.Views.Faculty
                 default: return null;
             }
         }
+        private void SaveAndPublish_Click(object sender, RoutedEventArgs e)
+        {
+            // Check if there are any sections
+            if (_sections == null || _sections.Count == 0)
+            {
+                ToastNotification.Show("Please add at least one section before publishing.",
+                    Application.Current.MainWindow, 4, true);
+                return;
+            }
+
+            // Check if the selected section has any questions
+            if (_selectedSection != null && _selectedSection.Questions.Count == 0)
+            {
+                ToastNotification.Show($"Section '{_selectedSection.Name}' has no questions. Please add questions before publishing.",
+                    Application.Current.MainWindow, 4, true);
+                return;
+            }
+
+            // Open the Publish Confirmation Modal
+            var publishModal = new PublishConfirmModal();
+            publishModal.Owner = Application.Current.MainWindow;
+
+            if (publishModal.ShowDialog() == true)
+            {
+                // The user confirmed publish
+                ToastNotification.Show("Exam published successfully!",
+                    Application.Current.MainWindow);
+
+                // TODO: Add your actual publish logic here
+                // - Save the exam to database
+                // - Generate exam code
+                // - etc.
+            }
+        }
 
         private void SelectTypeButton(string type)
         {
-            System.Diagnostics.Debug.WriteLine($"=== SelectTypeButton called with type: '{type}' ===");
-
             ResetAllTypeButtons();
 
             var properType = GetProperTypeName(type);
-            System.Diagnostics.Debug.WriteLine($"SelectTypeButton: properType = '{properType}'");
 
-            // Special handling - if properType is empty or same as input, try to detect from the string
             if (string.IsNullOrEmpty(properType) || properType == type)
             {
                 var lowerType = type.ToLower();
@@ -156,25 +185,17 @@ namespace ACPAMS.Views.Faculty
                     properType = "Coding";
                 else if (lowerType == "essay")
                     properType = "Essay";
-
-                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: properType after special handling = '{properType}'");
             }
 
             Button targetButton = GetTypeButton(properType);
 
             if (targetButton != null)
             {
-                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: Found button for '{properType}'");
                 targetButton.Background = (Brush)FindResource("Accent.PrimaryBg");
                 targetButton.BorderBrush = (Brush)FindResource("Accent.Primary");
                 targetButton.BorderThickness = new System.Windows.Thickness(2);
                 FillTypeDot(targetButton, true);
                 _selectedQuestionType = properType;
-                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: _selectedQuestionType set to '{_selectedQuestionType}'");
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: NO button found for '{properType}'");
             }
         }
 
@@ -255,11 +276,7 @@ namespace ACPAMS.Views.Faculty
 
             if (modal.ShowDialog() == true)
             {
-                System.Diagnostics.Debug.WriteLine($"=== AddSection_Click ===");
-                System.Diagnostics.Debug.WriteLine($"modal.QuestionType = '{modal.QuestionType}'");
-
                 var properType = GetProperTypeName(modal.QuestionType);
-                System.Diagnostics.Debug.WriteLine($"properType = '{properType}'");
 
                 var newSection = new ExamSection
                 {
@@ -284,10 +301,7 @@ namespace ACPAMS.Views.Faculty
                 UpdateQuestionsDisplay();
                 UpdateActiveSectionHeader();
 
-                MessageBox.Show($"Section '{newSection.Name}' added successfully!",
-                    "Success",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                ToastNotification.Show($"Section '{newSection.Name}' added successfully!", Application.Current.MainWindow);
             }
         }
 
@@ -386,9 +400,6 @@ namespace ACPAMS.Views.Faculty
 
             var section = button.DataContext as ExamSection;
             if (section == null) return;
-
-            System.Diagnostics.Debug.WriteLine($"=== SectionButton_Click ===");
-            System.Diagnostics.Debug.WriteLine($"section.Type = '{section.Type}'");
 
             foreach (var s in _sections)
                 s.IsActive = false;
@@ -555,7 +566,6 @@ namespace ACPAMS.Views.Faculty
                         {
                             Text = q.ExpectedAnswer,
                             Style = (Style)FindResource("Input.AnswerOption"),
-                            
                             AcceptsReturn = false,
                             Tag = q
                         };
@@ -853,7 +863,6 @@ namespace ACPAMS.Views.Faculty
                 {
                     Text = answers[idx],
                     Style = (Style)FindResource("Input.AnswerOption"),
-                    
                     AcceptsReturn = false,
                     Tag = new { Question = q, Index = idx }
                 };
@@ -936,7 +945,6 @@ namespace ACPAMS.Views.Faculty
             {
                 Text = optionText,
                 Style = (Style)FindResource("Input.AnswerOption"),
-                
                 AcceptsReturn = false,
                 Tag = new { Question = q, Letter = letter }
             };
@@ -1012,10 +1020,7 @@ namespace ACPAMS.Views.Faculty
 
             if (_selectedSection == null)
             {
-                MessageBox.Show("Please select a section first.",
-                    "No Section Selected",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                ToastNotification.Show("Please select a section first.", Application.Current.MainWindow, 3, true);
                 return;
             }
 
@@ -1034,10 +1039,7 @@ namespace ACPAMS.Views.Faculty
             UpdateSectionList();
             UpdateActiveSectionHeader();
 
-            MessageBox.Show($"New {questionType} question added to '{_selectedSection.Name}'!",
-                "Question Added",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            ToastNotification.Show($"New {questionType} question added!", Application.Current.MainWindow);
         }
 
         private QuestionItem CreateQuestionByType(string questionType)
@@ -1091,25 +1093,15 @@ namespace ACPAMS.Views.Faculty
 
         private void AddNewQuestion_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"=== AddNewQuestion_Click ===");
-            System.Diagnostics.Debug.WriteLine($"_selectedQuestionType = '{_selectedQuestionType}'");
-
             if (_selectedSection == null)
             {
-                MessageBox.Show("Please select a section first.",
-                    "No Section Selected",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                ToastNotification.Show("Please select a section first.", Application.Current.MainWindow, 3, true);
                 return;
             }
-
-            System.Diagnostics.Debug.WriteLine($"_selectedSection.Type = '{_selectedSection.Type}'");
 
             var questionType = string.IsNullOrEmpty(_selectedQuestionType)
                 ? _selectedSection.Type
                 : _selectedQuestionType;
-
-            System.Diagnostics.Debug.WriteLine($"Using questionType = '{questionType}'");
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
@@ -1119,10 +1111,7 @@ namespace ACPAMS.Views.Faculty
             UpdateSectionList();
             UpdateActiveSectionHeader();
 
-            MessageBox.Show($"New {questionType} question added to '{_selectedSection.Name}'!",
-                "Question Added",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            ToastNotification.Show($"New {questionType} question added!", Application.Current.MainWindow);
         }
 
         private void DeleteQuestion_Click(object sender, RoutedEventArgs e)
@@ -1321,4 +1310,153 @@ namespace ACPAMS.Views.Faculty
             // Already here
         }
     }
+
+    /// <summary>
+    /// Custom Toast Notification - auto-dismisses after 3-5 seconds with fade animation
+    /// </summary>
+    /// <summary>
+    /// Custom Toast Notification - auto-dismisses after 3-5 seconds with fade animation
+    /// </summary>
+    public static class ToastNotification
+    {
+        private static Border _toastBorder;
+        private static TextBlock _toastText;
+        private static double _opacity = 1.0;
+        private static System.Windows.Threading.DispatcherTimer _timer;
+        private static bool _isFading = false;
+
+        public static void Show(string message, Window parentWindow, int durationSeconds = 3, bool isWarning = false)
+        {
+            if (parentWindow == null) return;
+
+            // Create toast if it doesn't exist
+            if (_toastBorder == null)
+            {
+                _toastBorder = new Border
+                {
+                    Background = isWarning ? new SolidColorBrush(Color.FromRgb(239, 68, 68)) : new SolidColorBrush(Color.FromRgb(34, 197, 94)),
+                    CornerRadius = new CornerRadius(8),
+                    Padding = new Thickness(20, 14, 20, 14),
+                    MaxWidth = 500,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Margin = new Thickness(0, 20, 0, 0),
+                    Opacity = 0,
+                    RenderTransform = new TranslateTransform(0, -20)
+                };
+
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                _toastText = new TextBlock
+                {
+                    Text = message,
+                    Foreground = Brushes.White,
+                    FontSize = 14,
+                    FontWeight = FontWeights.SemiBold,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(_toastText, 0);
+                grid.Children.Add(_toastText);
+
+                var closeBtn = new Button
+                {
+                    Content = "✕",
+                    Background = Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    Foreground = Brushes.White,
+                    FontSize = 16,
+                    Cursor = Cursors.Hand,
+                    Margin = new Thickness(12, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Opacity = 0.7
+                };
+                closeBtn.Click += (s, e) => CloseToast();
+                Grid.SetColumn(closeBtn, 1);
+                grid.Children.Add(closeBtn);
+
+                _toastBorder.Child = grid;
+
+                // Add to parent window
+                var gridParent = parentWindow.Content as Grid;
+                if (gridParent != null)
+                {
+                    gridParent.Children.Add(_toastBorder);
+                }
+                else
+                {
+                    var parentGrid = new Grid();
+                    var oldContent = parentWindow.Content as UIElement;
+                    parentGrid.Children.Add(oldContent);
+                    parentGrid.Children.Add(_toastBorder);
+                    parentWindow.Content = parentGrid;
+                }
+            }
+
+            // Update text and color
+            var toastGrid = _toastBorder.Child as Grid;
+            if (toastGrid != null)
+            {
+                var textBlock = toastGrid.Children[0] as TextBlock;
+                if (textBlock != null) textBlock.Text = message;
+            }
+            _toastBorder.Background = isWarning ? new SolidColorBrush(Color.FromRgb(239, 68, 68)) : new SolidColorBrush(Color.FromRgb(34, 197, 94));
+
+            // Reset state
+            _opacity = 1.0;
+            _isFading = false;
+            _toastBorder.Opacity = 0;
+            _toastBorder.RenderTransform = new TranslateTransform(0, -20);
+            _toastBorder.Visibility = Visibility.Visible;
+
+            // Fade in
+            var fadeIn = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300));
+            var slideIn = new TranslateTransform();
+            slideIn.Y = -20;
+            _toastBorder.RenderTransform = slideIn;
+            var slideAnimation = new System.Windows.Media.Animation.DoubleAnimation(-20, 0, TimeSpan.FromMilliseconds(300));
+            slideIn.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
+            _toastBorder.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+            // Auto dismiss timer
+            _timer = new System.Windows.Threading.DispatcherTimer();
+            _timer.Interval = TimeSpan.FromSeconds(durationSeconds);
+            _timer.Tick += (s, e) =>
+            {
+                _timer.Stop();
+                FadeOutToast();
+            };
+            _timer.Start();
+        }
+
+        private static void FadeOutToast()
+        {
+            if (_toastBorder == null || _isFading) return;
+            _isFading = true;
+
+            var fadeOut = new System.Windows.Media.Animation.DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(500));
+            var slideOut = new TranslateTransform();
+            slideOut.Y = 0;
+            _toastBorder.RenderTransform = slideOut;
+            var slideAnimation = new System.Windows.Media.Animation.DoubleAnimation(0, -20, TimeSpan.FromMilliseconds(500));
+            slideOut.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
+            _toastBorder.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+
+            fadeOut.Completed += (s, e) =>
+            {
+                _toastBorder.Visibility = Visibility.Collapsed;
+                _isFading = false;
+            };
+        }
+
+        private static void CloseToast()
+        {
+            if (_timer != null && _timer.IsEnabled)
+                _timer.Stop();
+            FadeOutToast();
+        }
+    }
+
 }
