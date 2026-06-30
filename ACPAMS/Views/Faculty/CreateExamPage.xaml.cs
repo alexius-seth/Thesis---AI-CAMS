@@ -51,96 +51,201 @@ namespace ACPAMS.Views.Faculty
         public CreateExamPage()
         {
             InitializeComponent();
-            AddDefaultSections();
 
-            if (_sections.Count > 3)
-            {
-                _selectedSection = _sections[3];
-                _selectedSection.IsActive = true;
-            }
+            _sections = new List<ExamSection>();
+            _selectedSection = null;
+            _selectedQuestionType = string.Empty;
 
             UpdateSectionList();
             UpdateQuestionsDisplay();
+            UpdateActiveSectionHeader();
+            ResetAllTypeButtons();
         }
 
-        private void AddDefaultSections()
+        private void UpdateActiveSectionHeader()
         {
-            var defaultSections = new[]
+            var headerText = FindName("ActiveSectionHeader") as TextBlock;
+            var totalDisplay = FindName("TotalQuestionsDisplay") as TextBlock;
+            var typeDisplay = FindName("ActiveTypeDisplay") as TextBlock;
+
+            if (_selectedSection != null)
             {
-                new ExamSection {
-                    Id = "default1",
-                    Name = "Test I",
-                    Type = "Identification",
-                    IsActive = false,
-                    Questions = new List<QuestionItem>()
-                },
-                new ExamSection {
-                    Id = "default2",
-                    Name = "Test II",
-                    Type = "Multiple Choice",
-                    IsActive = false,
-                    Questions = new List<QuestionItem>()
-                },
-                new ExamSection {
-                    Id = "default3",
-                    Name = "Test III",
-                    Type = "Essay",
-                    IsActive = false,
-                    Questions = new List<QuestionItem>()
-                },
-                new ExamSection {
-                    Id = "default4",
-                    Name = "Test IV",
-                    Type = "Coding",
-                    IsActive = true,
-                    Questions = new List<QuestionItem>()
-                }
+                if (headerText != null)
+                    headerText.Text = $"{_selectedSection.Name} — {_selectedSection.Type}";
+                if (totalDisplay != null)
+                    totalDisplay.Text = $"Total: {_selectedSection.Questions.Sum(q => q.Points)} pts";
+                if (typeDisplay != null)
+                    typeDisplay.Text = _selectedSection.Type;
+            }
+            else
+            {
+                if (headerText != null)
+                    headerText.Text = "No section selected";
+                if (totalDisplay != null)
+                    totalDisplay.Text = "Total: 0 pts";
+                if (typeDisplay != null)
+                    typeDisplay.Text = "—";
+            }
+        }
+
+        private string GetProperTypeName(string type)
+        {
+            if (string.IsNullOrEmpty(type)) return string.Empty;
+
+            var trimmed = type.Trim();
+            var lowerType = trimmed.ToLower();
+
+            // Handle all variations
+            if (lowerType.Contains("identification") || lowerType == "id")
+                return "Identification";
+            if (lowerType.Contains("multiple") && lowerType.Contains("choice"))
+                return "Multiple Choice";
+            if (lowerType.Contains("true") && lowerType.Contains("false"))
+                return "True or False";
+            if (lowerType == "essay")
+                return "Essay";
+            if (lowerType.Contains("enumeration") || lowerType == "enum")
+                return "Enumeration";
+            if (lowerType.Contains("coding") || lowerType == "code")
+                return "Coding";
+
+            return trimmed;
+        }
+
+        private Button GetTypeButton(string type)
+        {
+            if (string.IsNullOrEmpty(type)) return null;
+
+            var properType = GetProperTypeName(type);
+            var lowerType = properType.ToLower();
+
+            switch (lowerType)
+            {
+                case "identification": return AddIdentificationBtn;
+                case "multiple choice": return AddMultipleChoiceBtn;
+                case "true or false": return AddTrueFalseBtn;
+                case "essay": return AddEssayBtn;
+                case "enumeration": return AddEnumerationBtn;
+                case "coding": return AddCodingBtn;
+                default: return null;
+            }
+        }
+
+        private void SelectTypeButton(string type)
+        {
+            System.Diagnostics.Debug.WriteLine($"=== SelectTypeButton called with type: '{type}' ===");
+
+            ResetAllTypeButtons();
+
+            var properType = GetProperTypeName(type);
+            System.Diagnostics.Debug.WriteLine($"SelectTypeButton: properType = '{properType}'");
+
+            // Special handling - if properType is empty or same as input, try to detect from the string
+            if (string.IsNullOrEmpty(properType) || properType == type)
+            {
+                var lowerType = type.ToLower();
+                if (lowerType.Contains("multiple") && lowerType.Contains("choice"))
+                    properType = "Multiple Choice";
+                else if (lowerType.Contains("true") && lowerType.Contains("false"))
+                    properType = "True or False";
+                else if (lowerType.Contains("identification") || lowerType == "id")
+                    properType = "Identification";
+                else if (lowerType.Contains("enumeration") || lowerType == "enum")
+                    properType = "Enumeration";
+                else if (lowerType.Contains("coding") || lowerType == "code")
+                    properType = "Coding";
+                else if (lowerType == "essay")
+                    properType = "Essay";
+
+                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: properType after special handling = '{properType}'");
+            }
+
+            Button targetButton = GetTypeButton(properType);
+
+            if (targetButton != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: Found button for '{properType}'");
+                targetButton.Background = (Brush)FindResource("Accent.PrimaryBg");
+                targetButton.BorderBrush = (Brush)FindResource("Accent.Primary");
+                targetButton.BorderThickness = new System.Windows.Thickness(2);
+                FillTypeDot(targetButton, true);
+                _selectedQuestionType = properType;
+                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: _selectedQuestionType set to '{_selectedQuestionType}'");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"SelectTypeButton: NO button found for '{properType}'");
+            }
+        }
+
+        private void ResetAllTypeButtons()
+        {
+            var typeButtons = new[]
+            {
+                AddIdentificationBtn,
+                AddMultipleChoiceBtn,
+                AddTrueFalseBtn,
+                AddEssayBtn,
+                AddEnumerationBtn,
+                AddCodingBtn
             };
 
-            defaultSections[3].Questions.Add(new QuestionItem
+            foreach (var btn in typeButtons)
             {
-                Id = "q1",
-                Text = "Write a method that accepts an integer n and returns the nth Fibonacci number. Your solution must handle edge cases where n is 0 or negative.",
-                Points = 50,
-                Type = "Coding",
-                Order = 1,
-                ProgrammingLanguage = "Java"
-            });
+                if (btn != null)
+                {
+                    btn.Background = (Brush)FindResource("Bg.Surface");
+                    btn.BorderBrush = (Brush)FindResource("Border.Subtle");
+                    btn.BorderThickness = new System.Windows.Thickness(1);
+                    FillTypeDot(btn, false);
+                }
+            }
+        }
 
-            defaultSections[0].Questions.Add(new QuestionItem
+        private void FillTypeDot(Button btn, bool isFilled)
+        {
+            if (btn == null) return;
+
+            var contentStack = btn.Content as StackPanel;
+            if (contentStack == null) return;
+
+            foreach (var child in contentStack.Children)
             {
-                Id = "q2",
-                Text = "What keyword is used in Java to define a constant variable that cannot be reassigned after initialization?",
-                Points = 5,
-                Type = "Identification",
-                Order = 1,
-                ExpectedAnswer = "final"
-            });
+                if (child is Grid grid)
+                {
+                    foreach (var gridChild in grid.Children)
+                    {
+                        if (gridChild is Ellipse ellipse)
+                        {
+                            UpdateEllipse(ellipse, isFilled);
+                            return;
+                        }
+                    }
+                }
+                else if (child is Ellipse ellipse)
+                {
+                    UpdateEllipse(ellipse, isFilled);
+                    return;
+                }
+            }
+        }
 
-            defaultSections[1].Questions.Add(new QuestionItem
+        private void UpdateEllipse(Ellipse ellipse, bool isFilled)
+        {
+            if (ellipse == null) return;
+
+            if (isFilled)
             {
-                Id = "q3",
-                Text = "Which of the following is NOT a valid access modifier in Java?",
-                Points = 3,
-                Type = "Multiple Choice",
-                Order = 1,
-                OptionA = "package",
-                OptionB = "private",
-                OptionC = "protected",
-                OptionD = "public",
-                CorrectAnswer = "A"
-            });
-
-            defaultSections[2].Questions.Add(new QuestionItem
+                ellipse.Fill = (Brush)FindResource("Accent.Primary");
+                ellipse.Stroke = (Brush)FindResource("Accent.Primary");
+                ellipse.StrokeThickness = 1.5;
+            }
+            else
             {
-                Id = "q4",
-                Text = "Explain the concept of polymorphism in Object-Oriented Programming. Describe at least two real-world scenarios where it improves code design and maintainability.",
-                Points = 20,
-                Type = "Essay",
-                Order = 1
-            });
-
-            _sections.AddRange(defaultSections);
+                ellipse.Fill = System.Windows.Media.Brushes.Transparent;
+                ellipse.Stroke = (Brush)FindResource("Border.Medium");
+                ellipse.StrokeThickness = 1.5;
+            }
         }
 
         private void AddSection_Click(object sender, RoutedEventArgs e)
@@ -150,21 +255,34 @@ namespace ACPAMS.Views.Faculty
 
             if (modal.ShowDialog() == true)
             {
+                System.Diagnostics.Debug.WriteLine($"=== AddSection_Click ===");
+                System.Diagnostics.Debug.WriteLine($"modal.QuestionType = '{modal.QuestionType}'");
+
+                var properType = GetProperTypeName(modal.QuestionType);
+                System.Diagnostics.Debug.WriteLine($"properType = '{properType}'");
+
                 var newSection = new ExamSection
                 {
                     Name = modal.SectionName,
-                    Type = modal.QuestionType,
+                    Type = properType,
                     Instructions = modal.Instructions,
                     IsActive = false,
                     Questions = new List<QuestionItem>()
                 };
 
                 _sections.Add(newSection);
-                _selectedSection = newSection;
+
+                foreach (var s in _sections)
+                    s.IsActive = false;
+
                 newSection.IsActive = true;
+                _selectedSection = newSection;
+
+                SelectTypeButton(properType);
 
                 UpdateSectionList();
                 UpdateQuestionsDisplay();
+                UpdateActiveSectionHeader();
 
                 MessageBox.Show($"Section '{newSection.Name}' added successfully!",
                     "Success",
@@ -182,8 +300,6 @@ namespace ACPAMS.Views.Faculty
 
             foreach (var section in _sections)
             {
-                if (section.Id.StartsWith("default")) continue;
-
                 var button = new Button
                 {
                     Style = (Style)FindResource("Btn.SectionItem"),
@@ -271,26 +387,20 @@ namespace ACPAMS.Views.Faculty
             var section = button.DataContext as ExamSection;
             if (section == null) return;
 
+            System.Diagnostics.Debug.WriteLine($"=== SectionButton_Click ===");
+            System.Diagnostics.Debug.WriteLine($"section.Type = '{section.Type}'");
+
             foreach (var s in _sections)
                 s.IsActive = false;
 
             section.IsActive = true;
             _selectedSection = section;
 
+            SelectTypeButton(section.Type);
+
             UpdateSectionList();
             UpdateQuestionsDisplay();
-
-            var headerText = FindName("ActiveSectionHeader") as TextBlock;
-            if (headerText != null)
-                headerText.Text = $"{section.Name} — {section.Type}";
-
-            var totalDisplay = FindName("TotalQuestionsDisplay") as TextBlock;
-            if (totalDisplay != null)
-                totalDisplay.Text = $"Total: {section.Questions.Count} questions";
-
-            var typeDisplay = FindName("ActiveTypeDisplay") as TextBlock;
-            if (typeDisplay != null)
-                typeDisplay.Text = section.Type;
+            UpdateActiveSectionHeader();
         }
 
         private void UpdateQuestionsDisplay()
@@ -301,18 +411,6 @@ namespace ACPAMS.Views.Faculty
             container.Children.Clear();
 
             if (_selectedSection == null) return;
-
-            var headerText = FindName("ActiveSectionHeader") as TextBlock;
-            if (headerText != null)
-                headerText.Text = $"{_selectedSection.Name} — {_selectedSection.Type}";
-
-            var totalDisplay = FindName("TotalQuestionsDisplay") as TextBlock;
-            if (totalDisplay != null)
-                totalDisplay.Text = $"Total: {_selectedSection.Questions.Count} questions";
-
-            var typeDisplay = FindName("ActiveTypeDisplay") as TextBlock;
-            if (typeDisplay != null)
-                typeDisplay.Text = _selectedSection.Type;
 
             foreach (var q in _selectedSection.Questions)
             {
@@ -424,7 +522,6 @@ namespace ACPAMS.Views.Faculty
                 // ---- Body ----
                 var bodyStack = new StackPanel { Margin = new System.Windows.Thickness(18, 16, 18, 16) };
 
-                // Editable question text
                 var questionTextBox = new TextBox
                 {
                     Text = q.Text,
@@ -441,8 +538,9 @@ namespace ACPAMS.Views.Faculty
                 };
                 bodyStack.Children.Add(questionTextBox);
 
-                // Render based on question type
-                switch (q.Type)
+                var properType = GetProperTypeName(q.Type);
+
+                switch (properType)
                 {
                     case "Identification":
                         var idLabel = new TextBlock
@@ -457,7 +555,7 @@ namespace ACPAMS.Views.Faculty
                         {
                             Text = q.ExpectedAnswer,
                             Style = (Style)FindResource("Input.AnswerOption"),
-                            Height = 34,
+                            
                             AcceptsReturn = false,
                             Tag = q
                         };
@@ -755,7 +853,7 @@ namespace ACPAMS.Views.Faculty
                 {
                     Text = answers[idx],
                     Style = (Style)FindResource("Input.AnswerOption"),
-                    Height = 34,
+                    
                     AcceptsReturn = false,
                     Tag = new { Question = q, Index = idx }
                 };
@@ -838,7 +936,7 @@ namespace ACPAMS.Views.Faculty
             {
                 Text = optionText,
                 Style = (Style)FindResource("Input.AnswerOption"),
-                Height = 34,
+                
                 AcceptsReturn = false,
                 Tag = new { Question = q, Letter = letter }
             };
@@ -921,51 +1019,20 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            ResetTypeButtons();
-
+            ResetAllTypeButtons();
             button.Background = (Brush)FindResource("Accent.PrimaryBg");
             button.BorderBrush = (Brush)FindResource("Accent.Primary");
             button.BorderThickness = new System.Windows.Thickness(2);
+            FillTypeDot(button, true);
             _selectedQuestionType = questionType;
 
-            var newQuestion = new QuestionItem
-            {
-                Id = Guid.NewGuid().ToString(),
-                Text = $"New {questionType} Question - Edit me!",
-                Points = 1,
-                Type = questionType,
-                Order = _selectedSection.Questions.Count + 1
-            };
-
-            switch (questionType)
-            {
-                case "Identification":
-                    newQuestion.ExpectedAnswer = "final";
-                    break;
-                case "Multiple Choice":
-                    newQuestion.OptionA = "Option A";
-                    newQuestion.OptionB = "Option B";
-                    newQuestion.OptionC = "Option C";
-                    newQuestion.OptionD = "Option D";
-                    newQuestion.CorrectAnswer = "A";
-                    break;
-                case "True or False":
-                    newQuestion.IsTrue = true;
-                    break;
-                case "Essay":
-                    break;
-                case "Enumeration":
-                    newQuestion.ExpectedAnswers = "Item 1, Item 2, Item 3, Item 4";
-                    break;
-                case "Coding":
-                    newQuestion.ProgrammingLanguage = "Java";
-                    break;
-            }
-
+            var newQuestion = CreateQuestionByType(questionType);
+            newQuestion.Order = _selectedSection.Questions.Count + 1;
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
             UpdateSectionList();
+            UpdateActiveSectionHeader();
 
             MessageBox.Show($"New {questionType} question added to '{_selectedSection.Name}'!",
                 "Question Added",
@@ -973,32 +1040,60 @@ namespace ACPAMS.Views.Faculty
                 MessageBoxImage.Information);
         }
 
-        private void ResetTypeButtons()
+        private QuestionItem CreateQuestionByType(string questionType)
         {
-            var typeButtons = new[]
+            var properType = GetProperTypeName(questionType);
+
+            var newQuestion = new QuestionItem
             {
-                FindName("AddIdentificationBtn") as Button,
-                FindName("AddMultipleChoiceBtn") as Button,
-                FindName("AddTrueFalseBtn") as Button,
-                FindName("AddEssayBtn") as Button,
-                FindName("AddEnumerationBtn") as Button,
-                FindName("AddCodingBtn") as Button
+                Id = Guid.NewGuid().ToString(),
+                Type = properType,
+                Points = 1,
+                Text = $"New {properType} Question - Edit me!"
             };
 
-            foreach (var btn in typeButtons)
+            switch (properType)
             {
-                if (btn != null)
-                {
-                    btn.Background = (Brush)FindResource("Bg.Surface");
-                    btn.BorderBrush = (Brush)FindResource("Border.Subtle");
-                    btn.BorderThickness = new System.Windows.Thickness(1);
-                }
+                case "Identification":
+                    newQuestion.ExpectedAnswer = "Enter correct answer...";
+                    newQuestion.Text = "Enter your identification question here...";
+                    break;
+                case "Multiple Choice":
+                    newQuestion.OptionA = "Option A";
+                    newQuestion.OptionB = "Option B";
+                    newQuestion.OptionC = "Option C";
+                    newQuestion.OptionD = "Option D";
+                    newQuestion.CorrectAnswer = "A";
+                    newQuestion.Text = "Enter your multiple choice question here...";
+                    break;
+                case "True or False":
+                    newQuestion.IsTrue = true;
+                    newQuestion.Text = "Enter your true/false question here...";
+                    break;
+                case "Essay":
+                    newQuestion.Text = "Enter your essay question here...";
+                    break;
+                case "Enumeration":
+                    newQuestion.ExpectedAnswers = "Item 1, Item 2, Item 3, Item 4";
+                    newQuestion.Text = "Enter your enumeration question here...";
+                    break;
+                case "Coding":
+                    newQuestion.ProgrammingLanguage = "Java";
+                    newQuestion.Text = "Enter your coding problem description here...";
+                    break;
+                default:
+                    newQuestion.Text = "Enter your question here...";
+                    break;
             }
+
+            return newQuestion;
         }
 
-        // ========== FIXED: Uses the selected type from sidebar ==========
         private void AddNewQuestion_Click(object sender, RoutedEventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine($"=== AddNewQuestion_Click ===");
+            System.Diagnostics.Debug.WriteLine($"_selectedQuestionType = '{_selectedQuestionType}'");
+
             if (_selectedSection == null)
             {
                 MessageBox.Show("Please select a section first.",
@@ -1008,52 +1103,21 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Use the type selected from the sidebar (the one with the filled dot)
-            // If none selected, fallback to the section's type
+            System.Diagnostics.Debug.WriteLine($"_selectedSection.Type = '{_selectedSection.Type}'");
+
             var questionType = string.IsNullOrEmpty(_selectedQuestionType)
                 ? _selectedSection.Type
                 : _selectedQuestionType;
 
-            MessageBox.Show($"Adding question of type: {questionType} to section: {_selectedSection.Name}");
+            System.Diagnostics.Debug.WriteLine($"Using questionType = '{questionType}'");
 
-            var newQuestion = new QuestionItem
-            {
-                Id = Guid.NewGuid().ToString(),
-                Text = $"New {questionType} Question - Edit me!",
-                Points = 1,
-                Type = questionType,
-                Order = _selectedSection.Questions.Count + 1
-            };
-
-            switch (questionType)
-            {
-                case "Identification":
-                    newQuestion.ExpectedAnswer = "final";
-                    break;
-                case "Multiple Choice":
-                    newQuestion.OptionA = "Option A";
-                    newQuestion.OptionB = "Option B";
-                    newQuestion.OptionC = "Option C";
-                    newQuestion.OptionD = "Option D";
-                    newQuestion.CorrectAnswer = "A";
-                    break;
-                case "True or False":
-                    newQuestion.IsTrue = true;
-                    break;
-                case "Essay":
-                    break;
-                case "Enumeration":
-                    newQuestion.ExpectedAnswers = "Item 1, Item 2, Item 3, Item 4";
-                    break;
-                case "Coding":
-                    newQuestion.ProgrammingLanguage = "Java";
-                    break;
-            }
-
+            var newQuestion = CreateQuestionByType(questionType);
+            newQuestion.Order = _selectedSection.Questions.Count + 1;
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
             UpdateSectionList();
+            UpdateActiveSectionHeader();
 
             MessageBox.Show($"New {questionType} question added to '{_selectedSection.Name}'!",
                 "Question Added",
@@ -1087,6 +1151,7 @@ namespace ACPAMS.Views.Faculty
 
                         UpdateQuestionsDisplay();
                         UpdateSectionList();
+                        UpdateActiveSectionHeader();
                     }
                 }
             }
@@ -1094,42 +1159,51 @@ namespace ACPAMS.Views.Faculty
 
         private Brush GetTypeBadgeBackground(string type)
         {
-            return type switch
+            if (string.IsNullOrEmpty(type)) return (Brush)FindResource("Bg.Base");
+
+            var lowerType = type.ToLower();
+            return lowerType switch
             {
-                "Coding" => (Brush)FindResource("Status.SuccessBg"),
-                "Identification" => (Brush)FindResource("Bg.Base"),
-                "Multiple Choice" => (Brush)FindResource("Accent.PrimaryBg"),
-                "True or False" => (Brush)FindResource("Status.SuccessBg"),
-                "Essay" => (Brush)FindResource("AI.Bg"),
-                "Enumeration" => (Brush)FindResource("Status.WarningBg"),
+                "coding" => (Brush)FindResource("Status.SuccessBg"),
+                "identification" => (Brush)FindResource("Bg.Base"),
+                "multiple choice" => (Brush)FindResource("Accent.PrimaryBg"),
+                "true or false" => (Brush)FindResource("Status.SuccessBg"),
+                "essay" => (Brush)FindResource("AI.Bg"),
+                "enumeration" => (Brush)FindResource("Status.WarningBg"),
                 _ => (Brush)FindResource("Bg.Base")
             };
         }
 
         private Brush GetTypeBadgeBorder(string type)
         {
-            return type switch
+            if (string.IsNullOrEmpty(type)) return (Brush)FindResource("Border.Medium");
+
+            var lowerType = type.ToLower();
+            return lowerType switch
             {
-                "Coding" => (Brush)FindResource("Status.Success"),
-                "Identification" => (Brush)FindResource("Border.Medium"),
-                "Multiple Choice" => (Brush)FindResource("Accent.Primary"),
-                "True or False" => (Brush)FindResource("Status.Success"),
-                "Essay" => (Brush)FindResource("AI.Border"),
-                "Enumeration" => (Brush)FindResource("Status.Warning"),
+                "coding" => (Brush)FindResource("Status.Success"),
+                "identification" => (Brush)FindResource("Border.Medium"),
+                "multiple choice" => (Brush)FindResource("Accent.Primary"),
+                "true or false" => (Brush)FindResource("Status.Success"),
+                "essay" => (Brush)FindResource("AI.Border"),
+                "enumeration" => (Brush)FindResource("Status.Warning"),
                 _ => (Brush)FindResource("Border.Medium")
             };
         }
 
         private Brush GetTypeBadgeForeground(string type)
         {
-            return type switch
+            if (string.IsNullOrEmpty(type)) return (Brush)FindResource("Text.Secondary");
+
+            var lowerType = type.ToLower();
+            return lowerType switch
             {
-                "Coding" => (Brush)FindResource("Status.Success"),
-                "Identification" => (Brush)FindResource("Text.Secondary"),
-                "Multiple Choice" => (Brush)FindResource("Accent.Primary"),
-                "True or False" => (Brush)FindResource("Status.Success"),
-                "Essay" => (Brush)FindResource("AI.Text"),
-                "Enumeration" => (Brush)FindResource("Status.Warning"),
+                "coding" => (Brush)FindResource("Status.Success"),
+                "identification" => (Brush)FindResource("Text.Secondary"),
+                "multiple choice" => (Brush)FindResource("Accent.Primary"),
+                "true or false" => (Brush)FindResource("Status.Success"),
+                "essay" => (Brush)FindResource("AI.Text"),
+                "enumeration" => (Brush)FindResource("Status.Warning"),
                 _ => (Brush)FindResource("Text.Secondary")
             };
         }
@@ -1139,7 +1213,7 @@ namespace ACPAMS.Views.Faculty
             if (string.IsNullOrEmpty(type)) return (Brush)FindResource("QType.Identification");
 
             var lowerType = type.ToLower();
-            if (lowerType.Contains("identification") || lowerType.Contains("id"))
+            if (lowerType.Contains("identification"))
                 return (Brush)FindResource("QType.Identification");
             if (lowerType.Contains("multiple") || lowerType.Contains("choice"))
                 return (Brush)FindResource("QType.MultipleChoice");
@@ -1147,9 +1221,9 @@ namespace ACPAMS.Views.Faculty
                 return (Brush)FindResource("QType.TrueOrFalse");
             if (lowerType.Contains("essay"))
                 return (Brush)FindResource("QType.Essay");
-            if (lowerType.Contains("enumeration") || lowerType.Contains("enum"))
+            if (lowerType.Contains("enumeration"))
                 return (Brush)FindResource("QType.Enumeration");
-            if (lowerType.Contains("coding") || lowerType.Contains("code") || lowerType.Contains("java") || lowerType.Contains("c"))
+            if (lowerType.Contains("coding") || lowerType.Contains("code"))
                 return (Brush)FindResource("QType.Coding");
 
             return (Brush)FindResource("QType.Identification");
