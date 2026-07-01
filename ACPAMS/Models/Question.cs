@@ -64,5 +64,7 @@ namespace ACPAMS.Models
         public Exam? Exam { get; set; }
         public Rubric? Rubric { get; set; }
         public ICollection<StudentAnswer> StudentAnswers { get; set; } = new List<StudentAnswer>();
+   
+        public ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();
     }
 }

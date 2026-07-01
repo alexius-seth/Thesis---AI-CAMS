@@ -38,10 +38,6 @@ namespace ACPAMS.Models
         [Column("program")]
         public string? Program { get; set; }
 
-        [MaxLength(20)]
-        [Column("year_level")]
-        public string? YearLevel { get; set; }
-
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

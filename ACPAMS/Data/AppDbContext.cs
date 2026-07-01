@@ -42,6 +42,7 @@ namespace ACPAMS.Data
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<ExamAttemptLog> ExamAttemptLogs { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
+        public DbSet<QuestionOption> QuestionOptions { get; set; }
 
         // ── Connection ──────────────────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder options)
@@ -316,6 +317,17 @@ namespace ACPAMS.Data
                       .WithMany()
                       .HasForeignKey(e => e.UploadedBy)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+           
+            // ── Question Option ──────────────────────────────────
+            modelBuilder.Entity<QuestionOption>(entity =>
+            {
+                entity.HasKey(e => e.OptionId);
+                entity.Property(e => e.OptionId).HasDefaultValueSql("NEWID()");
+                entity.HasOne(e => e.Question)
+                      .WithMany(q => q.Options)
+                      .HasForeignKey(e => e.QuestionId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
