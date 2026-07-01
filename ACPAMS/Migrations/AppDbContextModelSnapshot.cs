@@ -602,6 +602,35 @@ namespace ACPAMS.Migrations
                     b.ToTable("questions");
                 });
 
+            modelBuilder.Entity("ACPAMS.Models.QuestionOption", b =>
+                {
+                    b.Property<Guid>("OptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("option_id")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("OptionText")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("option_text");
+
+                    b.Property<int?>("OrderIndex")
+                        .HasColumnType("int")
+                        .HasColumnName("order_index");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("question_id");
+
+                    b.HasKey("OptionId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("question_options");
+                });
+
             modelBuilder.Entity("ACPAMS.Models.Rubric", b =>
                 {
                     b.Property<Guid>("RubricId")
@@ -771,11 +800,6 @@ namespace ACPAMS.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("user_id");
-
-                    b.Property<string>("YearLevel")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("year_level");
 
                     b.HasKey("StudentId");
 
@@ -1104,6 +1128,17 @@ namespace ACPAMS.Migrations
                     b.Navigation("Exam");
                 });
 
+            modelBuilder.Entity("ACPAMS.Models.QuestionOption", b =>
+                {
+                    b.HasOne("ACPAMS.Models.Question", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("ACPAMS.Models.Rubric", b =>
                 {
                     b.HasOne("ACPAMS.Models.Instructor", "Instructor")
@@ -1205,6 +1240,8 @@ namespace ACPAMS.Migrations
 
             modelBuilder.Entity("ACPAMS.Models.Question", b =>
                 {
+                    b.Navigation("Options");
+
                     b.Navigation("Rubric");
 
                     b.Navigation("StudentAnswers");
