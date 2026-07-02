@@ -1,3 +1,4 @@
+using ACPAMS.Services;
 using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
@@ -23,6 +24,7 @@ namespace ACPAMS.Views.Faculty
 
         public string QuestionTitle { get; set; } = "Test II — Coding (Java)";
         public string SectionName { get; set; } = "Test II";
+        public string QuestionId { get; set; } = string.Empty;
 
         private readonly string[] _tierColors = new string[]
         {
@@ -59,6 +61,51 @@ namespace ACPAMS.Views.Faculty
             BuildMatrix();
 
             this.Loaded += (s, e) => ResetScopeButtons();
+        }
+
+        public RubricData GetRubricData()
+        {
+            var result = new RubricData
+            {
+                Description = "AI Rubric Configuration",
+                AiInstructions = AIInstructions,
+                TotalWeight = 100,
+                Criteria = new List<RubricCriteriaData>()
+            };
+
+            foreach (var row in Rows)
+            {
+                var criteria = new RubricCriteriaData
+                {
+                    Name = row.Criteria,
+                    Description = row.Criteria,
+                    MaxScore = TierColumns.Sum(t => t.Points),
+                    WeightPercentage = 100m / Rows.Count,
+                    Levels = new List<RubricLevelData>()
+                };
+
+                foreach (var tier in TierColumns)
+                {
+                    string levelValue = tier.Name switch
+                    {
+                        "Excellent" => row.Excellent,
+                        "Good" => row.Good,
+                        "Poor" => row.Poor,
+                        _ => string.Empty
+                    };
+
+                    criteria.Levels.Add(new RubricLevelData
+                    {
+                        Name = tier.Name,
+                        ScorePercentage = tier.Points,
+                        Descriptor = levelValue
+                    });
+                }
+
+                result.Criteria.Add(criteria);
+            }
+
+            return result;
         }
 
         private void OnRowsChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -108,11 +155,9 @@ namespace ACPAMS.Views.Faculty
 
         private void ResetScopeButtons()
         {
-            // Reset both buttons to unselected
             SingleQuestionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle");
             EntireSectionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle");
 
-            // Reset both dots to empty
             UpdateScopeDot(SingleQuestionScopeBtn, false);
             UpdateScopeDot(EntireSectionScopeBtn, false);
 
@@ -404,7 +449,6 @@ namespace ACPAMS.Views.Faculty
             var content = btn.Content as StackPanel;
             if (content == null) return;
 
-            // Find the Ellipse in the StackPanel
             Ellipse ellipse = null;
             foreach (var child in content.Children)
             {
@@ -417,7 +461,6 @@ namespace ACPAMS.Views.Faculty
 
             if (ellipse == null) return;
 
-            // Update the fill based on selection
             if (isSelected)
             {
                 ellipse.Fill = (Brush)FindResource("Accent.Primary");
@@ -437,19 +480,15 @@ namespace ACPAMS.Views.Faculty
             var btn = sender as Button;
             if (btn == null) return;
 
-            // Reset both buttons to unselected
             SingleQuestionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle");
             EntireSectionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle");
 
-            // Reset both dots to empty
             UpdateScopeDot(SingleQuestionScopeBtn, false);
             UpdateScopeDot(EntireSectionScopeBtn, false);
 
-            // Set the clicked button to active
             btn.Style = (Style)FindResource("Btn.ScopeToggle.Active");
             UpdateScopeDot(btn, true);
 
-            // Update the scope property
             RubricScope = (btn == SingleQuestionScopeBtn) ? "Question" : "Section";
         }
 

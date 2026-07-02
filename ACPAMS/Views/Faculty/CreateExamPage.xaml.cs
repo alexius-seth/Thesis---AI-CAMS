@@ -16,6 +16,10 @@ namespace ACPAMS.Views.Faculty
         private ExamSection _selectedSection;
         private string _selectedQuestionType = string.Empty;
 
+        // Store rubric data per question
+        private Dictionary<string, RubricData> _rubricData = new Dictionary<string, RubricData>();
+
+
         // Supported programming languages
         private readonly string[] _supportedLanguages = new[] { "Java", "C", "C#", "C++", "Python" };
 
@@ -130,6 +134,7 @@ namespace ACPAMS.Views.Faculty
                 default: return null;
             }
         }
+
         private async void SaveAndPublish_Click(object sender, RoutedEventArgs e)
         {
             if (_sections == null || _sections.Count == 0)
@@ -172,7 +177,8 @@ namespace ACPAMS.Views.Faculty
 
                     var examService = new ExamService(dbContext, instructorId);
 
-                    var rubricData = new Dictionary<string, RubricData>();
+                    // Use the rubric data collected from the AIRubricModal
+                    var rubricData = _rubricData;
 
                     // Convert _sections to ExamService.ExamSectionData
                     var sectionsToSave = _sections.Select(s => new ExamService.ExamSectionData
@@ -728,7 +734,7 @@ namespace ACPAMS.Views.Faculty
                             VerticalAlignment = VerticalAlignment.Center
                         });
                         bodyStack.Children.Add(wordLimitPanel);
-                        bodyStack.Children.Add(CreateAIRubricSection());
+                        bodyStack.Children.Add(CreateAIRubricSection(q));
                         break;
 
                     case "Enumeration":
@@ -871,7 +877,7 @@ namespace ACPAMS.Views.Faculty
                         };
                         bodyStack.Children.Add(stubBox);
 
-                        bodyStack.Children.Add(CreateAIRubricSection());
+                        bodyStack.Children.Add(CreateAIRubricSection(q));
                         break;
                 }
 
@@ -1278,7 +1284,7 @@ namespace ACPAMS.Views.Faculty
             return (Brush)FindResource("QType.Identification");
         }
 
-        private Border CreateAIRubricSection()
+        private Border CreateAIRubricSection(QuestionItem question)
         {
             var border = new Border
             {
@@ -1324,7 +1330,8 @@ namespace ACPAMS.Views.Faculty
             var btn = new Button
             {
                 Style = (Style)FindResource("Btn.AIRubric"),
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = question
             };
             var btnStack = new StackPanel { Orientation = Orientation.Horizontal };
             btnStack.Children.Add(new TextBlock
@@ -1341,10 +1348,34 @@ namespace ACPAMS.Views.Faculty
                 VerticalAlignment = VerticalAlignment.Center
             });
             btn.Content = btnStack;
+
             btn.Click += (s, e) =>
             {
+                var button = s as Button;
+                if (button == null) return;
+
+                var q = button.Tag as QuestionItem;
+                if (q == null) return;
+
                 var rubricModal = new AIRubricModal { Owner = Application.Current.MainWindow };
-                rubricModal.ShowDialog();
+                rubricModal.QuestionTitle = q.Text ?? "Question";
+                rubricModal.QuestionId = q.Id;
+
+                if (rubricModal.ShowDialog() == true)
+                {
+                    var rubricData = rubricModal.GetRubricData();
+
+                    if (!_rubricData.ContainsKey(q.Id))
+                    {
+                        _rubricData[q.Id] = rubricData;
+                    }
+                    else
+                    {
+                        _rubricData[q.Id] = rubricData;
+                    }
+
+                    ToastNotification.Show("Rubric saved successfully!", Application.Current.MainWindow);
+                }
             };
             Grid.SetColumn(btn, 1);
             grid.Children.Add(btn);
@@ -1374,9 +1405,6 @@ namespace ACPAMS.Views.Faculty
     /// <summary>
     /// Custom Toast Notification - auto-dismisses after 3-5 seconds with fade animation
     /// </summary>
-    /// <summary>
-    /// Custom Toast Notification - auto-dismisses after 3-5 seconds with fade animation
-    /// </summary>
     public static class ToastNotification
     {
         private static Border _toastBorder;
@@ -1389,7 +1417,6 @@ namespace ACPAMS.Views.Faculty
         {
             if (parentWindow == null) return;
 
-            // Create toast if it doesn't exist
             if (_toastBorder == null)
             {
                 _toastBorder = new Border
@@ -1439,7 +1466,6 @@ namespace ACPAMS.Views.Faculty
 
                 _toastBorder.Child = grid;
 
-                // Add to parent window
                 var gridParent = parentWindow.Content as Grid;
                 if (gridParent != null)
                 {
@@ -1455,7 +1481,6 @@ namespace ACPAMS.Views.Faculty
                 }
             }
 
-            // Update text and color
             var toastGrid = _toastBorder.Child as Grid;
             if (toastGrid != null)
             {
@@ -1464,14 +1489,12 @@ namespace ACPAMS.Views.Faculty
             }
             _toastBorder.Background = isWarning ? new SolidColorBrush(Color.FromRgb(239, 68, 68)) : new SolidColorBrush(Color.FromRgb(34, 197, 94));
 
-            // Reset state
             _opacity = 1.0;
             _isFading = false;
             _toastBorder.Opacity = 0;
             _toastBorder.RenderTransform = new TranslateTransform(0, -20);
             _toastBorder.Visibility = Visibility.Visible;
 
-            // Fade in
             var fadeIn = new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300));
             var slideIn = new TranslateTransform();
             slideIn.Y = -20;
@@ -1480,7 +1503,6 @@ namespace ACPAMS.Views.Faculty
             slideIn.BeginAnimation(TranslateTransform.YProperty, slideAnimation);
             _toastBorder.BeginAnimation(UIElement.OpacityProperty, fadeIn);
 
-            // Auto dismiss timer
             _timer = new System.Windows.Threading.DispatcherTimer();
             _timer.Interval = TimeSpan.FromSeconds(durationSeconds);
             _timer.Tick += (s, e) =>
@@ -1518,5 +1540,4 @@ namespace ACPAMS.Views.Faculty
             FadeOutToast();
         }
     }
-
 }
