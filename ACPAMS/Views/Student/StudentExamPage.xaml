@@ -1,21 +1,10 @@
-<Window x:Class="ACPAMS.Views.Student.StudentExamPage"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:student="clr-namespace:ACPAMS.Views.Student"
-        Title="ACPAMS — CCS415 Finals Exam"
-        WindowState="Maximized"
-        WindowStyle="None"
-        ResizeMode="NoResize"
-        Background="#F4F5F7"
-        FontFamily="Segoe UI">
+<UserControl x:Class="ACPAMS.Views.Student.StudentExamPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#F4F5F7"
+      FontFamily="Segoe UI">
 
-    <!-- Kiosk mode: no minimize/close/resize. Alt+Tab blocked in code-behind. -->
-
-    <Window.Resources>
-
-        <!-- ═══════════════════════════════
-             DESIGN TOKENS
-        ═══════════════════════════════ -->
+    <UserControl.Resources>
         <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
         <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
         <SolidColorBrush x:Key="Bg.Canvas"        Color="#F8FAFC"/>
@@ -34,10 +23,6 @@
         <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
         <SolidColorBrush x:Key="Nav.Active.Bg"    Color="#EFF6FF"/>
         <SolidColorBrush x:Key="Nav.Active.Strip" Color="#1976D2"/>
-
-        <!-- ═══════════════════════════════
-             SHARED STYLES
-        ═══════════════════════════════ -->
 
         <!-- Nav section header button -->
         <Style x:Key="Btn.NavSection" TargetType="Button">
@@ -164,7 +149,7 @@
             </Setter>
         </Style>
 
-        <!-- Monitoring alert dismiss / understood button -->
+        <!-- Monitoring alert dismiss button -->
         <Style x:Key="Btn.AlertAction" TargetType="Button">
             <Setter Property="FontSize"        Value="11"/>
             <Setter Property="FontWeight"      Value="SemiBold"/>
@@ -189,18 +174,15 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-    </Window.Resources>
+    </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="56"/>   <!-- Top bar -->
-            <RowDefinition Height="*"/>    <!-- Body -->
+            <RowDefinition Height="56"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ══════════════════════════════════
-             TOP BAR
-        ══════════════════════════════════ -->
+        <!-- TOP BAR -->
         <Border Grid.Row="0"
                 Background="{StaticResource Bg.Surface}"
                 BorderBrush="{StaticResource Border.Subtle}"
@@ -213,8 +195,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Brand -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal"
-                            VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Width="30" Height="30" Background="#1A202C"
                             CornerRadius="6" Margin="0,0,8,0">
                         <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
@@ -226,14 +207,16 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Exam title -->
+                <!-- Exam title — back-end binds exam name and course code -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center"
                             HorizontalAlignment="Center">
-                    <TextBlock Text="CCS415 — FINALS EXAM"
+                    <TextBlock x:Name="ExamTitleText"
+                               Text="FINALS EXAM"
                                FontSize="14" FontWeight="Bold"
                                Foreground="{StaticResource Text.Primary}"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="Object-Oriented Programming"
+                    <TextBlock x:Name="ExamSubtitleText"
+                               Text="Loading..."
                                FontSize="11" Foreground="{StaticResource Text.Muted}"
                                HorizontalAlignment="Center"/>
                 </StackPanel>
@@ -241,17 +224,17 @@
                 <!-- Timer -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal"
                             HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Border Background="{StaticResource Status.DangerBg}"
+                    <Border x:Name="TimerBorder"
+                            Background="{StaticResource Status.DangerBg}"
                             BorderBrush="{StaticResource Status.Danger}"
                             BorderThickness="1" CornerRadius="6" Padding="12,6">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE916;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="{StaticResource Status.Danger}"
+                            <TextBlock Text="&#xE916;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14" Foreground="{StaticResource Status.Danger}"
                                        Margin="0,0,7,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="44:44"
-                                       FontFamily="Consolas" FontSize="16"
-                                       FontWeight="Bold"
+                            <TextBlock x:Name="TimerText"
+                                       Text="60:00"
+                                       FontFamily="Consolas" FontSize="16" FontWeight="Bold"
                                        Foreground="{StaticResource Status.Danger}"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
@@ -260,19 +243,15 @@
             </Grid>
         </Border>
 
-        <!-- ══════════════════════════════════
-             BODY: Nav | Canvas | Monitoring
-        ══════════════════════════════════ -->
+        <!-- BODY -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="0.20*"/>  <!-- Navigation pane -->
-                <ColumnDefinition Width="0.60*"/>  <!-- Active canvas -->
-                <ColumnDefinition Width="0.20*"/>  <!-- Monitoring pane -->
+                <ColumnDefinition Width="0.20*"/>
+                <ColumnDefinition Width="0.60*"/>
+                <ColumnDefinition Width="0.20*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ══════════════════════════
-                 PANE 1: NAVIGATION
-            ══════════════════════════ -->
+            <!-- PANE 1: NAVIGATION -->
             <Border Grid.Column="0"
                     Background="{StaticResource Bg.Surface}"
                     BorderBrush="{StaticResource Border.Subtle}"
@@ -297,132 +276,34 @@
                                     <Grid Margin="0,0,0,5">
                                         <TextBlock Text="Progress" FontSize="11"
                                                    Foreground="{StaticResource Text.Muted}"/>
-                                        <TextBlock Text="8 / 20" FontSize="11"
-                                                   FontWeight="Bold"
+                                        <TextBlock x:Name="ProgressText"
+                                                   Text="0 / 0" FontSize="11" FontWeight="Bold"
                                                    Foreground="{StaticResource Accent.Primary}"
                                                    HorizontalAlignment="Right"/>
                                     </Grid>
                                     <Border Height="5" CornerRadius="3"
                                             Background="{StaticResource Border.Subtle}">
-                                        <Border HorizontalAlignment="Left"
-                                                Width="40"
-                                                CornerRadius="3"
+                                        <Border x:Name="ProgressBar"
+                                                HorizontalAlignment="Left"
+                                                Width="0" CornerRadius="3"
                                                 Background="{StaticResource Accent.Primary}"/>
                                     </Border>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Test I: Identification -->
-                            <Button Style="{StaticResource Btn.NavSection}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="#64748B"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Test I" FontSize="12" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Primary}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text=" — Identification" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"
-                                               FontSize="10" Foreground="{StaticResource Text.Muted}"
-                                               Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Style="{StaticResource Btn.NavItem.Active}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets"
-                                               FontSize="10" Foreground="{StaticResource Accent.Primary}"
-                                               Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Question 1" FontSize="12" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Accent.Primary}"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Style="{StaticResource Btn.NavItem}">
-                                <StackPanel Orientation="Horizontal">
-                                    <!-- Answered dot -->
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="{StaticResource Status.Success}"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Question 2" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Style="{StaticResource Btn.NavItem}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="{StaticResource Status.Success}"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Question 3" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Style="{StaticResource Btn.NavItem}">
-                                <StackPanel Orientation="Horizontal">
-                                    <!-- Unanswered dot -->
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="{StaticResource Border.Medium}"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Question 4" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Style="{StaticResource Btn.NavItem}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="{StaticResource Border.Medium}"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Question 5" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"/>
-                                </StackPanel>
-                            </Button>
-
-                            <!-- Test II: Coding -->
-                            <Button Style="{StaticResource Btn.NavSection}" Margin="0,6,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="{StaticResource Status.Success}"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Test II" FontSize="12" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Primary}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text=" — Coding" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"
-                                               FontSize="10" Foreground="{StaticResource Text.Muted}"
-                                               Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <!-- Test III: Enumeration -->
-                            <Button Style="{StaticResource Btn.NavSection}" Margin="0,6,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="6" Height="6" CornerRadius="3"
-                                            Background="{StaticResource Border.Medium}"
-                                            Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Test III" FontSize="12" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Primary}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text=" — Enumeration" FontSize="12"
-                                               Foreground="{StaticResource Text.Secondary}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"
-                                               FontSize="10" Foreground="{StaticResource Text.Muted}"
-                                               Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
+                            <!-- Nav items — back-end populates NavItemsPanel dynamically -->
+                            <StackPanel x:Name="NavItemsPanel"/>
 
                         </StackPanel>
                     </ScrollViewer>
 
                     <!-- Submit Exam -->
-                    <Border Grid.Row="1"
-                            Padding="14,12"
+                    <Border Grid.Row="1" Padding="14,12"
                             BorderBrush="{StaticResource Border.Subtle}"
                             BorderThickness="0,1,0,0">
                         <Button Style="{StaticResource Btn.Submit}"
-                                HorizontalAlignment="Stretch">
+                                HorizontalAlignment="Stretch"
+                                Click="SubmitBtn_Click">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7FC;" FontFamily="Segoe MDL2 Assets"
                                            FontSize="13" Foreground="White"
@@ -434,10 +315,7 @@
                 </Grid>
             </Border>
 
-            <!-- ══════════════════════════
-                 PANE 2: ACTIVE CANVAS
-                 ContentControl — swapped by canvas type
-            ══════════════════════════ -->
+            <!-- PANE 2: ACTIVE CANVAS -->
             <Border Grid.Column="1"
                     Background="{StaticResource Bg.Canvas}"
                     BorderBrush="{StaticResource Border.Subtle}"
@@ -448,33 +326,35 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Canvas host: back-end swaps content here -->
+                    <!-- Canvas host -->
                     <ContentControl Grid.Row="0" x:Name="ExamCanvasHost"/>
 
                     <!-- Previous / Next bar -->
                     <Border Grid.Row="1"
                             Background="{StaticResource Bg.Surface}"
                             BorderBrush="{StaticResource Border.Subtle}"
-                            BorderThickness="0,1,0,0"
-                            Padding="24,12">
+                            BorderThickness="0,1,0,0" Padding="24,12">
                         <Grid>
-                            <Button Style="{StaticResource Btn.NavArrow}"
-                                    HorizontalAlignment="Left">
+                            <Button x:Name="PreviousBtn"
+                                    Style="{StaticResource Btn.NavArrow}"
+                                    HorizontalAlignment="Left"
+                                    IsEnabled="False"
+                                    Click="PreviousBtn_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE76B;"
-                                               FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                               Foreground="{StaticResource Accent.Primary}"
+                                    <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="12" Foreground="{StaticResource Accent.Primary}"
                                                Margin="0,0,7,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Previous" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource Btn.NavArrow}"
-                                    HorizontalAlignment="Right">
+                            <Button x:Name="NextBtn"
+                                    Style="{StaticResource Btn.NavArrow}"
+                                    HorizontalAlignment="Right"
+                                    Click="NextBtn_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Next" VerticalAlignment="Center"/>
-                                    <TextBlock Text="&#xE76C;"
-                                               FontFamily="Segoe MDL2 Assets" FontSize="12"
-                                               Foreground="{StaticResource Accent.Primary}"
+                                    <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="12" Foreground="{StaticResource Accent.Primary}"
                                                Margin="7,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
@@ -483,9 +363,7 @@
                 </Grid>
             </Border>
 
-            <!-- ══════════════════════════
-                 PANE 3: MONITORING
-            ══════════════════════════ -->
+            <!-- PANE 3: MONITORING -->
             <Border Grid.Column="2"
                     Background="{StaticResource Bg.Surface}"
                     BorderBrush="{StaticResource Border.Subtle}"
@@ -494,27 +372,19 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="10,12,10,12">
 
-                        <!-- Webcam feed — compact -->
-                        <Border Background="#0F172A"
-                                BorderBrush="#1E293B"
+                        <!-- Webcam feed -->
+                        <Border Background="#0F172A" BorderBrush="#1E293B"
                                 BorderThickness="1" CornerRadius="6"
                                 Height="100" Margin="0,0,0,8">
                             <Grid>
-                                <!-- Placeholder when no feed -->
-                                <StackPanel VerticalAlignment="Center"
-                                            HorizontalAlignment="Center">
-                                    <TextBlock Text="&#xE722;"
-                                               FontFamily="Segoe MDL2 Assets" FontSize="20"
-                                               Foreground="#334155"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,0,0,6"/>
-                                    <TextBlock Text="Live Feed"
-                                               FontSize="10" Foreground="#475569"
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE722;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="20" Foreground="#334155"
+                                               HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                    <TextBlock Text="Live Feed" FontSize="10" Foreground="#475569"
                                                HorizontalAlignment="Center"/>
                                 </StackPanel>
-                                <!-- LIVE badge -->
-                                <Border Background="#EF4444" CornerRadius="3"
-                                        Padding="5,2"
+                                <Border Background="#EF4444" CornerRadius="3" Padding="5,2"
                                         HorizontalAlignment="Left" VerticalAlignment="Top"
                                         Margin="6,6,0,0">
                                     <StackPanel Orientation="Horizontal">
@@ -524,12 +394,10 @@
                                                    Foreground="White"/>
                                     </StackPanel>
                                 </Border>
-                                <!-- MediaPipe host — back-end wires Image control here -->
                                 <TextBlock Text="MediaPipe feed renders here"
                                            FontSize="8" Foreground="#334155"
                                            HorizontalAlignment="Center"
-                                           VerticalAlignment="Bottom"
-                                           Margin="0,0,0,4"/>
+                                           VerticalAlignment="Bottom" Margin="0,0,0,4"/>
                             </Grid>
                         </Border>
 
@@ -539,10 +407,8 @@
                                 BorderThickness="1" CornerRadius="6"
                                 Padding="10,8" Margin="0,0,0,8">
                             <StackPanel>
-                                <TextBlock Text="MONITORING"
-                                           FontSize="9" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Muted}"
-                                           Margin="0,0,0,6"/>
+                                <TextBlock Text="MONITORING" FontSize="9" FontWeight="Bold"
+                                           Foreground="{StaticResource Text.Muted}" Margin="0,0,0,6"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                     <Ellipse Width="6" Height="6" Fill="{StaticResource Status.Success}"
                                              Margin="0,0,6,0" VerticalAlignment="Center"/>
@@ -564,33 +430,33 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Alert card — compact warning -->
-                        <Border Background="{StaticResource Status.WarningBg}"
+                        <!-- Alert card -->
+                        <Border x:Name="AlertCard"
+                                Background="{StaticResource Status.WarningBg}"
                                 BorderBrush="{StaticResource Status.Warning}"
-                                BorderThickness="1" CornerRadius="6"
-                                Padding="10,8">
+                                BorderThickness="1" CornerRadius="6" Padding="10,8">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <TextBlock Text="&#xE7BA;"
-                                               FontFamily="Segoe MDL2 Assets" FontSize="11"
-                                               Foreground="{StaticResource Status.Warning}"
+                                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="11" Foreground="{StaticResource Status.Warning}"
                                                Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Warning" FontSize="11" FontWeight="Bold"
+                                    <TextBlock x:Name="AlertTitle"
+                                               Text="Warning" FontSize="11" FontWeight="Bold"
                                                Foreground="{StaticResource Status.Warning}"
                                                VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <TextBlock Text="Please refrain from cheating. Your activity is being monitored."
-                                           FontSize="10"
-                                           Foreground="{StaticResource Status.Warning}"
+                                <TextBlock x:Name="AlertMessage"
+                                           Text="Please refrain from cheating. Your activity is being monitored."
+                                           FontSize="10" Foreground="{StaticResource Status.Warning}"
                                            TextWrapping="Wrap" Margin="0,0,0,8"/>
                                 <Button Style="{StaticResource Btn.AlertAction}"
                                         Background="Transparent"
                                         Foreground="{StaticResource Accent.Primary}"
-                                        HorizontalAlignment="Stretch">
+                                        HorizontalAlignment="Stretch"
+                                        Click="AlertDismiss_Click">
                                     <Border BorderBrush="{StaticResource Accent.Primary}"
                                             BorderThickness="1" CornerRadius="4" Padding="0,5">
-                                        <TextBlock Text="Understood"
-                                                   FontSize="11" FontWeight="SemiBold"
+                                        <TextBlock Text="Understood" FontSize="11" FontWeight="SemiBold"
                                                    Foreground="{StaticResource Accent.Primary}"
                                                    HorizontalAlignment="Center"/>
                                     </Border>
@@ -604,4 +470,4 @@
 
         </Grid>
     </Grid>
-</Window>
+</UserControl>

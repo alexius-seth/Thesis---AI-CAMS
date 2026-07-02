@@ -1,24 +1,38 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
 
 namespace ACPAMS
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
+        public static MainWindow? Instance { get; private set; }
+
         public MainWindow()
         {
             InitializeComponent();
+            Instance = this;
+
+            // Start at Login
+            ShowPage(new Views.Auth.LoginPage());
+        }
+
+        // Navigate to any UserControl or Page
+        public static void Navigate(object content)
+        {
+            Instance?.ShowPage(content);
+        }
+
+        public static void Resize(double width, double height)
+        {
+            if (Instance == null) return;
+            Instance.Width = width;
+            Instance.Height = height;
+            Instance.Left = (SystemParameters.PrimaryScreenWidth - width) / 2;
+            Instance.Top = (SystemParameters.PrimaryScreenHeight - height) / 2;
+        }
+
+        private void ShowPage(object content)
+        {
+            MainContent.Content = content;
         }
     }
 }

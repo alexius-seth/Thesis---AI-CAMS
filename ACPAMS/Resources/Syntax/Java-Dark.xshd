@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Java" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+  <Color name="Comment"      foreground="#6A9955" />
+  <Color name="String"       foreground="#CE9178" />
+  <Color name="Number"       foreground="#B5CEA8" />
+  <Color name="Keyword"      foreground="#569CD6" fontWeight="bold" />
+  <Color name="ControlFlow"  foreground="#C586C0" fontWeight="bold" />
+  <Color name="Type"         foreground="#4EC9B0" />
+  <Color name="Method"       foreground="#DCDCAA" />
+  <Color name="Annotation"   foreground="#DCDCAA" />
+  <Color name="Punctuation"  foreground="#D4D4D4" />
+
+  <RuleSet>
+    <Span color="Comment" begin="//" />
+    <Span color="Comment" multiline="true" begin="/\*" end="\*/" />
+    <Span color="String">
+      <Begin>"</Begin>
+      <End>"</End>
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+    <Span color="String" begin="'" end="'" />
+
+    <Rule color="Annotation">
+      @\w+
+    </Rule>
+
+    <Rule color="Number">
+      \b0[xX][0-9a-fA-F]+|\b\d+(\.\d+)?([eE][+-]?\d+)?[fFdDlL]?\b
+    </Rule>
+
+    <!-- Method calls: word immediately followed by ( -->
+    <Rule color="Method">
+      \b[a-zA-Z_]\w*(?=\s*\()
+    </Rule>
+
+    <Keywords color="ControlFlow">
+      <Word>if</Word>
+      <Word>else</Word>
+      <Word>for</Word>
+      <Word>while</Word>
+      <Word>do</Word>
+      <Word>switch</Word>
+      <Word>case</Word>
+      <Word>default</Word>
+      <Word>break</Word>
+      <Word>continue</Word>
+      <Word>return</Word>
+      <Word>try</Word>
+      <Word>catch</Word>
+      <Word>finally</Word>
+      <Word>throw</Word>
+      <Word>throws</Word>
+      <Word>new</Word>
+      <Word>instanceof</Word>
+    </Keywords>
+
+    <Keywords color="Type">
+      <Word>String</Word>
+      <Word>Integer</Word>
+      <Word>Double</Word>
+      <Word>Float</Word>
+      <Word>Long</Word>
+      <Word>Short</Word>
+      <Word>Byte</Word>
+      <Word>Boolean</Word>
+      <Word>Character</Word>
+      <Word>Object</Word>
+      <Word>List</Word>
+      <Word>ArrayList</Word>
+      <Word>Map</Word>
+      <Word>HashMap</Word>
+      <Word>Set</Word>
+      <Word>HashSet</Word>
+      <Word>int</Word>
+      <Word>long</Word>
+      <Word>short</Word>
+      <Word>byte</Word>
+      <Word>float</Word>
+      <Word>double</Word>
+      <Word>boolean</Word>
+      <Word>char</Word>
+      <Word>void</Word>
+    </Keywords>
+
+    <Keywords color="Keyword">
+      <Word>public</Word>
+      <Word>private</Word>
+      <Word>protected</Word>
+      <Word>static</Word>
+      <Word>final</Word>
+      <Word>abstract</Word>
+      <Word>class</Word>
+      <Word>interface</Word>
+      <Word>extends</Word>
+      <Word>implements</Word>
+      <Word>import</Word>
+      <Word>package</Word>
+      <Word>this</Word>
+      <Word>super</Word>
+      <Word>null</Word>
+      <Word>true</Word>
+      <Word>false</Word>
+      <Word>enum</Word>
+      <Word>synchronized</Word>
+      <Word>volatile</Word>
+      <Word>transient</Word>
+      <Word>native</Word>
+      <Word>strictfp</Word>
+      <Word>const</Word>
+      <Word>goto</Word>
+    </Keywords>
+
+  </RuleSet>
+</SyntaxDefinition>

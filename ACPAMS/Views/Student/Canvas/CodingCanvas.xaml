@@ -1,6 +1,7 @@
 <UserControl x:Class="ACPAMS.Views.Student.Canvas.CodingCanvas"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:avalonEdit="clr-namespace:ICSharpCode.AvalonEdit;assembly=ICSharpCode.AvalonEdit"
              Background="#F8FAFC"
              FontFamily="Segoe UI">
 
@@ -21,13 +22,6 @@
         <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
         <SolidColorBrush x:Key="QType.Coding"     Color="#15803D"/>
         <SolidColorBrush x:Key="QType.CodingBg"   Color="#DCFCE7"/>
-
-        <Style x:Key="T.CodeLine" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="FontSize"   Value="13"/>
-            <Setter Property="Foreground" Value="#E2E8F0"/>
-            <Setter Property="Margin"     Value="0,0,0,1"/>
-        </Style>
 
         <Style x:Key="Btn.Primary" TargetType="Button">
             <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
@@ -87,14 +81,48 @@
             </Setter>
         </Style>
 
+        <!-- Dropdown-style language picker button -->
+        <Style x:Key="Btn.LangSelect" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Bg.Base}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="10,5"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background"
+                                        Value="{StaticResource Accent.PrimaryBg}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush"
+                                        Value="{StaticResource Accent.Primary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Toolbar: language + view question -->
-            <RowDefinition Height="*"/>     <!-- IDE editor -->
-            <RowDefinition Height="Auto"/>  <!-- Output panel -->
-            <RowDefinition Height="Auto"/>  <!-- Run button -->
+            <RowDefinition Height="Auto"/>
+            <!-- Toolbar: language + view question -->
+            <RowDefinition Height="*"/>
+            <!-- IDE editor -->
+            <RowDefinition Height="Auto"/>
+            <!-- Output panel -->
+            <RowDefinition Height="Auto"/>
+            <!-- Run button -->
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
@@ -109,7 +137,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Left: question badge + language -->
+                <!-- Left: question badge + language selector -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Border Background="{StaticResource QType.CodingBg}"
                             BorderBrush="{StaticResource QType.Coding}"
@@ -121,27 +149,21 @@
                     <TextBlock Text="Language:" FontSize="12"
                                Foreground="{StaticResource Text.Secondary}"
                                VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <!-- Language selector — back-end replaces this Border+StackPanel
-                         with a ComboBox bound to ViewModel.SelectedLanguage.
-                         On selection change: update CodeEditor.SyntaxHighlighting
-                         and reload the starter code stub for that language. -->
-                    <Border x:Name="LanguageSelectorPlaceholder"
-                            Background="{StaticResource Bg.Base}"
-                            BorderBrush="{StaticResource Border.Medium}"
-                            BorderThickness="1" CornerRadius="4" Padding="10,5">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Java" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Text.Primary}"
-                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets"
-                                       FontSize="10" Foreground="{StaticResource Text.Secondary}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+
+                    <!-- Real language ComboBox -->
+                    <ComboBox x:Name="LanguageSelector"
+                              Width="110" Height="30"
+                              FontSize="12" FontWeight="SemiBold"
+                              SelectionChanged="LanguageSelector_SelectionChanged">
+                        <ComboBoxItem Content="Java"   Tag="Java"/>
+                        <ComboBoxItem Content="Python" Tag="Python"/>
+                        <ComboBoxItem Content="C"      Tag="C"/>
+                    </ComboBox>
                 </StackPanel>
 
                 <!-- Right: View Question button -->
-                <Button Grid.Column="1" Style="{StaticResource Btn.Ghost}">
+                <Button Grid.Column="1" Style="{StaticResource Btn.Ghost}"
+                        Click="ViewQuestionBtn_Click">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE8A4;" FontFamily="Segoe MDL2 Assets"
                                    FontSize="12" Margin="0,0,6,0"
@@ -153,6 +175,46 @@
             </Grid>
         </Border>
 
+        <!-- Question text strip — collapsed by default, toggled by View Question -->
+        <Border x:Name="QuestionStrip"
+                Grid.Row="0" Grid.RowSpan="2"
+                Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Subtle}"
+                BorderThickness="0,0,0,1"
+                Padding="20,52,20,16"
+                Visibility="Collapsed"
+                Panel.ZIndex="5">
+            <Grid>
+                <TextBlock x:Name="QuestionText"
+                           TextWrapping="Wrap" FontSize="14" LineHeight="22"
+                           Foreground="{StaticResource Text.Primary}"
+                           Margin="0,0,40,0"/>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Width="28" Height="28"
+                        Background="Transparent" BorderThickness="0"
+                        Cursor="Hand"
+                        Click="CloseQuestionBtn_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                    CornerRadius="14">
+                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                           FontSize="13"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
         <!-- ── EMBEDDED IDE ── -->
         <Border Grid.Row="1"
                 Background="{StaticResource Bg.Code}"
@@ -160,8 +222,10 @@
                 BorderThickness="0">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>  <!-- IDE chrome bar -->
-                    <RowDefinition Height="*"/>     <!-- Code area -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- IDE chrome bar -->
+                    <RowDefinition Height="*"/>
+                    <!-- Code area -->
                 </Grid.RowDefinitions>
 
                 <!-- IDE chrome bar -->
@@ -193,116 +257,43 @@
                                            FontFamily="Segoe MDL2 Assets" FontSize="11"
                                            Foreground="#64748B"
                                            Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Main.java"
+                                <TextBlock x:Name="FileNameText"
+                                           Text="Main.java"
                                            FontFamily="Consolas" FontSize="12"
                                            Foreground="#94A3B8"/>
                             </StackPanel>
                         </Border>
                         <!-- Line/Col indicator -->
-                        <TextBlock Grid.Column="2"
+                        <TextBlock x:Name="LineColText"
+                                   Grid.Column="2"
                                    FontFamily="Consolas" FontSize="11"
-                                   Foreground="#475569" Text="Ln 6, Col 1"
+                                   Foreground="#475569" Text="Ln 1, Col 1"
                                    VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
 
-                <!-- ═══════════════════════════════════════════════════════
-                     BACK-END SWAP TARGET — Replace this ScrollViewer with:
-
-                     <avalonEdit:TextEditor
-                         x:Name="CodeEditor"
-                         Grid.Row="1"
-                         FontFamily="Consolas" FontSize="13"
-                         ShowLineNumbers="True"
-                         SyntaxHighlighting="Java"
-                         Background="#1E293B"
-                         Foreground="#E2E8F0"
-                         LineNumbersForeground="#334155"
-                         HorizontalScrollBarVisibility="Auto"
-                         VerticalScrollBarVisibility="Auto"/>
-
-                     Add to Window xmlns:
-                       xmlns:avalonEdit=
-                         "clr-namespace:ICSharpCode.AvalonEdit;assembly=ICSharpCode.AvalonEdit"
-
-                     Bind CodeEditor.Text → ViewModel.StudentCodeAnswer (TwoWay)
-                     Change SyntaxHighlighting at runtime based on Language selection.
-                ═══════════════════════════════════════════════════════ -->
-                <ScrollViewer x:Name="CodeEditorPlaceholder"
-                              Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Auto"
-                              Background="{StaticResource Bg.Code}">
-                    <Grid Margin="0,12,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="42"/>   <!-- Line numbers -->
-                            <ColumnDefinition Width="*"/>    <!-- Code -->
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Line numbers -->
-                        <StackPanel Grid.Column="0" Margin="0,0,0,0">
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#334155"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="1"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#334155"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="2"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#334155"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="3"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#334155"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="4"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#475569"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="5"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#475569"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="6"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#475569"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="7"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#475569"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="8"/>
-                            <TextBlock FontFamily="Consolas" FontSize="13" Foreground="#475569"
-                                       TextAlignment="Right" Margin="0,0,10,1" Text="9"/>
-                        </StackPanel>
-
-                        <!-- Syntax-highlighted code stub -->
-                        <StackPanel Grid.Column="1" Margin="8,0,16,0">
-                            <TextBlock Style="{StaticResource T.CodeLine}">
-                                <Run Foreground="#7DD3FC">public class</Run>
-                                <Run Foreground="#E2E8F0"> Main {</Run>
-                            </TextBlock>
-                            <TextBlock Style="{StaticResource T.CodeLine}" Text=""/>
-                            <TextBlock Style="{StaticResource T.CodeLine}">
-                                <Run Foreground="#E2E8F0">    </Run>
-                                <Run Foreground="#7DD3FC">public static void</Run>
-                                <Run Foreground="#86EFAC"> main</Run>
-                                <Run Foreground="#E2E8F0">(String[] args) {</Run>
-                            </TextBlock>
-                            <TextBlock Style="{StaticResource T.CodeLine}">
-                                <Run Foreground="#E2E8F0">        </Run>
-                                <Run Foreground="#86EFAC">System</Run>
-                                <Run Foreground="#E2E8F0">.out.</Run>
-                                <Run Foreground="#86EFAC">println</Run>
-                                <Run Foreground="#E2E8F0">(</Run>
-                                <Run Foreground="#FCA5A5">"Hello, World!"</Run>
-                                <Run Foreground="#E2E8F0">);</Run>
-                            </TextBlock>
-                            <TextBlock Style="{StaticResource T.CodeLine}"
-                                       Foreground="#E2E8F0" Text="    }"/>
-                            <TextBlock Style="{StaticResource T.CodeLine}" Text=""/>
-                            <!-- Active cursor line highlight -->
-                            <Border Background="#1E3A5F" CornerRadius="2" Margin="-4,0,-4,0">
-                                <TextBlock Style="{StaticResource T.CodeLine}"
-                                           Margin="4,1"
-                                           Foreground="#64748B"
-                                           Text="    // Write your solution here"/>
-                            </Border>
-                            <TextBlock Style="{StaticResource T.CodeLine}" Text=""/>
-                            <TextBlock Style="{StaticResource T.CodeLine}"
-                                       Foreground="#E2E8F0" Text="}"/>
-                        </StackPanel>
-                    </Grid>
-                </ScrollViewer>
+                <!-- AvalonEdit gives real syntax highlighting + built-in
+                     line numbers, replacing the manual TextBox + line
+                     number ScrollViewer approach. Foreground/line-number
+                     colors match the VS Code Dark+ palette used in the
+                     custom .xshd highlighting definitions. -->
+                <avalonEdit:TextEditor
+                    x:Name="CodeEditor"
+                    Grid.Row="1"
+                    Margin="0,12,0,12"
+                    FontFamily="Consolas"
+                    FontSize="13"
+                    ShowLineNumbers="True"
+                    Background="{StaticResource Bg.Code}"
+                    Foreground="#D4D4D4"
+                    LineNumbersForeground="#5A6374"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto"
+                    TextChanged="CodeEditor_TextChanged"/>
             </Grid>
         </Border>
 
-        <!-- Output panel — bind TextBlock content to ViewModel.RunOutput (OneWay) -->
+        <!-- Output panel -->
         <Border x:Name="OutputPanel"
                 Grid.Row="2"
                 Background="{StaticResource Bg.Output}"
@@ -313,13 +304,15 @@
                 <TextBlock Text="OUTPUT"
                            FontFamily="Consolas" FontSize="10" FontWeight="Bold"
                            Foreground="#475569" Margin="0,0,0,6"/>
-                <TextBlock FontFamily="Consolas" FontSize="13">
+                <TextBlock x:Name="OutputCommandText"
+                           FontFamily="Consolas" FontSize="13">
                     <Run Foreground="#22C55E">$</Run>
-                    <Run Foreground="#94A3B8"> javac Main.java &amp;&amp; java Main</Run>
+                    <Run Foreground="#94A3B8" Text=" Click Run Code to execute"/>
                 </TextBlock>
-                <TextBlock FontFamily="Consolas" FontSize="13"
+                <TextBlock x:Name="OutputResultText"
+                           FontFamily="Consolas" FontSize="13"
                            Foreground="#E2E8F0" Margin="0,4,0,0"
-                           Text="Hello, World!"/>
+                           Text=""/>
             </StackPanel>
         </Border>
 
@@ -330,7 +323,8 @@
                 BorderThickness="0,1,0,0"
                 Padding="20,10">
             <Button Style="{StaticResource Btn.Primary}"
-                    HorizontalAlignment="Left">
+                    HorizontalAlignment="Left"
+                    Click="RunCodeBtn_Click">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="&#xE768;"
                                FontFamily="Segoe MDL2 Assets" FontSize="13"

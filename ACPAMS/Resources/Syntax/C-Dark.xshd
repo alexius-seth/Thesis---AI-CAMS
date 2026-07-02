@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="C" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+	<Color name="Comment"      foreground="#6A9955" />
+	<Color name="String"       foreground="#CE9178" />
+	<Color name="Number"       foreground="#B5CEA8" />
+	<Color name="Keyword"      foreground="#569CD6" fontWeight="bold" />
+	<Color name="ControlFlow"  foreground="#C586C0" fontWeight="bold" />
+	<Color name="Type"         foreground="#4EC9B0" />
+	<Color name="Method"       foreground="#DCDCAA" />
+	<Color name="Preprocessor" foreground="#C586C0" />
+
+	<RuleSet>
+		<Span color="Comment" begin="//" />
+		<Span color="Comment" multiline="true" begin="/\*" end="\*/" />
+
+		<Span color="String">
+			<Begin>"</Begin>
+			<End>"</End>
+			<RuleSet>
+				<Span begin="\\" end="." />
+			</RuleSet>
+		</Span>
+		<Span color="String" begin="'" end="'" />
+
+		<!-- Preprocessor directives: #include, #define, etc. -->
+		<Rule color="Preprocessor">
+			\#\w+
+		</Rule>
+
+		<!-- Angle-bracket includes, e.g. <stdio.h> -->
+		<Span color="String" begin="&lt;" end="&gt;" />
+
+		<Rule color="Number">
+			\b0[xX][0-9a-fA-F]+|\b\d+(\.\d+)?([eE][+-]?\d+)?[fFlLuU]?\b
+		</Rule>
+
+		<!-- Function calls: word immediately followed by ( -->
+		<Rule color="Method">
+			\b[a-zA-Z_]\w*(?=\s*\()
+		</Rule>
+
+		<Keywords color="ControlFlow">
+			<Word>if</Word>
+			<Word>else</Word>
+			<Word>for</Word>
+			<Word>while</Word>
+			<Word>do</Word>
+			<Word>switch</Word>
+			<Word>case</Word>
+			<Word>default</Word>
+			<Word>break</Word>
+			<Word>continue</Word>
+			<Word>return</Word>
+			<Word>goto</Word>
+		</Keywords>
+
+		<Keywords color="Type">
+			<Word>int</Word>
+			<Word>long</Word>
+			<Word>short</Word>
+			<Word>char</Word>
+			<Word>float</Word>
+			<Word>double</Word>
+			<Word>void</Word>
+			<Word>unsigned</Word>
+			<Word>signed</Word>
+			<Word>size_t</Word>
+			<Word>FILE</Word>
+		</Keywords>
+
+		<Keywords color="Keyword">
+			<Word>struct</Word>
+			<Word>union</Word>
+			<Word>enum</Word>
+			<Word>typedef</Word>
+			<Word>static</Word>
+			<Word>const</Word>
+			<Word>extern</Word>
+			<Word>register</Word>
+			<Word>volatile</Word>
+			<Word>auto</Word>
+			<Word>sizeof</Word>
+			<Word>NULL</Word>
+		</Keywords>
+
+	</RuleSet>
+</SyntaxDefinition>

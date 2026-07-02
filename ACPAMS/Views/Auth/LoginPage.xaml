@@ -1,33 +1,19 @@
-<Window x:Class="ACPAMS.Views.Auth.LoginPage"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ACPAMS — Log In"
-        Width="480" Height="560"
-        WindowStartupLocation="CenterScreen"
-        WindowStyle="SingleBorderWindow"
-        ResizeMode="NoResize"
-        Background="#EEF2F7"
-        FontFamily="Segoe UI">
+<UserControl x:Class="ACPAMS.Views.Auth.LoginPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#EEF2F7"
+      FontFamily="Segoe UI">
 
-    <Window.Resources>
-
-        <!-- ═══════════════════════════════
-             DESIGN TOKENS
-        ═══════════════════════════════ -->
-        <SolidColorBrush x:Key="Bg.Window"        Color="#EEF2F7"/>
+    <UserControl.Resources>
         <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
         <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
         <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
         <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
         <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
         <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
-        <SolidColorBrush x:Key="Text.Placeholder" Color="#A0AEC0"/>
         <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
         <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
 
-        <!-- ═══════════════════════════════
-             INPUT
-        ═══════════════════════════════ -->
         <Style x:Key="Input.Field" TargetType="TextBox">
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
@@ -50,9 +36,6 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
-        <!-- ═══════════════════════════════
-             BUTTONS
-        ═══════════════════════════════ -->
         <Style x:Key="Btn.Primary" TargetType="Button">
             <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
             <Setter Property="Foreground"      Value="White"/>
@@ -67,8 +50,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bg" Background="{TemplateBinding Background}"
                                 CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -93,15 +75,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <TextBlock x:Name="Txt"
-                                   Text="{TemplateBinding Content}"
+                        <TextBlock x:Name="Txt" Text="{TemplateBinding Content}"
                                    Foreground="{TemplateBinding Foreground}"
                                    FontSize="{TemplateBinding FontSize}"
                                    FontFamily="{TemplateBinding FontFamily}"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Txt" Property="TextDecorations"
-                                        Value="Underline"/>
+                                <Setter TargetName="Txt" Property="TextDecorations" Value="Underline"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -109,7 +89,6 @@
             </Setter>
         </Style>
 
-        <!-- Show/hide password toggle -->
         <Style x:Key="Btn.EyeToggle" TargetType="Button">
             <Setter Property="Background"      Value="{StaticResource Bg.Surface}"/>
             <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
@@ -120,151 +99,98 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="{TemplateBinding Background}"
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="6">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background"
-                                        Value="{StaticResource Accent.PrimaryBg}"/>
-                                <Setter TargetName="Bg" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource Accent.PrimaryBg}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource Accent.Primary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+    </UserControl.Resources>
 
-    </Window.Resources>
-
-    <!-- Window background -->
-    <Grid Background="{StaticResource Bg.Window}">
-
-        <!-- Centered card -->
+    <Grid Background="#EEF2F7">
         <Border Background="{StaticResource Bg.Surface}"
                 BorderBrush="{StaticResource Border.Subtle}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Width="400"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center">
+                BorderThickness="1" CornerRadius="12"
+                Width="400" VerticalAlignment="Center" HorizontalAlignment="Center">
             <Border.Effect>
-                <DropShadowEffect Color="#94A3B8" Opacity="0.18"
-                                  BlurRadius="32" ShadowDepth="6"/>
+                <DropShadowEffect Color="#94A3B8" Opacity="0.18" BlurRadius="32" ShadowDepth="6"/>
             </Border.Effect>
-
             <StackPanel Margin="36,32,36,32">
-
-                <!-- Brand mark -->
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Center" Margin="0,0,0,24">
-                    <Border Width="36" Height="36" Background="#1A202C"
-                            CornerRadius="8" Margin="0,0,10,0">
-                        <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="18" Foreground="White"
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                    <Border Width="36" Height="36" Background="#1A202C" CornerRadius="8" Margin="0,0,10,0">
+                        <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="ACPAMS" FontSize="20" FontWeight="Bold"
-                               Foreground="{StaticResource Text.Primary}"
-                               VerticalAlignment="Center"/>
+                               Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                 </StackPanel>
-
-                <!-- Heading -->
-                <TextBlock Text="Welcome to ACPAMS"
-                           FontSize="20" FontWeight="Bold"
-                           Foreground="{StaticResource Text.Primary}"
-                           Margin="0,0,0,4"/>
-                <TextBlock Text="Please log in to continue"
-                           FontSize="13" Foreground="{StaticResource Text.Muted}"
-                           Margin="0,0,0,24"/>
-
-                <!-- Username -->
+                <TextBlock Text="Welcome to ACPAMS" FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource Text.Primary}" Margin="0,0,0,4"/>
+                <TextBlock Text="Please log in to continue" FontSize="13"
+                           Foreground="{StaticResource Text.Muted}" Margin="0,0,0,24"/>
                 <TextBlock Text="User" FontSize="12" FontWeight="SemiBold"
-               Foreground="{StaticResource Text.Secondary}"
-               Margin="0,0,0,6"/>
+                           Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
                 <Border Background="{StaticResource Bg.Surface}"
-                BorderBrush="{StaticResource Border.Medium}"
-                BorderThickness="1" CornerRadius="6"
-                Height="42" Margin="0,0,0,16">
-                    <TextBox x:Name="UsernameBox"
-                 Style="{StaticResource Input.Field}"/>
+                        BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="1" CornerRadius="6" Height="42" Margin="0,0,0,16">
+                    <TextBox x:Name="UsernameBox" Style="{StaticResource Input.Field}"/>
                 </Border>
-                <!-- Password -->
                 <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
-           Foreground="{StaticResource Text.Secondary}"
-           Margin="0,0,0,6"/>
+                           Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0"
-            Background="{StaticResource Bg.Surface}"
-            BorderBrush="{StaticResource Border.Medium}"
-            BorderThickness="1" CornerRadius="6"
-            Height="42">
+                    <Border Grid.Column="0" Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="6" Height="42">
                         <Grid>
-                            <PasswordBox x:Name="PasswordBox"
-                         Style="{StaticResource Input.Password}"/>
-                            <TextBox x:Name="PasswordVisibleBox"
-                     Style="{StaticResource Input.Field}"
-                     Visibility="Collapsed"/>
+                            <PasswordBox x:Name="PasswordBox" Style="{StaticResource Input.Password}"/>
+                            <TextBox x:Name="PasswordVisibleBox" Style="{StaticResource Input.Field}"
+                                     Visibility="Collapsed"/>
                         </Grid>
                     </Border>
-                    <Button x:Name="TogglePasswordBtn"
-            Grid.Column="2"
-            Style="{StaticResource Btn.EyeToggle}"
-            Click="TogglePasswordBtn_Click">
+                    <Button x:Name="TogglePasswordBtn" Grid.Column="2"
+                            Style="{StaticResource Btn.EyeToggle}" Click="TogglePasswordBtn_Click">
                         <TextBlock Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets"
-                   FontSize="14" Foreground="{StaticResource Text.Muted}"/>
+                                   FontSize="14" Foreground="{StaticResource Text.Muted}"/>
                     </Button>
                 </Grid>
-
-                <!-- Log In button -->
-                <Button x:Name="LogInBtn"
-                        Style="{StaticResource Btn.Primary}"
-                        HorizontalAlignment="Stretch"
-                        Margin="0,0,0,20"
-                        Click="LogInButton_Click"
-                        Content="Log In"/>  
-
-                <!-- Divider -->
+                <Button Style="{StaticResource Btn.Link}" Content="Forgot Password?"
+                        HorizontalAlignment="Right" Margin="0,0,0,20" Click="ForgotPasswordBtn_Click"/>
+                <Button x:Name="LogInBtn" Style="{StaticResource Btn.Primary}"
+                        HorizontalAlignment="Stretch" Margin="0,0,0,20"
+                        Click="LogInButton_Click" Content="Log In"/>
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Height="1"
-                            Background="{StaticResource Border.Subtle}"
-                            VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="or"
-                               FontSize="12" Foreground="{StaticResource Text.Muted}"
-                               Margin="10,0" VerticalAlignment="Center"/>
-                    <Border Grid.Column="2" Height="1"
-                            Background="{StaticResource Border.Subtle}"
-                            VerticalAlignment="Center"/>
+                    <Border Grid.Column="0" Height="1" Background="{StaticResource Border.Subtle}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="or" FontSize="12"
+                               Foreground="{StaticResource Text.Muted}" Margin="10,0" VerticalAlignment="Center"/>
+                    <Border Grid.Column="2" Height="1" Background="{StaticResource Border.Subtle}" VerticalAlignment="Center"/>
                 </Grid>
-
-                <!-- Sign up link -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <TextBlock Text="No account yet? " FontSize="13"
-                               Foreground="{StaticResource Text.Secondary}"
-                               VerticalAlignment="Center"/>
-                    <Button Style="{StaticResource Btn.Link}"
-                            Content="Sign Up"
-                            FontWeight="SemiBold"
-                            Click="SignUpBtn_Click"/>       
+                               Foreground="{StaticResource Text.Secondary}" VerticalAlignment="Center"/>
+                    <Button Style="{StaticResource Btn.Link}" Content="Sign Up"
+                            FontWeight="SemiBold" Click="SignUpBtn_Click"/>
                 </StackPanel>
-
             </StackPanel>
         </Border>
     </Grid>
-</Window>
+</UserControl>

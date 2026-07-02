@@ -21,35 +21,11 @@
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="14"/>
             <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
-            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
-            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
-            <Setter Property="BorderThickness"          Value="1"/>
-            <Setter Property="Padding"                  Value="14,11"/>
-            <Setter Property="Height"                   Value="44"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
+            <Setter Property="Height"                   Value="40"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
-                                <Setter TargetName="Root" Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
     </UserControl.Resources>
 
@@ -82,7 +58,7 @@
                     Margin="0,0,0,16"/>
 
             <!-- Question text -->
-            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8"
+            <TextBlock x:Name="QuestionText" TextWrapping="Wrap" Margin="0,0,0,8"
                        FontSize="16" LineHeight="26"
                        Foreground="{StaticResource Text.Primary}"
                        Text="List three core principles of Object-Oriented Programming."/>
@@ -109,8 +85,12 @@
                                Foreground="White" HorizontalAlignment="Center"
                                VerticalAlignment="Center"/>
                 </Border>
-                <TextBox Grid.Column="1" Style="{StaticResource Input.EnumItem}"
-                         Text="Encapsulation"/>
+                <Border Grid.Column="1"
+                        Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Medium}"
+                        BorderThickness="1" CornerRadius="6" Height="40">
+                    <TextBox x:Name="Answer1Box" Style="{StaticResource Input.EnumItem}"/>
+                </Border>
             </Grid>
 
             <!-- Item 2 -->
@@ -126,8 +106,12 @@
                                Foreground="White" HorizontalAlignment="Center"
                                VerticalAlignment="Center"/>
                 </Border>
-                <TextBox Grid.Column="1" Style="{StaticResource Input.EnumItem}"
-                         Text="Polymorphism"/>
+                <Border Grid.Column="1"
+                        Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Medium}"
+                        BorderThickness="1" CornerRadius="6" Height="40">
+                    <TextBox x:Name="Answer2Box" Style="{StaticResource Input.EnumItem}"/>
+                </Border>
             </Grid>
 
             <!-- Item 3 -->
@@ -143,8 +127,12 @@
                                Foreground="White" HorizontalAlignment="Center"
                                VerticalAlignment="Center"/>
                 </Border>
-                <TextBox Grid.Column="1" Style="{StaticResource Input.EnumItem}"
-                         Text="Inheritance"/>
+                <Border Grid.Column="1"
+                        Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Medium}"
+                        BorderThickness="1" CornerRadius="6" Height="40">
+                    <TextBox x:Name="Answer3Box" Style="{StaticResource Input.EnumItem}"/>
+                </Border>
             </Grid>
 
         </StackPanel>

@@ -9,11 +9,24 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Syntax\C-Dark.xshd" />
+	  <None Remove="Resources\Syntax\Java-Dark.xshd" />
+	  <None Remove="Resources\Syntax\Python-Dark.xshd" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Resources\Syntax\C-Dark.xshd" />
+	  <EmbeddedResource Include="Resources\Syntax\Java-Dark.xshd" />
+	  <EmbeddedResource Include="Resources\Syntax\Python-Dark.xshd" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Folder Include="Views\Faculty\Tabs\" />
 		<Folder Include="Views\Student\Canvas\" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">

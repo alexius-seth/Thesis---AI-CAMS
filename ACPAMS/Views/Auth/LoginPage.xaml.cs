@@ -1,11 +1,13 @@
 ﻿using ACPAMS.Data;
 using ACPAMS.Services;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ACPAMS.Views.Auth
 {
-    public partial class LoginPage : Window
+    public partial class LoginPage : UserControl
     {
         private readonly AuthService _authService;
         private bool _passwordVisible = false;
@@ -14,12 +16,15 @@ namespace ACPAMS.Views.Auth
         {
             InitializeComponent();
             _authService = new AuthService();
+            ACPAMS.MainWindow.Resize(520, 600);
         }
 
         private async void LogInButton_Click(object sender, RoutedEventArgs e)
         {
             string username = UsernameBox.Text.Trim();
-            string password = PasswordBox.Password;
+            string password = _passwordVisible
+                ? PasswordVisibleBox.Text
+                : PasswordBox.Password;
 
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -50,18 +55,35 @@ namespace ACPAMS.Views.Auth
                     SessionManager.CurrentStudent = await context.Students
                         .FirstOrDefaultAsync(s => s.UserId == user.UserId);
 
-                    var examEntry = new Student.ExamEntryPage();
-                    examEntry.Show();
-                    this.Close();
+                    // TEMPORARY — load test exam
+                    SessionManager.CurrentExam = await context.Exams
+                        .FirstOrDefaultAsync(e => e.ExamCode == "CCS415-TEST-001");
+
+
+                    var attempt = new Models.StudentExamAttempt
+                    {
+                        AttemptId = Guid.NewGuid(),
+                        StudentId = SessionManager.CurrentStudent!.StudentId,
+                        ExamId = SessionManager.CurrentExam!.ExamId,
+                        ExamCodeUsed = "CCS415-TEST-001",
+                        StartedAt = DateTime.Now,
+                        Status = "in_progress"
+                    };
+                    context.StudentExamAttempts.Add(attempt);
+                    await context.SaveChangesAsync();
+                    SessionManager.CurrentAttempt = attempt;
+
+                    ACPAMS.MainWindow.Resize(1280, 800);
+                    ACPAMS.MainWindow.Navigate(new Student.StudentExamPage());
+                    //ACPAMS.MainWindow.Navigate(new Student.ExamEntryPage());
                 }
                 else if (user.Role == "instructor")
                 {
                     SessionManager.CurrentInstructor = await context.Instructors
                         .FirstOrDefaultAsync(i => i.UserId == user.UserId);
 
-                    var facultyHome = new Faculty.FacultyHomePage();
-                    facultyHome.Show();
-                    this.Close();
+                    ACPAMS.MainWindow.Resize(1280, 800);
+                    ACPAMS.MainWindow.Navigate(new Faculty.FacultyHomePage());
                 }
             }
             catch (Exception ex)
@@ -79,7 +101,6 @@ namespace ACPAMS.Views.Auth
         private void TogglePasswordBtn_Click(object sender, RoutedEventArgs e)
         {
             _passwordVisible = !_passwordVisible;
-
             if (_passwordVisible)
             {
                 PasswordVisibleBox.Text = PasswordBox.Password;
@@ -94,6 +115,12 @@ namespace ACPAMS.Views.Auth
             }
         }
 
+        private void ForgotPasswordBtn_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Please contact your administrator to reset your password.",
+                "Forgot Password", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private void SignUpBtn_Click(object sender, RoutedEventArgs e)
         {
             var result = MessageBox.Show(
@@ -102,22 +129,14 @@ namespace ACPAMS.Views.Auth
 
             if (result == MessageBoxResult.Yes)
             {
-                var studentSignUp = new StudentSignUpPage();
-                studentSignUp.Show();
-                this.Close();
+                ACPAMS.MainWindow.Resize(520, 680);
+                ACPAMS.MainWindow.Navigate(new StudentSignUpPage());
             }
             else
             {
                 var facultySignUp = new FacultySignUpPage();
                 facultySignUp.Show();
-                this.Close();
             }
-        }
-
-        private void ForgotPasswordBtn_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Please contact your administrator to reset your password.",
-                "Forgot Password", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }
