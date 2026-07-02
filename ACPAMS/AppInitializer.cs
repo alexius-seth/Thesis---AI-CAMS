@@ -21,7 +21,7 @@ namespace ACPAMS
             try
             {
                 // Ensure database is created
-                _dbContext.Database.EnsureCreated();
+                _dbContext.Database.Migrate();
 
                 // Initialize default data
                 InitializeDefaultData();
@@ -57,7 +57,7 @@ namespace ACPAMS
                         UserId = defaultInstructor.UserId,
                         Role = "instructor",
                         Username = "instructor",
-                        PasswordHash = "default",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234"),
                         IsActive = true,
                         CreatedAt = DateTime.Now
                     };
