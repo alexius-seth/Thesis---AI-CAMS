@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using ACPAMS.Services;
 
 namespace ACPAMS.Views.Faculty
 {
@@ -129,9 +130,8 @@ namespace ACPAMS.Views.Faculty
                 default: return null;
             }
         }
-        private void SaveAndPublish_Click(object sender, RoutedEventArgs e)
+        private async void SaveAndPublish_Click(object sender, RoutedEventArgs e)
         {
-            // Check if there are any sections
             if (_sections == null || _sections.Count == 0)
             {
                 ToastNotification.Show("Please add at least one section before publishing.",
@@ -139,7 +139,6 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Check if the selected section has any questions
             if (_selectedSection != null && _selectedSection.Questions.Count == 0)
             {
                 ToastNotification.Show($"Section '{_selectedSection.Name}' has no questions. Please add questions before publishing.",
@@ -147,20 +146,81 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Open the Publish Confirmation Modal
             var publishModal = new PublishConfirmModal();
             publishModal.Owner = Application.Current.MainWindow;
 
             if (publishModal.ShowDialog() == true)
             {
-                // The user confirmed publish
-                ToastNotification.Show("Exam published successfully!",
-                    Application.Current.MainWindow);
+                try
+                {
+                    ToastNotification.Show("Publishing exam...", Application.Current.MainWindow, 2, false);
 
-                // TODO: Add your actual publish logic here
-                // - Save the exam to database
-                // - Generate exam code
-                // - etc.
+                    var dbContext = AppInitializer.GetDbContext();
+                    var instructorId = AppInitializer.GetCurrentInstructorId();
+
+                    if (dbContext == null)
+                    {
+                        ToastNotification.Show("Database connection not available.", Application.Current.MainWindow, 4, true);
+                        return;
+                    }
+
+                    if (string.IsNullOrEmpty(instructorId))
+                    {
+                        ToastNotification.Show("Instructor not found. Please login again.", Application.Current.MainWindow, 4, true);
+                        return;
+                    }
+
+                    var examService = new ExamService(dbContext, instructorId);
+
+                    var rubricData = new Dictionary<string, RubricData>();
+
+                    // Convert _sections to ExamService.ExamSectionData
+                    var sectionsToSave = _sections.Select(s => new ExamService.ExamSectionData
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        Type = s.Type,
+                        Instructions = s.Instructions,
+                        IsActive = s.IsActive,
+                        Questions = s.Questions.Select(q => new ExamService.QuestionItemData
+                        {
+                            Id = q.Id,
+                            Text = q.Text,
+                            Points = q.Points,
+                            Type = q.Type,
+                            Order = q.Order,
+                            CorrectAnswer = q.CorrectAnswer,
+                            OptionA = q.OptionA,
+                            OptionB = q.OptionB,
+                            OptionC = q.OptionC,
+                            OptionD = q.OptionD,
+                            ExpectedAnswer = q.ExpectedAnswer,
+                            IsTrue = q.IsTrue,
+                            ProgrammingLanguage = q.ProgrammingLanguage,
+                            SectionId = q.SectionId,
+                            ExpectedAnswers = q.ExpectedAnswers
+                        }).ToList()
+                    }).ToList();
+
+                    var exam = await examService.SaveExamAsync(
+                        publishModal.ExamName,
+                        publishModal.CourseCode,
+                        publishModal.GeneratedExamCode,
+                        publishModal.TimeLimitMinutes,
+                        sectionsToSave,
+                        rubricData
+                    );
+
+                    ToastNotification.Show($"Exam '{exam.Title}' published successfully!",
+                        Application.Current.MainWindow, 4, false);
+
+                    NavigateToDashboard(sender, e);
+                }
+                catch (Exception ex)
+                {
+                    ToastNotification.Show($"Failed to publish exam: {ex.Message}",
+                        Application.Current.MainWindow, 5, true);
+                }
             }
         }
 

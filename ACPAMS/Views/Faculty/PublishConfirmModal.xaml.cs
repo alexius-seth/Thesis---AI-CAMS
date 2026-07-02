@@ -5,12 +5,8 @@ using System.Windows.Input;
 
 namespace ACPAMS.Views.Faculty
 {
-    /// <summary>
-    /// Publish Confirmation Modal — shown when faculty clicks "Save and Publish" on CreateExamPage.
-    /// </summary>
     public partial class PublishConfirmModal : Window
     {
-        // Properties to hold the values entered by the user
         public string CourseCode { get; private set; } = string.Empty;
         public string ExamName { get; private set; } = string.Empty;
         public int TimeLimitMinutes { get; private set; } = 60;
@@ -20,27 +16,22 @@ namespace ACPAMS.Views.Faculty
         {
             InitializeComponent();
 
-            // Wire up the Close button (X)
             var closeButton = FindName("CloseBtn") as Button;
             if (closeButton != null)
                 closeButton.Click += (s, e) => CloseModal(false);
 
-            // Wire up the Copy button
             var copyButton = FindName("CopyBtn") as Button;
             if (copyButton != null)
                 copyButton.Click += CopyButton_Click;
 
-            // Wire up the Finish and Publish button
             var publishButton = FindName("PublishBtn") as Button;
             if (publishButton != null)
                 publishButton.Click += PublishButton_Click;
 
-            // Wire up Course Code TextChanged event to generate exam code
             var courseCodeBox = FindName("CourseCodeBox") as TextBox;
             if (courseCodeBox != null)
             {
                 courseCodeBox.TextChanged += CourseCode_TextChanged;
-                // Initialize with current text
                 CourseCode = courseCodeBox.Text.Trim();
                 if (!string.IsNullOrEmpty(CourseCode))
                 {
@@ -48,13 +39,11 @@ namespace ACPAMS.Views.Faculty
                 }
             }
 
-            // Make sure time limit box only accepts numbers
             var timeLimitBox = FindName("TimeLimitBox") as TextBox;
             if (timeLimitBox != null)
             {
                 timeLimitBox.PreviewTextInput += (s, e) =>
                 {
-                    // Only allow digits
                     foreach (char c in e.Text)
                     {
                         if (!char.IsDigit(c))
@@ -66,7 +55,6 @@ namespace ACPAMS.Views.Faculty
                 };
             }
 
-            // Wire up Enter key to trigger publish
             this.KeyDown += (s, e) =>
             {
                 if (e.Key == Key.Enter)
@@ -79,7 +67,6 @@ namespace ACPAMS.Views.Faculty
                 }
             };
 
-            // Focus the first input field
             if (courseCodeBox != null)
             {
                 courseCodeBox.Focus();
@@ -108,7 +95,6 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Generate a unique exam code: CourseCode + "-" + Date + "-" + Random
             var datePart = DateTime.Now.ToString("MMdd");
             var randomPart = new Random().Next(1000, 9999).ToString();
             GeneratedExamCode = $"{CourseCode}-{datePart}-{randomPart}";
@@ -139,12 +125,10 @@ namespace ACPAMS.Views.Faculty
 
         private void PublishButton_Click(object sender, RoutedEventArgs e)
         {
-            // Get all input values
             var courseCodeBox = FindName("CourseCodeBox") as TextBox;
             var timeLimitBox = FindName("TimeLimitBox") as TextBox;
             var examNameBox = FindName("ExamNameBox") as TextBox;
 
-            // Validate Course Code
             CourseCode = courseCodeBox?.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrEmpty(CourseCode))
             {
@@ -155,7 +139,6 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Validate Time Limit
             if (!int.TryParse(timeLimitBox?.Text, out int timeLimit) || timeLimit < 1)
             {
                 ToastNotification.Show("Please enter a valid Time Limit (minimum 1 minute).",
@@ -166,7 +149,6 @@ namespace ACPAMS.Views.Faculty
             }
             TimeLimitMinutes = timeLimit;
 
-            // Validate Exam Name
             ExamName = examNameBox?.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrEmpty(ExamName))
             {
@@ -177,7 +159,6 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            // Validate Exam Code is generated
             if (string.IsNullOrEmpty(GeneratedExamCode))
             {
                 GenerateExamCode();
@@ -189,7 +170,6 @@ namespace ACPAMS.Views.Faculty
                 }
             }
 
-            // All validations passed - close with success
             DialogResult = true;
             Close();
         }
@@ -200,7 +180,6 @@ namespace ACPAMS.Views.Faculty
             Close();
         }
 
-        // Helper method to get the generated exam code after dialog closes
         public string GetGeneratedExamCode() => GeneratedExamCode;
     }
 }
