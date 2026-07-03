@@ -1,55 +1,29 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
-using Microsoft.EntityFrameworkCore;
+﻿using System.Windows;
 
 namespace ACPAMS
 {
     public partial class App : Application
     {
-        private static AppDbContext _dbContext;
-
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
             try
             {
-                _dbContext = new AppDbContext();
-
-                // Test the connection
-                var canConnect = _dbContext.Database.CanConnect();
-                System.Diagnostics.Debug.WriteLine($"Database connection: {(canConnect ? "SUCCESS" : "FAILED")}");
-
-                if (canConnect)
-                {
-                    AppInitializer.Initialize(_dbContext);
-                }
-                else
-                {
-                    MessageBox.Show("Cannot connect to the database. Please make sure MySQL is running.",
-                        "Database Connection Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                }
+                // Run EF Core migrations and seed default instructor
+                using var context = new ACPAMS.Data.AppDbContext();
+                AppInitializer.Initialize(context);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Application startup error: {ex.Message}");
-                MessageBox.Show($"Database connection error: {ex.Message}\n\nPlease make sure MySQL is running and the database 'acpams_db' exists.",
-                    "Database Error",
+                MessageBox.Show(
+                    $"Database initialization error:\n\n{ex.Message}",
+                    "Startup Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+                Shutdown();
             }
         }
-
-        protected override void OnExit(ExitEventArgs e)
-        {
-            _dbContext?.Dispose();
-            base.OnExit(e);
-        }
-
-        public static AppDbContext GetDbContext() => _dbContext;
-        public static string GetCurrentInstructorId() => AppInitializer.GetCurrentInstructorId();
     }
 }

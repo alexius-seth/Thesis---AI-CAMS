@@ -1,11 +1,14 @@
 ﻿using ACPAMS.Data;
 using ACPAMS.Models;
 using ACPAMS.Services;
+using System;
 using System.Windows;
+using System.Windows.Controls;
 using StudentModel = ACPAMS.Models.Student;
+
 namespace ACPAMS.Views.Auth
 {
-    public partial class StudentSignUpPage : Window
+    public partial class StudentSignUpPage : UserControl
     {
         private readonly AuthService _authService;
         private bool _passwordVisible = false;
@@ -14,6 +17,7 @@ namespace ACPAMS.Views.Auth
         {
             InitializeComponent();
             _authService = new AuthService();
+            ACPAMS.MainWindow.Resize(520, 680);
         }
 
         private async void SignUpButton_Click(object sender, RoutedEventArgs e)
@@ -22,9 +26,10 @@ namespace ACPAMS.Views.Auth
             string lastName = LastNameBox.Text.Trim();
             string middleInitial = MiddleInitialBox.Text.Trim();
             string studentId = StudentIDBox.Text.Trim();
-            string password = PasswordBox.Password;
+            string password = _passwordVisible
+                ? PasswordVisibleBox.Text
+                : PasswordBox.Password;
 
-            // Validate fields
             if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName) ||
                 string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(password))
             {
@@ -33,7 +38,15 @@ namespace ACPAMS.Views.Auth
                 return;
             }
 
-            // Validate password strength
+            string program = (ProgramBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? string.Empty;
+
+            if (string.IsNullOrEmpty(program))
+            {
+                MessageBox.Show("Please select your program.",
+                    "Missing Fields", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (!_authService.ValidatePassword(password))
             {
                 MessageBox.Show(
@@ -49,7 +62,6 @@ namespace ACPAMS.Views.Auth
             {
                 using var context = new AppDbContext();
 
-                // Check if student ID already exists
                 bool exists = context.Students.Any(s => s.StudentId == studentId);
                 if (exists)
                 {
@@ -58,7 +70,6 @@ namespace ACPAMS.Views.Auth
                     return;
                 }
 
-                // Create user
                 var user = new User
                 {
                     UserId = Guid.NewGuid(),
@@ -69,7 +80,6 @@ namespace ACPAMS.Views.Auth
                     CreatedAt = DateTime.Now
                 };
 
-                // Create student profileS
                 var student = new StudentModel
                 {
                     StudentId = studentId,
@@ -77,6 +87,7 @@ namespace ACPAMS.Views.Auth
                     FirstName = firstName,
                     LastName = lastName,
                     MiddleInitial = string.IsNullOrEmpty(middleInitial) ? null : middleInitial,
+                    Program = program,
                     CreatedAt = DateTime.Now
                 };
 
@@ -87,10 +98,8 @@ namespace ACPAMS.Views.Auth
                 MessageBox.Show("Account created successfully! You can now log in.",
                     "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Go back to login
-                var login = new LoginPage();
-                login.Show();
-                this.Close();
+                ACPAMS.MainWindow.Resize(520, 600);
+                ACPAMS.MainWindow.Navigate(new LoginPage());
             }
             catch (Exception ex)
             {
@@ -107,7 +116,6 @@ namespace ACPAMS.Views.Auth
         private void TogglePasswordBtn_Click(object sender, RoutedEventArgs e)
         {
             _passwordVisible = !_passwordVisible;
-
             if (_passwordVisible)
             {
                 PasswordVisibleBox.Text = PasswordBox.Password;
@@ -124,9 +132,8 @@ namespace ACPAMS.Views.Auth
 
         private void LogInBtn_Click(object sender, RoutedEventArgs e)
         {
-            var login = new LoginPage();
-            login.Show();
-            this.Close();
+            ACPAMS.MainWindow.Resize(520, 600);
+            ACPAMS.MainWindow.Navigate(new LoginPage());
         }
     }
 }

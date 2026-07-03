@@ -27,4 +27,9 @@
 		</PackageReference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Remove="Views/Faculty/**/*.cs" />
+		<Page Remove="Views/Faculty/**/*.xaml" />
+	</ItemGroup>
+
 </Project>
