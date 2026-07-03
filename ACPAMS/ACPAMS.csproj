@@ -20,10 +20,6 @@
 	  <EmbeddedResource Include="Resources\Syntax\Python-Dark.xshd" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Views\Faculty\Tabs\" />
-		<Folder Include="Views\Student\Canvas\" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
