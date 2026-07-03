@@ -80,5 +80,94 @@ namespace ACPAMS.Services
                 .FirstOrDefaultAsync(a => a.AttemptId == attemptId
                                        && a.QuestionId == questionId);
         }
+        // Add these nested classes inside the ExamService class
+        public class ExamSectionData
+        {
+            public string Id { get; set; } = string.Empty;
+            public string Instructions { get; set; } = string.Empty;
+            public bool IsActive { get; set; }
+            public List<QuestionItemData> Questions { get; set; } = new();
+        }
+
+        public class QuestionItemData
+        {
+            public string Id { get; set; } = string.Empty;
+            public string Text { get; set; } = string.Empty;
+            public string Type { get; set; } = string.Empty;
+            public string CorrectAnswer { get; set; } = string.Empty;
+            public string OptionA { get; set; } = string.Empty;
+            public string OptionB { get; set; } = string.Empty;
+            public string OptionC { get; set; } = string.Empty;
+            public string OptionD { get; set; } = string.Empty;
+            public string ExpectedAnswer { get; set; } = string.Empty;
+            public string ProgrammingLanguage { get; set; } = string.Empty;
+            public string SectionId { get; set; } = string.Empty;
+            public List<string> ExpectedAnswers { get; set; } = new();
+        }
+
+    
+        public async Task<Exam> SaveExamAsync(
+            string examName,
+            string courseCode,
+            string generatedExamCode,
+            int timeLimitMinutes,
+            List<ExamSectionData> sections,
+            Dictionary<string, RubricData> rubricData)
+        {
+            using var context = new AppDbContext();
+
+            var exam = new Exam
+            {
+                ExamId = Guid.NewGuid(),
+                ExamName = examName,
+                Title = examName,
+                CourseCode = courseCode,
+                ExamCode = generatedExamCode,
+                DurationMinutes = timeLimitMinutes,
+                Status = "active",
+                CreatedAt = DateTime.Now
+            };
+
+            context.Exams.Add(exam);
+
+            int orderIndex = 1;
+            foreach (var section in sections)
+            {
+                foreach (var q in section.Questions)
+                {
+                    var question = new Question
+                    {
+                        QuestionId = Guid.NewGuid(),
+                        ExamId = exam.ExamId,
+                        QuestionType = q.Type,
+                        Text = q.Text,
+                        CorrectAnswer = q.CorrectAnswer,
+                        ProgrammingLanguage = q.ProgrammingLanguage,
+                        ExpectedOutput = q.ExpectedAnswer,
+                        OrderIndex = orderIndex++,
+                        GradingMethod = rubricData.ContainsKey(q.Id) ? "manual" : "objective",
+                        RequiresRubric = rubricData.ContainsKey(q.Id)
+                    };
+
+                    context.Questions.Add(question);
+
+                    // Add MCQ options if applicable
+                    if (q.Type == "multiple_choice")
+                    {
+                        var options = new[]
+                        {
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
+                };
+                        context.QuestionOptions.AddRange(options);
+                    }
+                }
+            }
+
+            await context.SaveChangesAsync();
+            return exam;
+        }
     }
 }

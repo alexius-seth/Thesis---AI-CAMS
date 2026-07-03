@@ -55,27 +55,8 @@ namespace ACPAMS.Views.Auth
                     SessionManager.CurrentStudent = await context.Students
                         .FirstOrDefaultAsync(s => s.UserId == user.UserId);
 
-                    // TEMPORARY — load test exam
-                    SessionManager.CurrentExam = await context.Exams
-                        .FirstOrDefaultAsync(e => e.ExamCode == "CCS415-TEST-001");
-
-
-                    var attempt = new Models.StudentExamAttempt
-                    {
-                        AttemptId = Guid.NewGuid(),
-                        StudentId = SessionManager.CurrentStudent!.StudentId,
-                        ExamId = SessionManager.CurrentExam!.ExamId,
-                        ExamCodeUsed = "CCS415-TEST-001",
-                        StartedAt = DateTime.Now,
-                        Status = "in_progress"
-                    };
-                    context.StudentExamAttempts.Add(attempt);
-                    await context.SaveChangesAsync();
-                    SessionManager.CurrentAttempt = attempt;
-
-                    ACPAMS.MainWindow.Resize(1280, 800);
-                    ACPAMS.MainWindow.Navigate(new Student.StudentExamPage());
-                    //ACPAMS.MainWindow.Navigate(new Student.ExamEntryPage());
+                    ACPAMS.MainWindow.Resize(520, 480);
+                    ACPAMS.MainWindow.Navigate(new Student.ExamEntryPage());
                 }
                 else if (user.Role == "instructor")
                 {
