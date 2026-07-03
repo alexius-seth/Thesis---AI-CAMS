@@ -6,22 +6,19 @@ namespace ACPAMS.Services
 {
     public class ExamService
     {
-        // No shared _context field — each method creates and disposes
-        // its own AppDbContext to avoid "second operation started on
-        // this context" threading errors with EF Core.
+        public ExamService() { }
+        public ExamService(AppDbContext dbContext, string instructorId) { }
 
-        // Load all questions for an exam ordered by index
         public async Task<List<Question>> GetQuestionsAsync(Guid examId)
         {
             using var context = new AppDbContext();
             return await context.Questions
-                .Include(q => q.Options)   
+                .Include(q => q.Options)
                 .Where(q => q.ExamId == examId)
                 .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
         }
 
-        // Save or update a student answer
         public async Task SaveAnswerAsync(Guid attemptId, Guid questionId,
                                           string? answerText = null,
                                           string? sourceCode = null,
@@ -56,7 +53,6 @@ namespace ACPAMS.Services
             await context.SaveChangesAsync();
         }
 
-        // Submit the exam — mark attempt as submitted
         public async Task SubmitExamAsync(Guid attemptId)
         {
             using var context = new AppDbContext();
@@ -72,7 +68,6 @@ namespace ACPAMS.Services
             }
         }
 
-        // Get existing answer for a question
         public async Task<StudentAnswer?> GetAnswerAsync(Guid attemptId, Guid questionId)
         {
             using var context = new AppDbContext();
@@ -80,10 +75,12 @@ namespace ACPAMS.Services
                 .FirstOrDefaultAsync(a => a.AttemptId == attemptId
                                        && a.QuestionId == questionId);
         }
-        // Add these nested classes inside the ExamService class
+
         public class ExamSectionData
         {
             public string Id { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Type { get; set; } = string.Empty;
             public string Instructions { get; set; } = string.Empty;
             public bool IsActive { get; set; }
             public List<QuestionItemData> Questions { get; set; } = new();
@@ -100,12 +97,14 @@ namespace ACPAMS.Services
             public string OptionC { get; set; } = string.Empty;
             public string OptionD { get; set; } = string.Empty;
             public string ExpectedAnswer { get; set; } = string.Empty;
+            public string ExpectedAnswers { get; set; } = string.Empty;  
             public string ProgrammingLanguage { get; set; } = string.Empty;
             public string SectionId { get; set; } = string.Empty;
-            public List<string> ExpectedAnswers { get; set; } = new();
+            public double Points { get; set; }
+            public int Order { get; set; }
+            public bool? IsTrue { get; set; }
         }
 
-    
         public async Task<Exam> SaveExamAsync(
             string examName,
             string courseCode,
@@ -151,16 +150,15 @@ namespace ACPAMS.Services
 
                     context.Questions.Add(question);
 
-                    // Add MCQ options if applicable
                     if (q.Type == "multiple_choice")
                     {
                         var options = new[]
                         {
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
-                };
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
+                        };
                         context.QuestionOptions.AddRange(options);
                     }
                 }

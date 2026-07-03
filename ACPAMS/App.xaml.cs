@@ -1,14 +1,29 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
 
 namespace ACPAMS
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
-    }
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
 
+            try
+            {
+                // Run EF Core migrations and seed default instructor
+                using var context = new ACPAMS.Data.AppDbContext();
+                AppInitializer.Initialize(context);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Application startup error: {ex.Message}");
+                MessageBox.Show(
+                    $"Database initialization error:\n\n{ex.Message}",
+                    "Startup Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown();
+            }
+        }
+    }
 }

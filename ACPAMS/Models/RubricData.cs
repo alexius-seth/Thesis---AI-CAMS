@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace ACPAMS.Models
 {
@@ -24,5 +24,7 @@ namespace ACPAMS.Models
         public string Name { get; set; } = string.Empty;
         public double Points { get; set; }
         public string Description { get; set; } = string.Empty;
+        public double ScorePercentage { get; set; }
+        public string Descriptor { get; set; } = string.Empty;
     }
 }

@@ -1,13 +1,10 @@
-﻿<Window x:Class="ACPAMS.Views.Faculty.FacultyHomePage"
+﻿<UserControl x:Class="ACPAMS.Views.Faculty.FacultyHomePage"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ACPAMS — Home"
-        WindowState="Maximized"
         Background="#F4F5F7"
-        FontFamily="Segoe UI"
-        WindowStartupLocation="CenterScreen">
+        FontFamily="Segoe UI">
 
-    <Window.Resources>
+    <UserControl.Resources>
 
         <!-- ═══════════════════════════════
              DESIGN TOKENS
@@ -341,7 +338,7 @@
             <Setter Property="Padding"         Value="16,12"/>
         </Style>
 
-    </Window.Resources>
+    </UserControl.Resources>
 
     <!-- ═══════════════════════════════════════════
          ROOT: Sidebar (220px) | Main (*)
@@ -440,37 +437,44 @@
                 </Border>
 
                 <!-- Navigation -->
+                <!-- Navigation -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,2,0,0">
 
-                    <Button Style="{StaticResource Btn.Nav.Active}">
+                    <!-- Home Button -->
+                    <Button Style="{StaticResource Btn.Nav.Active}"
+            Click="NavigateToHome">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE80F;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="{StaticResource Accent.Primary}"
-                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Foreground="{StaticResource Accent.Primary}"
+                       Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Home"
-                                       FontSize="13" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Accent.Primary}"
-                                       VerticalAlignment="Center"/>
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{StaticResource Accent.Primary}"
+                       VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
-                    <Button Style="{StaticResource Btn.Nav}">
+                    <!-- Dashboard Button -->
+                    <Button Style="{StaticResource Btn.Nav}"
+            Click="OpenDashboardPage">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xF246;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="{StaticResource Text.Secondary}"
-                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Foreground="{StaticResource Text.Secondary}"
+                       Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Dashboard" Style="{StaticResource T.NavItem}"/>
                         </StackPanel>
                     </Button>
 
-                    <Button Style="{StaticResource Btn.Nav}">
+                    <!-- Create Exam Button -->
+                    <Button Style="{StaticResource Btn.Nav}"
+            Click="OpenCreateExamPage">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE8A5;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="{StaticResource Text.Secondary}"
-                                       Margin="0,0,10,0" VerticalAlignment="Center"/>
+                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       Foreground="{StaticResource Text.Secondary}"
+                       Margin="0,0,10,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Create Exam" Style="{StaticResource T.NavItem}"/>
                         </StackPanel>
                     </Button>
@@ -539,7 +543,8 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- Create Assessment -->
-                        <Button Grid.Column="0" Style="{StaticResource Btn.QuickNav}">
+                        <Button Grid.Column="0" Style="{StaticResource Btn.QuickNav}"
+                                Click="OpenCreateExamPage">
                             <StackPanel>
                                 <Border Width="38" Height="38" CornerRadius="8"
                                         Background="{StaticResource Accent.PrimaryBg}"
@@ -560,7 +565,8 @@
                         </Button>
 
                         <!-- Live Monitor -->
-                        <Button Grid.Column="2" Style="{StaticResource Btn.QuickNav}">
+                        <Button Grid.Column="2" Style="{StaticResource Btn.QuickNav}"
+                                Click="OpenMonitoringTab">
                             <StackPanel>
                                 <Border Width="38" Height="38" CornerRadius="8"
                                         Background="{StaticResource Status.LiveBg}"
@@ -581,7 +587,8 @@
                         </Button>
 
                         <!-- Student Reports -->
-                        <Button Grid.Column="4" Style="{StaticResource Btn.QuickNav}">
+                        <Button Grid.Column="4" Style="{StaticResource Btn.QuickNav}"
+                                Click="OpenStudentReportTab">
                             <StackPanel>
                                 <Border Width="38" Height="38" CornerRadius="8"
                                         Background="#F5F3FF"
@@ -665,6 +672,7 @@
 
                                 <Button Style="{StaticResource Btn.Primary}"
                                         HorizontalAlignment="Left"
+                                        Click="OpenMonitoringTab"
                                         Content="Manage Live Session"/>
                             </StackPanel>
                         </Border>
@@ -833,6 +841,7 @@
                                     </StackPanel>
                                     <Button Grid.Column="2"
                                             Style="{StaticResource Btn.Outlined}"
+                                            Click="OpenStudentReportTab"
                                             Content="View Report"
                                             HorizontalAlignment="Left"/>
                                 </Grid>
@@ -847,4 +856,4 @@
         </Grid>
 
     </Grid>
-</Window>
+</UserControl>

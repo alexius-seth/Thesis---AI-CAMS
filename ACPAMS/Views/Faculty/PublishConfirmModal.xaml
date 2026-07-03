@@ -31,64 +31,45 @@
         <SolidColorBrush x:Key="Overlay.Bg"       Color="#1A202C"/>
 
         <!-- ═══════════════════════════
-             INPUTS
+             SIMPLE INPUT STYLE - NO COMPLEX TRIGGERS
         ═══════════════════════════ -->
         <Style x:Key="Input.Field" TargetType="TextBox">
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
-            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
-            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
-            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
+            <Setter Property="Foreground"               Value="Black"/>
+            <Setter Property="Background"               Value="White"/>
+            <Setter Property="BorderBrush"              Value="#CBD5E1"/>
             <Setter Property="BorderThickness"          Value="1"/>
             <Setter Property="Padding"                  Value="12,10"/>
             <Setter Property="Height"                   Value="40"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
-                                <Setter TargetName="Root" Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Trigger>
-                            <Trigger Property="IsReadOnly" Value="True">
-                                <Setter TargetName="Root" Property="Background"
-                                        Value="{StaticResource Bg.Base}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="IsReadOnly"               Value="False"/>
+            <Setter Property="IsEnabled"                Value="True"/>
+            <Setter Property="Focusable"                Value="True"/>
+            <Setter Property="CaretBrush"               Value="#1976D2"/>
         </Style>
 
-        <!-- Generated code field — monospace, read-only styling -->
-        <Style x:Key="Input.GeneratedCode" TargetType="TextBox"
-               BasedOn="{StaticResource Input.Field}">
-            <Setter Property="FontFamily"  Value="Consolas"/>
-            <Setter Property="FontSize"    Value="14"/>
-            <Setter Property="FontWeight"  Value="SemiBold"/>
-            <Setter Property="Foreground"  Value="{StaticResource Accent.Primary}"/>
-            <Setter Property="Background"  Value="{StaticResource Accent.PrimaryBg}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent.Primary}"/>
-            <Setter Property="IsReadOnly"  Value="True"/>
+        <!-- Generated code field — read-only -->
+        <Style x:Key="Input.GeneratedCode" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Consolas"/>
+            <Setter Property="FontSize"                 Value="14"/>
+            <Setter Property="FontWeight"               Value="SemiBold"/>
+            <Setter Property="Foreground"               Value="#1976D2"/>
+            <Setter Property="Background"               Value="#EFF6FF"/>
+            <Setter Property="BorderBrush"              Value="#1976D2"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="Height"                   Value="40"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="IsReadOnly"               Value="True"/>
+            <Setter Property="Focusable"                Value="False"/>
         </Style>
 
         <!-- ═══════════════════════════
              BUTTONS
         ═══════════════════════════ -->
         <Style x:Key="Btn.Primary" TargetType="Button">
-            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Background"      Value="#1976D2"/>
             <Setter Property="Foreground"      Value="White"/>
             <Setter Property="FontSize"        Value="14"/>
             <Setter Property="FontWeight"      Value="SemiBold"/>
@@ -121,7 +102,7 @@
 
         <!-- Copy to clipboard icon button -->
         <Style x:Key="Btn.Copy" TargetType="Button">
-            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Background"      Value="#1976D2"/>
             <Setter Property="Foreground"      Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Width"           Value="44"/>
@@ -235,6 +216,7 @@
 
                         <!-- Close -->
                         <Button Grid.Column="1"
+                                x:Name="CloseBtn"
                                 Style="{StaticResource Btn.Close}"
                                 VerticalAlignment="Top">
                             <TextBlock Text="&#xE711;"
@@ -245,7 +227,7 @@
                 </Border>
 
                 <!-- ══════════════════
-                     FORM BODY
+                     FORM BODY - SIMPLIFIED TEXTBOXES
                 ══════════════════ -->
                 <StackPanel Margin="28,22,28,0">
 
@@ -263,7 +245,19 @@
                                        FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Text.Secondary}"
                                        Margin="0,0,0,6"/>
-                            <TextBox Style="{StaticResource Input.Field}"
+                            <TextBox x:Name="CourseCodeBox"
+                                     Width="Auto"
+                                     FontSize="13"
+                                     Foreground="Black"
+                                     Background="White"
+                                     BorderBrush="#CBD5E1"
+                                     BorderThickness="1"
+                                     Padding="12,10"
+                                     Height="40"
+                                     VerticalContentAlignment="Center"
+                                     IsReadOnly="False"
+                                     IsEnabled="True"
+                                     Focusable="True"
                                      Text="CCS415"/>
                         </StackPanel>
 
@@ -279,7 +273,18 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox Grid.Column="0"
-                                         Style="{StaticResource Input.Field}"
+                                         x:Name="TimeLimitBox"
+                                         FontSize="13"
+                                         Foreground="Black"
+                                         Background="White"
+                                         BorderBrush="#CBD5E1"
+                                         BorderThickness="1"
+                                         Padding="12,10"
+                                         Height="40"
+                                         VerticalContentAlignment="Center"
+                                         IsReadOnly="False"
+                                         IsEnabled="True"
+                                         Focusable="True"
                                          Text="60"
                                          TextAlignment="Center"/>
                                 <!-- "min" unit label inside a trailing tag -->
@@ -318,9 +323,20 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox Grid.Column="0"
-                                         Style="{StaticResource Input.GeneratedCode}"
-                                         Text="CCS415-4224-052426"
-                                         IsReadOnly="True"/>
+                                         x:Name="GeneratedCodeBox"
+                                         FontFamily="Consolas"
+                                         FontSize="14"
+                                         FontWeight="SemiBold"
+                                         Foreground="#1976D2"
+                                         Background="#EFF6FF"
+                                         BorderBrush="#1976D2"
+                                         BorderThickness="1"
+                                         Padding="12,10"
+                                         Height="40"
+                                         VerticalContentAlignment="Center"
+                                         IsReadOnly="True"
+                                         Focusable="False"
+                                         Text="Enter a course code to generate exam code"/>
                                 <!-- Read-only badge inside the field -->
                                 <Border Grid.Column="1"
                                         Background="{StaticResource Accent.Primary}"
@@ -336,6 +352,7 @@
 
                             <!-- Copy button -->
                             <Button Grid.Column="2"
+                                    x:Name="CopyBtn"
                                     Style="{StaticResource Btn.Copy}"
                                     ToolTip="Copy exam code to clipboard">
                                 <TextBlock Text="&#xE8C8;"
@@ -363,7 +380,18 @@
                                    FontSize="12" FontWeight="SemiBold"
                                    Foreground="{StaticResource Text.Secondary}"
                                    Margin="0,0,0,6"/>
-                        <TextBox Style="{StaticResource Input.Field}"
+                        <TextBox x:Name="ExamNameBox"
+                                 FontSize="13"
+                                 Foreground="Black"
+                                 Background="White"
+                                 BorderBrush="#CBD5E1"
+                                 BorderThickness="1"
+                                 Padding="12,10"
+                                 Height="40"
+                                 VerticalContentAlignment="Center"
+                                 IsReadOnly="False"
+                                 IsEnabled="True"
+                                 Focusable="True"
                                  Text="Object-Oriented Programming Finals"/>
                     </StackPanel>
 
@@ -375,7 +403,8 @@
                 <Border BorderBrush="{StaticResource Border.Subtle}"
                         BorderThickness="0,1,0,0"
                         Padding="28,16">
-                    <Button Style="{StaticResource Btn.Primary}"
+                    <Button x:Name="PublishBtn"
+                            Style="{StaticResource Btn.Primary}"
                             HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE72D;"

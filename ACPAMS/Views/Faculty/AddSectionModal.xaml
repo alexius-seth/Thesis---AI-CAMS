@@ -1,0 +1,422 @@
+<Window x:Class="ACPAMS.Views.Faculty.AddSectionModal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add Section"
+        Width="480"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Overlay.Bg"       Color="#1A202C"/>
+
+        <!-- Question type colors for the type selector -->
+        <SolidColorBrush x:Key="QType.Identification" Color="#64748B"/>
+        <SolidColorBrush x:Key="QType.MultipleChoice" Color="#1976D2"/>
+        <SolidColorBrush x:Key="QType.TrueOrFalse"    Color="#0F766E"/>
+        <SolidColorBrush x:Key="QType.Essay"          Color="#7C3AED"/>
+        <SolidColorBrush x:Key="QType.Enumeration"    Color="#B45309"/>
+        <SolidColorBrush x:Key="QType.Coding"         Color="#15803D"/>
+
+        <!-- Input styles -->
+        <Style x:Key="Input.Field" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Input.TextArea" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="AcceptsReturn"            Value="True"/>
+            <Setter Property="TextWrapping"             Value="Wrap"/>
+        </Style>
+
+        <!-- Buttons -->
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height"          Value="40"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Outlined" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="Height"          Value="40"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Close button -->
+        <Style x:Key="Btn.Close" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width"           Value="32"/>
+            <Setter Property="Height"          Value="32"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#FEE2E2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Question type toggle button -->
+        <Style x:Key="Btn.TypeToggle" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Bg.Base}"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="Padding"         Value="12,7"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background"
+                                        Value="{StaticResource Accent.PrimaryBg}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush"
+                                        Value="{StaticResource Accent.Primary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Selected type toggle -->
+        <Style x:Key="Btn.TypeToggle.Selected" TargetType="Button"
+               BasedOn="{StaticResource Btn.TypeToggle}">
+            <Setter Property="Background"  Value="{StaticResource Accent.PrimaryBg}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"  Value="{StaticResource Accent.Primary}"/>
+        </Style>
+
+    </Window.Resources>
+
+    <!-- Scrim -->
+    <Grid>
+        <Border Background="{StaticResource Overlay.Bg}" Opacity="0.45"/>
+
+        <!-- Modal card -->
+        <Border Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Subtle}"
+                BorderThickness="1" CornerRadius="10"
+                Width="440"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect Color="#1A202C" Opacity="0.18"
+                                  BlurRadius="32" ShadowDepth="8"/>
+            </Border.Effect>
+
+            <StackPanel>
+
+                <!-- Header -->
+                <Border BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1" Padding="24,18,18,18">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Add Section"
+                                       FontSize="17" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"
+                                       Margin="0,0,0,2"/>
+                            <TextBlock Text="Define a new test section for this exam."
+                                       FontSize="12"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Btn.Close}"
+                                VerticalAlignment="Top"
+                                Click="CancelButton_Click">
+                            <TextBlock Text="&#xE711;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Body -->
+                <StackPanel Margin="24,20,24,0">
+
+                    <!-- Section Name -->
+                    <TextBlock Text="Section Name"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,6"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Medium}"
+                            BorderThickness="1" CornerRadius="6"
+                            Height="42" Margin="0,0,0,4">
+                        <TextBox x:Name="SectionNameBox"
+                                 Style="{StaticResource Input.Field}"
+                                 Height="42"/>
+                    </Border>
+                    <TextBlock Text="e.g. Test I, Part A, Section 1"
+                               FontSize="11" Foreground="{StaticResource Text.Muted}"
+                               Margin="0,0,0,18"/>
+
+                    <!-- Question Type -->
+                    <TextBlock Text="Question Type"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,8"/>
+                    <WrapPanel Margin="0,0,0,4">
+
+                        <!-- Identification -->
+                        <Button x:Name="TypeIdentification"
+                                Style="{StaticResource Btn.TypeToggle}"
+                                Margin="0,0,6,6"
+                                Click="TypeButton_Click"
+                                Tag="identification">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="7" Height="7" CornerRadius="4"
+                                        Background="{StaticResource QType.Identification}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Identification" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Multiple Choice -->
+                        <Button x:Name="TypeMultipleChoice"
+                                Style="{StaticResource Btn.TypeToggle}"
+                                Margin="0,0,6,6"
+                                Click="TypeButton_Click"
+                                Tag="multiple_choice">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="7" Height="7" CornerRadius="4"
+                                        Background="{StaticResource QType.MultipleChoice}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Multiple Choice" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- True or False -->
+                        <Button x:Name="TypeTrueOrFalse"
+                                Style="{StaticResource Btn.TypeToggle}"
+                                Margin="0,0,6,6"
+                                Click="TypeButton_Click"
+                                Tag="true_false">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="7" Height="7" CornerRadius="4"
+                                        Background="{StaticResource QType.TrueOrFalse}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="True or False" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Essay -->
+                        <Button x:Name="TypeEssay"
+                                Style="{StaticResource Btn.TypeToggle}"
+                                Margin="0,0,6,6"
+                                Click="TypeButton_Click"
+                                Tag="essay">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="7" Height="7" CornerRadius="4"
+                                        Background="{StaticResource QType.Essay}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Essay" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Enumeration -->
+                        <Button x:Name="TypeEnumeration"
+                                Style="{StaticResource Btn.TypeToggle}"
+                                Margin="0,0,6,6"
+                                Click="TypeButton_Click"
+                                Tag="enumeration">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="7" Height="7" CornerRadius="4"
+                                        Background="{StaticResource QType.Enumeration}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Enumeration" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Coding -->
+                        <Button x:Name="TypeCoding"
+                                Style="{StaticResource Btn.TypeToggle}"
+                                Margin="0,0,6,6"
+                                Click="TypeButton_Click"
+                                Tag="coding">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="7" Height="7" CornerRadius="4"
+                                        Background="{StaticResource QType.Coding}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Coding" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                    </WrapPanel>
+                    <!-- Selected type indicator -->
+                    <TextBlock x:Name="SelectedTypeLabel"
+                               FontSize="11"
+                               Foreground="{StaticResource Text.Muted}"
+                               Margin="0,0,0,18"
+                               Text="No type selected"/>
+
+                    <!-- Section Instructions -->
+                    <TextBlock Text="Section Instructions"
+                               FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,6"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Medium}"
+                            BorderThickness="1" CornerRadius="6"
+                            Margin="0,0,0,4">
+                        <TextBox x:Name="InstructionsBox"
+                                 Style="{StaticResource Input.TextArea}"
+                                 Height="90"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </Border>
+                    <TextBlock Text="These instructions will be shown to students at the start of this section."
+                               FontSize="11" Foreground="{StaticResource Text.Muted}"
+                               TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+                </StackPanel>
+
+                <!-- Footer -->
+                <Border BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,1,0,0" Padding="24,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left note -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="&#xE946;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       Margin="0,0,5,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="You can add questions after saving the section."
+                                       FontSize="11"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Action buttons -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Style="{StaticResource Btn.Outlined}"
+                                    Content="Cancel"
+                                    Padding="16,0"
+                                    Margin="0,0,8,0"
+                                    Click="CancelButton_Click"/>
+                            <Button x:Name="SaveBtn"
+                                    Style="{StaticResource Btn.Primary}"
+                                    Padding="16,0"
+                                    Click="SaveButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE710;"
+                                               FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="White"
+                                               Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Add Section" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

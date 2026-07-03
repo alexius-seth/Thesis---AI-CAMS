@@ -1,27 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ACPAMS.Views.Faculty;
+using ACPAMS.Views.Faculty.Tabs;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ACPAMS.Views.Faculty
 {
-    /// <summary>
-    /// Interaction logic for FacultyHomePage.xaml
-    /// </summary>
-    public partial class FacultyHomePage : Window
+    public partial class FacultyHomePage : UserControl
     {
         public FacultyHomePage()
         {
             InitializeComponent();
+        }
+
+        private void NavigateToHome(object sender, RoutedEventArgs e)
+        {
+            // Already on Home - do nothing
+        }
+
+        private void OpenDashboardPage(object sender, RoutedEventArgs e)
+        {
+            var mainWindow = Application.Current.MainWindow as Window1;
+            mainWindow?.NavigateToDashboard();
+        }
+
+        private void OpenCreateExamPage(object sender, RoutedEventArgs e)
+        {
+            var mainWindow = Application.Current.MainWindow as Window1;
+            mainWindow?.NavigateToCreateExam();
+        }
+
+        private void OpenMonitoringTab(object sender, RoutedEventArgs e)
+        {
+            var mainWindow = Application.Current.MainWindow as Window1;
+            mainWindow?.NavigateToMonitoring();
+        }
+
+        private void OpenStudentReportTab(object sender, RoutedEventArgs e)
+        {
+            var mainWindow = Application.Current.MainWindow as Window1;
+            mainWindow?.NavigateToReports();
+        }
+
+        private void ManageLiveSession(object sender, RoutedEventArgs e)
+        {
+            OpenMonitoringTab(sender, e);
+        }
+
+        private void ViewReport(object sender, RoutedEventArgs e)
+        {
+            OpenStudentReportTab(sender, e);
         }
     }
 }

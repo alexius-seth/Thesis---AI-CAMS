@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ACPAMS.Views.Faculty;
 
 namespace ACPAMS.Views.Auth
 {
@@ -64,7 +65,7 @@ namespace ACPAMS.Views.Auth
                         .FirstOrDefaultAsync(i => i.UserId == user.UserId);
 
                     ACPAMS.MainWindow.Resize(1280, 800);
-                    ACPAMS.MainWindow.Navigate(new Faculty.FacultyHomePage());
+                    ACPAMS.MainWindow.Navigate(new FacultyHomePage());
                 }
             }
             catch (Exception ex)
@@ -115,6 +116,7 @@ namespace ACPAMS.Views.Auth
             }
             else
             {
+                // FacultySignUpPage still a Window — open separately
                 var facultySignUp = new FacultySignUpPage();
                 facultySignUp.Show();
             }
