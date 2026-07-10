@@ -58,18 +58,15 @@ namespace ACPAMS.Models
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+       
+        [Column("section_name")]
+        public string? SectionName { get; set; }
 
         // Navigation
         [ForeignKey("ExamId")]
         public Exam? Exam { get; set; }
         public Rubric? Rubric { get; set; }
         public ICollection<StudentAnswer> StudentAnswers { get; set; } = new List<StudentAnswer>();
-   
-
-
-
-
-
         public ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();
     }
 }

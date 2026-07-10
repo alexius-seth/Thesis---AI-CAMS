@@ -1,5 +1,5 @@
-﻿using ACPAMS.Views.Faculty;
-using ACPAMS.Views.Faculty.Tabs;
+﻿using ACPAMS.Views.Faculty.Tabs;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -19,26 +19,30 @@ namespace ACPAMS.Views.Faculty
 
         private void OpenDashboardPage(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToDashboard();
+            ACPAMS.MainWindow.Navigate(new DashboardPage());
         }
 
         private void OpenCreateExamPage(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToCreateExam();
+            try
+            {
+                ACPAMS.MainWindow.Navigate(new CreateExamPage());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Navigation error: {ex.Message}\n\n{ex.InnerException?.Message}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void OpenMonitoringTab(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToMonitoring();
+            ACPAMS.MainWindow.Navigate(new MonitoringTab());
         }
 
         private void OpenStudentReportTab(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToReports();
+            ACPAMS.MainWindow.Navigate(new StudentPerformanceReportTab());
         }
 
         private void ManageLiveSession(object sender, RoutedEventArgs e)

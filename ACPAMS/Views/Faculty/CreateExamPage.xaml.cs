@@ -160,9 +160,9 @@ namespace ACPAMS.Views.Faculty
                 try
                 {
                     ToastNotification.Show("Publishing exam...", Application.Current.MainWindow, 2, false);
-
-                    var dbContext = AppInitializer.GetDbContext();
-                    var instructorId = AppInitializer.GetCurrentInstructorId();
+                    
+                    var dbContext = new ACPAMS.Data.AppDbContext();
+                    var instructorId = SessionManager.CurrentInstructor?.InstructorId;
 
                     if (dbContext == null)
                     {
@@ -215,7 +215,8 @@ namespace ACPAMS.Views.Faculty
                         publishModal.GeneratedExamCode,
                         publishModal.TimeLimitMinutes,
                         sectionsToSave,
-                        rubricData
+                        rubricData,
+                        instructorId
                     );
 
                     ToastNotification.Show($"Exam '{exam.Title}' published successfully!",
@@ -225,8 +226,8 @@ namespace ACPAMS.Views.Faculty
                 }
                 catch (Exception ex)
                 {
-                    ToastNotification.Show($"Failed to publish exam: {ex.Message}",
-                        Application.Current.MainWindow, 5, true);
+                    MessageBox.Show($"Failed to publish exam:\n\n{ex.Message}\n\n{ex.InnerException?.Message}",
+                        "Publish Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -572,6 +573,7 @@ namespace ACPAMS.Views.Faculty
                     if (int.TryParse(pointsBox.Text, out int val))
                     {
                         (pointsBox.Tag as QuestionItem).Points = val;
+                        UpdateActiveSectionHeader();
                     }
                 };
                 rightStack.Children.Add(pointsBox);
@@ -851,7 +853,55 @@ namespace ACPAMS.Views.Faculty
                                 var data = (dynamic)((Border)s).Tag;
                                 var qItem = data.Question as QuestionItem;
                                 qItem.ProgrammingLanguage = data.Language;
-                                UpdateQuestionsDisplay();
+
+                                // Update only the language buttons in this langPanel visually
+                                foreach (var child in langPanel.Children)
+                                {
+                                    if (child is not Border lb) continue;
+                                    var ldata = (dynamic)lb.Tag;
+                                    bool sel = ldata.Language == data.Language;
+                                    lb.Background = sel ? (Brush)FindResource("Accent.PrimaryBg") : (Brush)FindResource("Bg.Base");
+                                    lb.BorderBrush = sel ? (Brush)FindResource("Accent.Primary") : (Brush)FindResource("Border.Medium");
+
+                                    // Update the dot and text inside
+                                    if (lb.Child is StackPanel sp && sp.Children.Count >= 2)
+                                    {
+                                        if (sp.Children[0] is Grid dotGrid)
+                                        {
+                                            // Remove inner filled dot if exists
+                                            if (dotGrid.Children.Count > 1)
+                                                dotGrid.Children.RemoveAt(1);
+
+                                            if (sel)
+                                            {
+                                                dotGrid.Children.Add(new Ellipse
+                                                {
+                                                    Width = 8,
+                                                    Height = 8,
+                                                    Fill = (Brush)FindResource("Accent.Primary"),
+                                                    HorizontalAlignment = HorizontalAlignment.Center,
+                                                    VerticalAlignment = VerticalAlignment.Center
+                                                });
+                                            }
+
+                                            // Update outer ellipse stroke
+                                            if (dotGrid.Children[0] is Ellipse outerDot)
+                                            {
+                                                outerDot.Stroke = sel
+                                                    ? (Brush)FindResource("Accent.Primary")
+                                                    : (Brush)FindResource("Border.Medium");
+                                            }
+                                        }
+
+                                        if (sp.Children[1] is TextBlock langText)
+                                        {
+                                            langText.Foreground = sel
+                                                ? (Brush)FindResource("Accent.Primary")
+                                                : (Brush)FindResource("Text.Secondary");
+                                            langText.FontWeight = sel ? FontWeights.SemiBold : FontWeights.Normal;
+                                        }
+                                    }
+                                }
                             };
 
                             langPanel.Children.Add(border);
@@ -873,8 +923,8 @@ namespace ACPAMS.Views.Faculty
                             Style = (Style)FindResource("Input.Text"),
                             Height = 60,
                             FontFamily = new FontFamily("Consolas"),
-                            AcceptsReturn = true,
-                            IsReadOnly = true
+                            AcceptsReturn = true,   
+                            IsReadOnly = false
                         };
                         bodyStack.Children.Add(stubBox);
 
@@ -1100,6 +1150,7 @@ namespace ACPAMS.Views.Faculty
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
+            newQuestion.SectionId = _selectedSection.Id; 
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
@@ -1172,6 +1223,7 @@ namespace ACPAMS.Views.Faculty
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
+            newQuestion.SectionId = _selectedSection.Id; 
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
@@ -1387,14 +1439,12 @@ namespace ACPAMS.Views.Faculty
 
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToHome();
+            ACPAMS.MainWindow.Navigate(new FacultyHomePage());
         }
 
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToDashboard();
+            ACPAMS.MainWindow.Navigate(new DashboardPage());
         }
 
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)

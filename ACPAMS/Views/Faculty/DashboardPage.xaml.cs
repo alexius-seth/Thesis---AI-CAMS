@@ -10,28 +10,19 @@ namespace ACPAMS.Views.Faculty
             InitializeComponent();
         }
 
-        // ============================================
-        // NAVIGATION - Calls Window1
-        // ============================================
-
-        // 1. Navigate to Home
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToHome();
+            ACPAMS.MainWindow.Navigate(new FacultyHomePage());
         }
 
-        // 2. Navigate to Create Exam
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)
         {
-            var mainWindow = Application.Current.MainWindow as Window1;
-            mainWindow?.NavigateToCreateExam();
+            ACPAMS.MainWindow.Navigate(new CreateExamPage());
         }
 
-        // 3. Stay on Dashboard
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
-            // Already here - do nothing
+           
         }
     }
 }

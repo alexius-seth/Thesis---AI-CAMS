@@ -374,63 +374,84 @@
 
                         <!-- Webcam feed -->
                         <Border Background="#0F172A" BorderBrush="#1E293B"
-                                BorderThickness="1" CornerRadius="6"
-                                Height="100" Margin="0,0,0,8">
+        BorderThickness="1" CornerRadius="6"
+        Height="140" Margin="0,0,0,8">
                             <Grid>
-                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <!-- Live webcam feed -->
+                                <Image x:Name="WebcamFeed" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="LowQuality"/>
+
+                                <!-- Placeholder shown when webcam not active -->
+                                <StackPanel x:Name="WebcamPlaceholder" VerticalAlignment="Center" HorizontalAlignment="Center">
                                     <TextBlock Text="&#xE722;" FontFamily="Segoe MDL2 Assets"
-                                               FontSize="20" Foreground="#334155"
-                                               HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                       FontSize="20" Foreground="#334155"
+                       HorizontalAlignment="Center" Margin="0,0,0,6"/>
                                     <TextBlock Text="Live Feed" FontSize="10" Foreground="#475569"
-                                               HorizontalAlignment="Center"/>
+                       HorizontalAlignment="Center"/>
                                 </StackPanel>
+
+                                <!-- LIVE badge -->
                                 <Border Background="#EF4444" CornerRadius="3" Padding="5,2"
-                                        HorizontalAlignment="Left" VerticalAlignment="Top"
-                                        Margin="6,6,0,0">
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="6,6,0,0">
                                     <StackPanel Orientation="Horizontal">
                                         <Ellipse Width="5" Height="5" Fill="White"
-                                                 Margin="0,0,3,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="LIVE" FontSize="8" FontWeight="Bold"
-                                                   Foreground="White"/>
+                         Margin="0,0,3,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="LIVE" FontSize="8" FontWeight="Bold" Foreground="White"/>
                                     </StackPanel>
                                 </Border>
-                                <TextBlock Text="MediaPipe feed renders here"
-                                           FontSize="8" Foreground="#334155"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Bottom" Margin="0,0,0,4"/>
                             </Grid>
                         </Border>
 
                         <!-- Monitoring status -->
                         <Border Background="{StaticResource Bg.Base}"
-                                BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="1" CornerRadius="6"
-                                Padding="10,8" Margin="0,0,0,8">
+        BorderBrush="{StaticResource Border.Subtle}"
+        BorderThickness="1" CornerRadius="6"
+        Padding="10,8" Margin="0,0,0,8">
                             <StackPanel>
                                 <TextBlock Text="MONITORING" FontSize="9" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Muted}" Margin="0,0,0,6"/>
+                                    Foreground="{StaticResource Text.Muted}" Margin="0,0,0,6"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Ellipse Width="6" Height="6" Fill="{StaticResource Status.Success}"
-                                             Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Webcam active" FontSize="10"
-                                               Foreground="{StaticResource Text.Secondary}"/>
+                                    <Ellipse x:Name="WebcamStatusDot" Width="6" Height="6"
+                                         Fill="{StaticResource Status.Warning}"
+                                         Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="WebcamStatusText" Text="Webcam initializing..."
+                                         FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Ellipse Width="6" Height="6" Fill="{StaticResource Status.Success}"
-                                             Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Clipboard blocked" FontSize="10"
-                                               Foreground="{StaticResource Text.Secondary}"/>
+                                    <Ellipse x:Name="ClipboardStatusDot" Width="6" Height="6"
+                                        Fill="{StaticResource Status.Warning}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="ClipboardStatusText" Text="Clipboard monitoring..."
+                                         FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
-                                    <Ellipse Width="6" Height="6" Fill="{StaticResource Status.Success}"
-                                             Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Alt+Tab intercepted" FontSize="10"
-                                               Foreground="{StaticResource Text.Secondary}"/>
+                                    <Ellipse x:Name="AltTabStatusDot" Width="6" Height="6"
+                                        Fill="{StaticResource Status.Warning}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="AltTabStatusText" Text="Alt+Tab monitoring..."
+                                        FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-
-                        <!-- Alert card -->
+                        <Border Background="{StaticResource Bg.Base}"
+        BorderBrush="{StaticResource Border.Subtle}"
+        BorderThickness="1" CornerRadius="6"
+        Padding="10,8" Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock Text="RISK SCORE" FontSize="9" FontWeight="Bold"
+                   Foreground="{StaticResource Text.Muted}" Margin="0,0,0,6"/>
+                                <TextBlock x:Name="CheatingScoreText" Text="Risk Score: 0.0 / 100"
+                   FontSize="10" Foreground="{StaticResource Text.Secondary}"
+                   Margin="0,0,0,4"/>
+                                <Border x:Name="ScoreBarContainer" Height="6" CornerRadius="3"
+        Background="{StaticResource Border.Subtle}">
+                                    <Border x:Name="CheatingScoreBar"
+            HorizontalAlignment="Left"
+            Width="0" Height="6" CornerRadius="3"
+            Background="{StaticResource Status.Success}"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
                         <Border x:Name="AlertCard"
                                 Background="{StaticResource Status.WarningBg}"
                                 BorderBrush="{StaticResource Status.Warning}"
@@ -463,6 +484,8 @@
                                 </Button>
                             </StackPanel>
                         </Border>
+
+                        <!-- Alert card -->
 
                     </StackPanel>
                 </ScrollViewer>

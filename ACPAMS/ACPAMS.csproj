@@ -9,9 +9,20 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Models\haarcascade_frontalface_default.xml" />
+	  <None Remove="Resources\Models\shape_predictor_68_face_landmarks.dat" />
 	  <None Remove="Resources\Syntax\C-Dark.xshd" />
 	  <None Remove="Resources\Syntax\Java-Dark.xshd" />
 	  <None Remove="Resources\Syntax\Python-Dark.xshd" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="Resources\Models\haarcascade_frontalface_default.xml">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Resources\Models\shape_predictor_68_face_landmarks.dat">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -24,6 +35,7 @@
 	<ItemGroup>
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+		<PackageReference Include="DlibDotNet" Version="19.21.0.20220724" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -34,6 +46,9 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260627" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
 	</ItemGroup>
 
 

@@ -577,17 +577,21 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <Border Grid.Row="0" Margin="18,16"
-                        BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1">
-                    <StackPanel Margin="0,0,0,16">
-                        <TextBlock Text="CREATE EXAM MANAGER"
-                                   Style="{StaticResource T.SectionLabel}" Margin="0,0,0,10"/>
-                        <TextBox Style="{StaticResource Input.Text}"
-                                 Text="CS101 — Final Examination"
-                                 Height="36" AcceptsReturn="False"
-                                 FontSize="13" FontWeight="SemiBold"/>
-                    </StackPanel>
-                </Border>
+                <StackPanel Margin="0,0,0,16">
+                    <TextBlock Text="CREATE EXAM MANAGER"
+               Style="{StaticResource T.SectionLabel}" Margin="0,0,0,10"/>
+                    <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Height="36">
+                        <TextBox x:Name="ExamNameBox"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Foreground="#1A202C"
+                 Padding="12,8"
+                 FontSize="13"
+                 FontWeight="SemiBold"
+                 VerticalContentAlignment="Center"
+                 AcceptsReturn="False"/>
+                    </Border>
+                </StackPanel>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>

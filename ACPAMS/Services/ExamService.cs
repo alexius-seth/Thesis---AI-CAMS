@@ -69,7 +69,7 @@ namespace ACPAMS.Services
         }
 
         public async Task<StudentAnswer?> GetAnswerAsync(Guid attemptId, Guid questionId)
-        {
+        { 
             using var context = new AppDbContext();
             return await context.StudentAnswers
                 .FirstOrDefaultAsync(a => a.AttemptId == attemptId
@@ -106,18 +106,20 @@ namespace ACPAMS.Services
         }
 
         public async Task<Exam> SaveExamAsync(
-            string examName,
-            string courseCode,
-            string generatedExamCode,
-            int timeLimitMinutes,
-            List<ExamSectionData> sections,
-            Dictionary<string, RubricData> rubricData)
+     string examName,
+     string courseCode,
+     string generatedExamCode,
+     int timeLimitMinutes,
+     List<ExamSectionData> sections,
+     Dictionary<string, RubricData> rubricData,
+     string instructorId)
         {
             using var context = new AppDbContext();
 
             var exam = new Exam
             {
                 ExamId = Guid.NewGuid(),
+                InstructorId = instructorId,
                 ExamName = examName,
                 Title = examName,
                 CourseCode = courseCode,
@@ -134,15 +136,28 @@ namespace ACPAMS.Services
             {
                 foreach (var q in section.Questions)
                 {
+                    var normalizedType = q.Type.ToLower() switch
+                    {
+                        "multiple choice" or "multiple_choice" => "multiple_choice",
+                        "true or false" or "true_false" => "true_false",
+                        "identification" => "identification",
+                        "enumeration" => "enumeration",
+                        "essay" => "essay",
+                        "coding" => "coding",
+                        _ => q.Type.ToLower()
+                    };
+
                     var question = new Question
                     {
                         QuestionId = Guid.NewGuid(),
                         ExamId = exam.ExamId,
-                        QuestionType = q.Type,
+                        QuestionType = normalizedType,
                         Text = q.Text,
                         CorrectAnswer = q.CorrectAnswer,
                         ProgrammingLanguage = q.ProgrammingLanguage,
                         ExpectedOutput = q.ExpectedAnswer,
+                        Points = (decimal)q.Points,
+                        SectionName = sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General",
                         OrderIndex = orderIndex++,
                         GradingMethod = rubricData.ContainsKey(q.Id) ? "manual" : "objective",
                         RequiresRubric = rubricData.ContainsKey(q.Id)
@@ -150,15 +165,15 @@ namespace ACPAMS.Services
 
                     context.Questions.Add(question);
 
-                    if (q.Type == "multiple_choice")
+                    if (normalizedType == "multiple_choice")
                     {
                         var options = new[]
                         {
-                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
-                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
-                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
-                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
-                        };
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
+                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
+                };
                         context.QuestionOptions.AddRange(options);
                     }
                 }

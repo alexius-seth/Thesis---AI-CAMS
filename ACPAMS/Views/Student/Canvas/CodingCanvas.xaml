@@ -116,11 +116,11 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Toolbar: language + view question -->
+            <!-- Toolbar -->
+            <RowDefinition Height="3*"/>
+            <!-- IDE editor — takes 3x space -->
             <RowDefinition Height="*"/>
-            <!-- IDE editor -->
-            <RowDefinition Height="Auto"/>
-            <!-- Output panel -->
+            <!-- Output panel — takes 1x space -->
             <RowDefinition Height="Auto"/>
             <!-- Run button -->
         </Grid.RowDefinitions>
@@ -295,27 +295,42 @@
 
         <!-- Output panel -->
         <Border x:Name="OutputPanel"
-                Grid.Row="2"
-                Background="{StaticResource Bg.Output}"
-                BorderBrush="#1E293B"
-                BorderThickness="0,2,0,0"
-                MinHeight="80" MaxHeight="120">
-            <StackPanel Margin="14,10">
-                <TextBlock Text="OUTPUT"
-                           FontFamily="Consolas" FontSize="10" FontWeight="Bold"
-                           Foreground="#475569" Margin="0,0,0,6"/>
-                <TextBlock x:Name="OutputCommandText"
+        Grid.Row="2"
+        Background="{StaticResource Bg.Output}"
+        BorderBrush="#1E293B"
+        BorderThickness="0,2,0,0"
+        MinHeight="80" MaxHeight="200">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                   Text="OUTPUT"
+                   FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                   Foreground="#475569" Margin="14,10,14,4"/>
+
+                <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto"
+                      Margin="14,0,14,10">
+                    <StackPanel>
+                        <TextBlock x:Name="OutputCommandText"
                            FontFamily="Consolas" FontSize="13">
                     <Run Foreground="#22C55E">$</Run>
                     <Run Foreground="#94A3B8" Text=" Click Run Code to execute"/>
-                </TextBlock>
-                <TextBlock x:Name="OutputResultText"
+                        </TextBlock>
+                        <TextBlock x:Name="OutputResultText"
                            FontFamily="Consolas" FontSize="13"
                            Foreground="#E2E8F0" Margin="0,4,0,0"
+                           TextWrapping="Wrap"
                            Text=""/>
-            </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </Border>
-
+        
         <!-- Run Code button -->
         <Border Grid.Row="3"
                 Background="{StaticResource Bg.Surface}"
