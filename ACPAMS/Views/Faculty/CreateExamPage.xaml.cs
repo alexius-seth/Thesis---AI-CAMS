@@ -16,10 +16,10 @@ namespace ACPAMS.Views.Faculty
         private List<ExamSection> _sections = new List<ExamSection>();
         private ExamSection _selectedSection;
         private string _selectedQuestionType = string.Empty;
+        private string _taskCategory = "Examination";
 
         // Store rubric data per question
         private Dictionary<string, RubricData> _rubricData = new Dictionary<string, RubricData>();
-
 
         // Supported programming languages
         private readonly string[] _supportedLanguages = new[] { "Java", "C", "C#", "C++", "Python" };
@@ -54,8 +54,15 @@ namespace ACPAMS.Views.Faculty
             public string ExpectedAnswers { get; set; } // comma-separated for enumeration
         }
 
-        public CreateExamPage()
+        // Default constructor
+        public CreateExamPage() : this("Examination")
         {
+        }
+
+        // Constructor with category
+        public CreateExamPage(string category)
+        {
+            _taskCategory = category;
             InitializeComponent();
 
             _sections = new List<ExamSection>();
@@ -66,6 +73,52 @@ namespace ACPAMS.Views.Faculty
             UpdateQuestionsDisplay();
             UpdateActiveSectionHeader();
             ResetAllTypeButtons();
+            UpdateHeaderWithCategory();
+        }
+
+        private void UpdateHeaderWithCategory()
+        {
+            var label = FindName("CreateExamManagerLabel") as TextBlock;
+            if (label != null)
+            {
+                string categoryDisplay = _taskCategory switch
+                {
+                    "Examination" => "CREATE EXAM MANAGER",
+                    "Quiz" => "CREATE QUIZ MANAGER",
+                    "Activity" => "CREATE ACTIVITY MANAGER",
+                    _ => "CREATE EXAM MANAGER"
+                };
+                label.Text = categoryDisplay;
+            }
+
+            // Show the category badge
+            var badge = FindName("CategoryBadge") as Border;
+            var badgeText = FindName("CategoryBadgeText") as TextBlock;
+            if (badge != null && badgeText != null)
+            {
+                badge.Visibility = Visibility.Visible;
+                badgeText.Text = _taskCategory.ToUpper();
+
+                // Change colors based on category
+                switch (_taskCategory)
+                {
+                    case "Examination":
+                        badge.Background = (Brush)FindResource("Accent.PrimaryBg");
+                        badge.BorderBrush = (Brush)FindResource("Accent.Primary");
+                        badgeText.Foreground = (Brush)FindResource("Accent.Primary");
+                        break;
+                    case "Quiz":
+                        badge.Background = (Brush)FindResource("Status.SuccessBg");
+                        badge.BorderBrush = (Brush)FindResource("Status.Success");
+                        badgeText.Foreground = (Brush)FindResource("Status.Success");
+                        break;
+                    case "Activity":
+                        badge.Background = (Brush)FindResource("Status.WarningBg");
+                        badge.BorderBrush = (Brush)FindResource("Status.Warning");
+                        badgeText.Foreground = (Brush)FindResource("Status.Warning");
+                        break;
+                }
+            }
         }
 
         private void UpdateActiveSectionHeader()
@@ -160,7 +213,7 @@ namespace ACPAMS.Views.Faculty
                 try
                 {
                     ToastNotification.Show("Publishing exam...", Application.Current.MainWindow, 2, false);
-                    
+
                     var dbContext = new ACPAMS.Data.AppDbContext();
                     var instructorId = SessionManager.CurrentInstructor?.InstructorId;
 
@@ -923,7 +976,7 @@ namespace ACPAMS.Views.Faculty
                             Style = (Style)FindResource("Input.Text"),
                             Height = 60,
                             FontFamily = new FontFamily("Consolas"),
-                            AcceptsReturn = true,   
+                            AcceptsReturn = true,
                             IsReadOnly = false
                         };
                         bodyStack.Children.Add(stubBox);
@@ -1150,7 +1203,7 @@ namespace ACPAMS.Views.Faculty
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
-            newQuestion.SectionId = _selectedSection.Id; 
+            newQuestion.SectionId = _selectedSection.Id;
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
@@ -1223,7 +1276,7 @@ namespace ACPAMS.Views.Faculty
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
-            newQuestion.SectionId = _selectedSection.Id; 
+            newQuestion.SectionId = _selectedSection.Id;
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
@@ -1439,17 +1492,17 @@ namespace ACPAMS.Views.Faculty
 
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new FacultyHomePage());
+            MainWindow.NavigateToHomeStatic();
         }
 
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new DashboardPage());
+            MainWindow.NavigateToDashboardStatic();
         }
 
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)
         {
-            // Already here
+            MainWindow.NavigateToCreateExamStatic();
         }
     }
 

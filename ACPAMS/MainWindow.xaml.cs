@@ -1,10 +1,23 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using System.Windows.Controls;
+using ACPAMS.Views.Faculty;
+using ACPAMS.Views.Faculty.Tabs;
 
 namespace ACPAMS
 {
     public partial class MainWindow : Window
     {
         public static MainWindow? Instance { get; private set; }
+
+        // Page instances
+        private FacultyHomePage _homePage;
+        private DashboardPage _dashboardPage;
+        private CreateExamPage _createExamPage;
+        private MonitoringTab _monitoringControl;
+        private ReportsTab _reportsControl;
+        private GradingTab _gradingControl;
+        private string _selectedTaskCategory = "Examination";
 
         public MainWindow()
         {
@@ -15,10 +28,115 @@ namespace ACPAMS
             ShowPage(new Views.Auth.LoginPage());
         }
 
-        // Navigate to any UserControl or Page
+        // ─── Public Navigation Methods ──────────────────────────────
+
+        public void NavigateToHome()
+        {
+            if (_homePage == null)
+                _homePage = new FacultyHomePage();
+            ShowPage(_homePage);
+        }
+
+        public void NavigateToDashboard()
+        {
+            if (_dashboardPage == null)
+                _dashboardPage = new DashboardPage();
+            ShowPage(_dashboardPage);
+        }
+
+        public void NavigateToCreateExam()
+        {
+            // Show the TaskCategoryModal first
+            var modal = new TaskCategoryModal();
+            modal.Owner = this;
+
+            if (modal.ShowDialog() == true)
+            {
+                _selectedTaskCategory = modal.SelectedCategory;
+                OpenCreateExamPage(_selectedTaskCategory);
+            }
+        }
+
+        public void OpenCreateExamPage(string category)
+        {
+            _createExamPage = new CreateExamPage(category);
+            ShowPage(_createExamPage);
+        }
+
+        public void NavigateToMonitoring()
+        {
+            if (_monitoringControl == null)
+                _monitoringControl = new MonitoringTab();
+            ShowPage(_monitoringControl);
+        }
+
+        public void NavigateToReports()
+        {
+            if (_reportsControl == null)
+                _reportsControl = new ReportsTab();
+            ShowPage(_reportsControl);
+        }
+
+        public void NavigateToGrading()
+        {
+            if (_gradingControl == null)
+                _gradingControl = new GradingTab();
+            ShowPage(_gradingControl);
+        }
+
+        public void ShowTaskCategoryModal()
+        {
+            var modal = new TaskCategoryModal();
+            modal.Owner = this;
+
+            if (modal.ShowDialog() == true)
+            {
+                _selectedTaskCategory = modal.SelectedCategory;
+                OpenCreateExamPage(_selectedTaskCategory);
+            }
+        }
+
+        // ─── Static Navigation Methods ──────────────────────────────
+
         public static void Navigate(object content)
         {
             Instance?.ShowPage(content);
+        }
+
+        public static void NavigateToHomeStatic()
+        {
+            Instance?.NavigateToHome();
+        }
+
+        public static void NavigateToDashboardStatic()
+        {
+            Instance?.NavigateToDashboard();
+        }
+
+        public static void NavigateToCreateExamStatic()
+        {
+            Instance?.NavigateToCreateExam();
+        }
+
+        public static void NavigateToMonitoringStatic()
+        {
+            Instance?.NavigateToMonitoring();
+        }
+
+        public static void NavigateToReportsStatic()
+        {
+            Instance?.NavigateToReports();
+        }
+
+        public static void NavigateToGradingStatic()
+        {
+            Instance?.NavigateToGrading();
+        }
+
+        public static void NavigateToStudentReport(Guid attemptId)
+        {
+            var reportPage = new StudentReportPage(attemptId);
+            Instance?.ShowPage(reportPage);
         }
 
         public static void Resize(double width, double height)
@@ -29,6 +147,8 @@ namespace ACPAMS
             Instance.Left = (SystemParameters.PrimaryScreenWidth - width) / 2;
             Instance.Top = (SystemParameters.PrimaryScreenHeight - height) / 2;
         }
+
+        // ─── Private Helper ──────────────────────────────────────────
 
         private void ShowPage(object content)
         {

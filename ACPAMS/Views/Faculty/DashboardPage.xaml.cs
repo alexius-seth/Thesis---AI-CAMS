@@ -12,17 +12,17 @@ namespace ACPAMS.Views.Faculty
 
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new FacultyHomePage());
+            MainWindow.NavigateToHomeStatic();
         }
 
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new CreateExamPage());
+            MainWindow.NavigateToCreateExamStatic();
         }
 
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
-           
+            // Already here - do nothing
         }
     }
 }

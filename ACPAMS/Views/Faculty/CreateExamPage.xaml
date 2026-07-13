@@ -578,8 +578,8 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Margin="0,0,0,16">
-                    <TextBlock Text="CREATE EXAM MANAGER"
-               Style="{StaticResource T.SectionLabel}" Margin="0,0,0,10"/>
+                    <TextBlock x:Name="CreateExamManagerLabel"
+                               Style="{StaticResource T.SectionLabel}" Margin="0,0,0,10"/>
                     <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Height="36">
                         <TextBox x:Name="ExamNameBox"
                  Background="Transparent"
@@ -598,12 +598,10 @@
                         <Border Margin="18,14,18,6">
                             <TextBlock Text="SECTIONS" Style="{StaticResource T.SectionLabel}"/>
                         </Border>
-                        <!-- Section: Identification -->
-                       
-                        
+
                         <!--Dynamic Sections Container-->
                         <StackPanel x:Name="SectionsContainer" Margin="0,0,0,10"/>
-                        
+
                         <!-- Add Section -->
                         <Border Margin="14,10"
         BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1">
@@ -622,16 +620,16 @@
                         <Border Margin="18,14,18,8">
                             <TextBlock Text="ADD QUESTION TYPE" Style="{StaticResource T.SectionLabel}"/>
                         </Border>
-                        
+
                         <!--Identification-->
                         <Button x:Name="AddIdentificationBtn" Click="AddQuestionByType_Click" Tag="Identification" Style="{StaticResource Btn.QTypeItem}">
                             <StackPanel Orientation="Horizontal">
                                 <Border Width="8" Height="8" CornerRadius="4"
                                  Background="{StaticResource QType.Identification}"
                                  Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                  <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
+                                <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
                                    Fill="Transparent" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Identification" FontSize="13"
+                                <TextBlock Text="Identification" FontSize="13"
                                      Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -641,9 +639,9 @@
                                 <Border Width="8" Height="8" CornerRadius="4"
                                 Background="{StaticResource QType.MultipleChoice}"
                                 Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                 <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
+                                <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
                                  Fill="Transparent" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                   <TextBlock Text="Multiple Choice" FontSize="13"
+                                <TextBlock Text="Multiple Choice" FontSize="13"
                                    Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -653,9 +651,9 @@
                                 <Border Width="8" Height="8" CornerRadius="4"
                                 Background="{StaticResource QType.TrueOrFalse}"
                                 Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                 <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
+                                <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
                                  Fill="Transparent" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="True or False" FontSize="13"
+                                <TextBlock Text="True or False" FontSize="13"
                                    Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -665,9 +663,9 @@
                                 <Border Width="8" Height="8" CornerRadius="4"
                                 Background="{StaticResource QType.Essay}"
                                 Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                 <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
+                                <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
                                  Fill="Transparent" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                   <TextBlock Text="Essay" FontSize="13"
+                                <TextBlock Text="Essay" FontSize="13"
                                    Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -677,14 +675,12 @@
                                 <Border Width="8" Height="8" CornerRadius="4"
                                 Background="{StaticResource QType.Enumeration}"
                                 Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                 <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
+                                <Ellipse Width="16" Height="16" Stroke="{StaticResource Border.Medium}"
                                  Fill="Transparent" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                   <TextBlock Text="Enumeration" FontSize="13"
+                                <TextBlock Text="Enumeration" FontSize="13"
                                    Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <!-- Coding selected -->
-                        <!-- Coding -->
                         <!-- Coding -->
                         <Button x:Name="AddCodingBtn" Click="AddQuestionByType_Click" Tag="Coding" Style="{StaticResource Btn.QTypeItem}">
                             <StackPanel Orientation="Horizontal">
@@ -726,47 +722,58 @@
             </Grid.RowDefinitions>
 
             <!-- Canvas header -->
-            <!-- Canvas header -->
-<Border Grid.Row="0" Background="{StaticResource Bg.Surface}"
-        BorderBrush="{StaticResource Border.Subtle}"
-        BorderThickness="0,0,0,1" Padding="28,14">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-            <TextBlock Text="ACTIVE SECTION"
-                       Style="{StaticResource T.SectionLabel}" Margin="0,0,0,2"/>
-            <TextBlock x:Name="ActiveSectionHeader"
-                       Text="No section selected"
-                       FontSize="18" FontWeight="SemiBold"
-                       Foreground="{StaticResource Text.Primary}"/>
-        </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-            <Border Background="{StaticResource Accent.PrimaryBg}"
-                    BorderBrush="{StaticResource Accent.Primary}"
-                    BorderThickness="1" CornerRadius="6" Padding="12,5" Margin="0,0,10,0">
-                <TextBlock x:Name="TotalQuestionsDisplay" Text="Total: 0 pts" FontSize="12" FontWeight="Bold"
-                           Foreground="{StaticResource Accent.Primary}"/>
+            <Border Grid.Row="0" Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1" Padding="28,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <TextBlock Text="ACTIVE SECTION"
+                                       Style="{StaticResource T.SectionLabel}"/>
+                            <!-- Category Badge -->
+                            <Border x:Name="CategoryBadge" 
+                                    Background="{StaticResource Accent.PrimaryBg}"
+                                    BorderBrush="{StaticResource Accent.Primary}"
+                                    BorderThickness="1" CornerRadius="4"
+                                    Padding="8,2" Margin="10,0,0,0"
+                                    Visibility="Collapsed">
+                                <TextBlock x:Name="CategoryBadgeText" 
+                                           Text=""
+                                           FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Accent.Primary}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock x:Name="ActiveSectionHeader"
+                                   Text="No section selected"
+                                   FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Text.Primary}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="{StaticResource Accent.PrimaryBg}"
+                                BorderBrush="{StaticResource Accent.Primary}"
+                                BorderThickness="1" CornerRadius="6" Padding="12,5" Margin="0,0,10,0">
+                            <TextBlock x:Name="TotalQuestionsDisplay" Text="Total: 0 pts" FontSize="12" FontWeight="Bold"
+                                       Foreground="{StaticResource Accent.Primary}"/>
+                        </Border>
+                        <Border Background="{StaticResource Status.SuccessBg}"
+                                BorderBrush="{StaticResource Status.Success}"
+                                BorderThickness="1" CornerRadius="6" Padding="12,5">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="8" Height="8" CornerRadius="4"
+                                        Background="{StaticResource QType.Coding}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ActiveTypeDisplay" Text="—" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Status.Success}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
             </Border>
-            <Border Background="{StaticResource Status.SuccessBg}"
-                    BorderBrush="{StaticResource Status.Success}"
-                    BorderThickness="1" CornerRadius="6" Padding="12,5">
-                <StackPanel Orientation="Horizontal">
-                    <Border Width="8" Height="8" CornerRadius="4"
-                            Background="{StaticResource QType.Coding}"
-                            Margin="0,0,6,0" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="ActiveTypeDisplay" Text="—" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{StaticResource Status.Success}"/>
-                </StackPanel>
-            </Border>
-        </StackPanel>
-    </Grid>
-</Border>
 
-            <!-- Scrollable question list -->
-            <!--DITO PASTE-->
             <!-- Scrollable question list -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
               HorizontalScrollBarVisibility="Disabled"
@@ -780,9 +787,9 @@
             BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,1,0,0">
                 <Button x:Name="AddQuestionBtn" Click="AddNewQuestion_Click" Style="{StaticResource Btn.AddQuestion}" HorizontalAlignment="Stretch">
                     <StackPanel Orientation="Horizontal">
-                       <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                        <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                        Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                       <TextBlock Text="Add New Question" VerticalAlignment="Center"/>
+                        <TextBlock Text="Add New Question" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Border>

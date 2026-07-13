@@ -1,0 +1,561 @@
+<UserControl x:Class="ACPAMS.Views.Faculty.StudentReportPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:ACPAMS.Converters"
+             Background="#F4F5F7"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <!-- DESIGN TOKENS -->
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.TableHeader"   Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
+        <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
+        <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Status.Danger"    Color="#C62828"/>
+        <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEF2F2"/>
+        <SolidColorBrush x:Key="AI.Bg"            Color="#F5F3FF"/>
+        <SolidColorBrush x:Key="AI.Border"        Color="#7C3AED"/>
+        <SolidColorBrush x:Key="AI.Text"          Color="#5B21B6"/>
+
+        <!-- Converters -->
+        <converters:RiskLevelToColorConverter x:Key="RiskLevelToColorConverter"/>
+        <converters:InitialsConverter x:Key="InitialsConverter"/>
+        <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+
+        <!-- TYPOGRAPHY -->
+        <Style x:Key="T.SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Muted}"/>
+        </Style>
+
+        <Style x:Key="T.CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        </Style>
+
+        <Style x:Key="T.KpiNumber" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+        </Style>
+
+        <Style x:Key="T.TableHeader" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="11"/>
+            <Setter Property="FontWeight"        Value="SemiBold"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.TableCell" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Primary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.TableCell.Muted" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="T.Timestamp" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="FontFamily"        Value="Consolas"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- CARD SURFACE -->
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="8"/>
+        </Style>
+
+        <!-- BADGES -->
+        <Style x:Key="Badge.Success" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.SuccessBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Success}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Warning" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.WarningBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Warning}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Danger" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Status.DangerBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <Style x:Key="Badge.Blue" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Accent.PrimaryBg}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="12"/>
+            <Setter Property="Padding"         Value="8,3"/>
+        </Style>
+
+        <!-- TABLE ROW -->
+        <Style x:Key="TableRow" TargetType="Border">
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding"         Value="14,11"/>
+        </Style>
+
+        <!-- BUTTONS -->
+        <Style x:Key="Btn.Outlined" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="Padding"         Value="16,8"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="16,9"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- PAGE BODY -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,24,32,40">
+
+            <!-- HEADER WITH BACK BUTTON -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <Button Style="{StaticResource Btn.Outlined}" Content="← Back to Monitoring" Click="BackToMonitoring_Click" Padding="16,8"/>
+                <TextBlock Text="STUDENT FULL REPORT" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                <Border Background="{StaticResource Accent.PrimaryBg}" BorderBrush="{StaticResource Accent.Primary}" BorderThickness="1" CornerRadius="4" Padding="10,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Report.ExamCode}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Accent.Primary}"/>
+                </Border>
+            </StackPanel>
+
+            <!-- STUDENT PROFILE HEADER -->
+            <Border Style="{StaticResource Card}" Padding="24,20" Margin="0,0,0,24">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Avatar -->
+                    <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32" Background="{StaticResource Accent.PrimaryBg}" BorderBrush="{StaticResource Accent.Primary}" BorderThickness="2" Margin="0,0,20,0">
+                        <TextBlock Text="{Binding Report.StudentName, Converter={StaticResource InitialsConverter}}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource Accent.Primary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Student Info -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Report.StudentName}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Text.Primary}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock Text="{Binding Report.StudentId}" FontSize="12" Foreground="{StaticResource Text.Secondary}" Margin="0,0,12,0"/>
+                            <TextBlock Text="•" FontSize="12" Foreground="{StaticResource Text.Muted}" Margin="0,0,12,0"/>
+                            <TextBlock Text="{Binding Report.Program}" FontSize="12" Foreground="{StaticResource Text.Secondary}" Margin="0,0,12,0"/>
+                            <TextBlock Text="•" FontSize="12" Foreground="{StaticResource Text.Muted}" Margin="0,0,12,0"/>
+                            <TextBlock Text="{Binding Report.Section}" FontSize="12" Foreground="{StaticResource Text.Secondary}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock Text="Started:" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding Report.StartedAt, StringFormat='{}{0:MMM dd, yyyy HH:mm}'}" FontSize="11" Foreground="{StaticResource Text.Secondary}" Margin="0,0,16,0"/>
+                            <TextBlock Text="Submitted:" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding Report.SubmittedAt, StringFormat='{}{0:MMM dd, yyyy HH:mm}'}" FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Risk Badge -->
+                    <Border Grid.Column="2" VerticalAlignment="Center">
+                        <Border.Style>
+                            <!-- BasedOn Badge.Danger (a Border style). Keep BasedOn but ensure Background setters use Brushes -->
+                            <Style TargetType="Border" BasedOn="{StaticResource Badge.Danger}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Report.RiskLevel}" Value="medium">
+                                        <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Report.RiskLevel}" Value="low">
+                                        <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{Binding Report.RiskLevel, Converter={StaticResource RiskLevelToColorConverter}}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock FontSize="13" FontWeight="Bold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="HIGH RISK"/>
+                                        <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Report.RiskLevel}" Value="medium">
+                                                <Setter Property="Text" Value="MEDIUM RISK"/>
+                                                <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Report.RiskLevel}" Value="low">
+                                                <Setter Property="Text" Value="LOW RISK"/>
+                                                <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                </Grid>
+            </Border>
+
+            <!-- METRICS ROW -->
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Score -->
+                <Border Grid.Column="0" Style="{StaticResource Card}" Padding="16,14">
+                    <StackPanel>
+                        <TextBlock Text="TOTAL SCORE" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,4"/>
+                        <TextBlock Style="{StaticResource T.KpiNumber}">
+                            <Run Text="{Binding Report.TotalScore}"/><Run Text=" / "/><Run Text="{Binding Report.MaxPossibleScore}"/>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Report.TotalScorePercent, StringFormat={}{0:P0} of max}" FontSize="11" Foreground="{StaticResource Text.Muted}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Cheating Score -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16,14" BorderBrush="{StaticResource AI.Border}" BorderThickness="3,1,1,1">
+                    <StackPanel>
+                        <TextBlock Text="CHEATING SCORE" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,4"/>
+                        <TextBlock Style="{StaticResource T.KpiNumber}" Foreground="{StaticResource AI.Text}">
+                            <Run Text="{Binding Report.CheatingScore, StringFormat={}{0:F1}}"/><Run Text="%"/>
+                        </TextBlock>
+                        <Border Height="4" CornerRadius="2" Background="{StaticResource AI.Bg}" Margin="0,6,0,0">
+                            <Border HorizontalAlignment="Left" Height="4" CornerRadius="2" Background="{StaticResource AI.Border}" 
+                                    Width="{Binding Report.CheatingScore, Converter={StaticResource PercentageToWidthConverter}}"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Total Flags -->
+                <Border Grid.Column="4" Style="{StaticResource Card}" Padding="16,14">
+                    <StackPanel>
+                        <TextBlock Text="TOTAL FLAGS" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,4"/>
+                        <TextBlock Style="{StaticResource T.KpiNumber}" Foreground="{Binding Report.RiskLevel, Converter={StaticResource RiskLevelToColorConverter}}">
+                            <Run Text="{Binding Report.TotalFlags}"/>
+                        </TextBlock>
+                        <TextBlock Text="Suspicious events detected" FontSize="11" Foreground="{StaticResource Text.Muted}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Status -->
+                <Border Grid.Column="6" Style="{StaticResource Card}" Padding="16,14">
+                    <StackPanel>
+                        <TextBlock Text="STATUS" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,4"/>
+                        <Border HorizontalAlignment="Left" CornerRadius="10" Padding="10,4">
+                            <Border.Style>
+                                <!-- Based on Badge.Blue style instead of setting Style via Setter (not allowed) -->
+                                <Style TargetType="Border" BasedOn="{StaticResource Badge.Blue}">
+                                    <Setter Property="BorderBrush" Value="{StaticResource Accent.Primary}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Report.Status}" Value="submitted">
+                                            <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Report.Status}" Value="graded">
+                                            <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock FontSize="12" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="In Progress"/>
+                                        <Setter Property="Foreground" Value="{StaticResource Accent.Primary}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Report.Status}" Value="submitted">
+                                                <Setter Property="Text" Value="Submitted"/>
+                                                <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Report.Status}" Value="graded">
+                                                <Setter Property="Text" Value="Graded"/>
+                                                <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+
+            <!-- FLAG HISTORY TABLE -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="FLAG HISTORY" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center"/>
+                <Border Background="{StaticResource Status.WarningBg}" BorderBrush="{StaticResource Status.Warning}" BorderThickness="1" CornerRadius="4" Padding="8,2" Margin="12,0,0,0">
+                    <TextBlock Text="{Binding Report.TotalFlags, StringFormat={}{0} events}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource Status.Warning}"/>
+                </Border>
+            </StackPanel>
+
+            <Border Style="{StaticResource Card}" Padding="0" Margin="0,0,0,24">
+                <StackPanel>
+                    <!-- Table Header -->
+                    <Border Background="{StaticResource Bg.TableHeader}" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="14,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="TIME" Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="1" Text="EVENT TYPE" Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="2" Text="DESCRIPTION" Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="3" Text="SEVERITY" Style="{StaticResource T.TableHeader}" HorizontalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Report.FlagHistory}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource TableRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="80"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp, StringFormat={}{0:HH:mm:ss}}" Style="{StaticResource T.Timestamp}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding EventType}" Style="{StaticResource T.TableCell}" FontSize="12"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Description}" Style="{StaticResource T.TableCell.Muted}" FontSize="12" TextWrapping="Wrap"/>
+                                        <Border Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="10" Padding="6,2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                    <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="medium">
+                                                            <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="high">
+                                                            <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontSize="10" FontWeight="Bold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="LOW"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Severity}" Value="medium">
+                                                                <Setter Property="Text" Value="MEDIUM"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Severity}" Value="high">
+                                                                <Setter Property="Text" Value="HIGH"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- QUESTION ANSWERS TABLE -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="QUESTION ANSWERS" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center"/>
+                <!-- Use the Badge.Blue style (a Border style), not as a Background brush -->
+                <Border Style="{StaticResource Badge.Blue}" Margin="12,0,0,0">
+                    <TextBlock Text="{Binding Report.QuestionAnswers.Count, StringFormat={}{0} questions}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource Accent.Primary}"/>
+                </Border>
+            </StackPanel>
+
+            <Border Style="{StaticResource Card}" Padding="0">
+                <StackPanel>
+                    <!-- Table Header -->
+                    <Border Background="{StaticResource Bg.TableHeader}" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="14,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="#" Style="{StaticResource T.TableHeader}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="QUESTION" Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="2" Text="TYPE" Style="{StaticResource T.TableHeader}"/>
+                            <TextBlock Grid.Column="3" Text="SCORE" Style="{StaticResource T.TableHeader}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="STATUS" Style="{StaticResource T.TableHeader}" HorizontalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Report.QuestionAnswers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource TableRow}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="100"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding Number}" Style="{StaticResource T.TableCell}" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Text}" Style="{StaticResource T.TableCell}" FontSize="12" TextWrapping="Wrap" MaxHeight="40" TextTrimming="WordEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Type}" Style="{StaticResource T.TableCell.Muted}" FontSize="12"/>
+                                        <TextBlock Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="{Binding ObtainedPoints, StringFormat={}{0} / {1}}"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ObtainedPoints}" Value="{x:Null}">
+                                                            <Setter Property="Text" Value="—"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource Text.Muted}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <Border Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="10" Padding="8,2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                                    <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ObtainedPoints}" Value="{x:Null}">
+                                                            <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="graded">
+                                                            <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontSize="10" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="Pending"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="graded">
+                                                                <Setter Property="Text" Value="Graded"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- EXPORT BUTTONS -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Style="{StaticResource Btn.Outlined}" Content="📄 Export PDF" Margin="0,0,8,0" Padding="16,8"/>
+                <Button Style="{StaticResource Btn.Outlined}" Content="📋 Copy Report" Padding="16,8"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

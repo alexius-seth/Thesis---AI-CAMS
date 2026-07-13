@@ -19,14 +19,14 @@ namespace ACPAMS.Views.Faculty
 
         private void OpenDashboardPage(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new DashboardPage());
+            MainWindow.NavigateToDashboardStatic();
         }
 
         private void OpenCreateExamPage(object sender, RoutedEventArgs e)
         {
             try
             {
-                ACPAMS.MainWindow.Navigate(new CreateExamPage());
+                MainWindow.NavigateToCreateExamStatic();
             }
             catch (Exception ex)
             {
@@ -37,12 +37,12 @@ namespace ACPAMS.Views.Faculty
 
         private void OpenMonitoringTab(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new MonitoringTab());
+            MainWindow.NavigateToMonitoringStatic();
         }
 
         private void OpenStudentReportTab(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new StudentPerformanceReportTab());
+            MainWindow.NavigateToReportsStatic();
         }
 
         private void ManageLiveSession(object sender, RoutedEventArgs e)
