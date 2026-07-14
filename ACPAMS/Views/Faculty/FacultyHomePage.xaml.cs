@@ -1,5 +1,8 @@
-﻿using ACPAMS.Views.Faculty.Tabs;
+﻿using ACPAMS.Services;
+using ACPAMS.ViewModels;
+using ACPAMS.Views.Faculty.Tabs;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -7,10 +10,31 @@ namespace ACPAMS.Views.Faculty
 {
     public partial class FacultyHomePage : UserControl
     {
+        private readonly FacultyHomePageViewModel _viewModel;
+
         public FacultyHomePage()
         {
             InitializeComponent();
+
+            // SessionManager.CurrentInstructor is set at login (see LoginPage.xaml.cs).
+            // NOTE: if SessionManager doesn't resolve, add the correct
+            // "using ACPAMS.XYZ;" for wherever it actually lives.
+            var instructorId = SessionManager.CurrentInstructor?.InstructorId;
+
+            _viewModel = new FacultyHomePageViewModel(instructorId);
+            DataContext = _viewModel;
+
+            Loaded += FacultyHomePage_Loaded;
         }
+
+        private async void FacultyHomePage_Loaded(object sender, RoutedEventArgs e)
+        {
+            await _viewModel.LoadExamsAsync();
+        }
+
+        // ─────────────────────────────────────────────
+        // Sidebar / quick-nav (unchanged from before)
+        // ─────────────────────────────────────────────
 
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
@@ -37,7 +61,15 @@ namespace ACPAMS.Views.Faculty
 
         private void OpenMonitoringTab(object sender, RoutedEventArgs e)
         {
-            MainWindow.NavigateToMonitoringStatic();
+            var liveExam = _viewModel.Exams.FirstOrDefault(x => x.IsLive);
+
+            if (liveExam == null)
+            {
+                ToastNotification.Show("No Current Active Exam", Application.Current.MainWindow, 3);
+                return;
+            }
+
+            MainWindow.Navigate(new MonitoringTab(liveExam.ExamId));
         }
 
         private void OpenStudentReportTab(object sender, RoutedEventArgs e)

@@ -25,10 +25,15 @@ namespace ACPAMS.Views.Faculty.Tabs
         public List<AuditLog> SelectedStudentEvents { get; set; } = new();
         public MonitoringService.MonitoringStatsDto Stats { get; set; } = new();
 
-        public MonitoringTab()
+        public MonitoringTab() : this(null)
+        {
+        }
+
+        public MonitoringTab(Guid? examId)
         {
             InitializeComponent();
             _context = new AppDbContext();
+            _currentExamId = examId;
 
             DataContext = this;
 
