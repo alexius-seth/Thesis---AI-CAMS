@@ -168,7 +168,7 @@
                         CornerRadius="4"
                         Padding="10,3"
                         Margin="12,0,0,0">
-                    <TextBlock Text="CS101 — MIDTERMS"
+                    <TextBlock x:Name="ExamLabel" Text="—"
                                FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource Accent.Primary}"/>
                 </Border>
@@ -191,7 +191,7 @@
                         <TextBlock Text="Students Taking"
                                    Style="{StaticResource T.KpiLabel}"
                                    Margin="0,0,0,6"/>
-                        <TextBlock Text="44"
+                        <TextBlock x:Name="StudentsTakingValue" Text="0"
                                    Style="{StaticResource T.KpiNumber}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                             <Ellipse Width="6" Height="6"
@@ -211,9 +211,9 @@
                         <TextBlock Text="Students Finished"
                                    Style="{StaticResource T.KpiLabel}"
                                    Margin="0,0,0,6"/>
-                        <TextBlock Text="6"
+                        <TextBlock x:Name="StudentsFinishedValue" Text="0"
                                    Style="{StaticResource T.KpiNumber}"/>
-                        <TextBlock Text="of 50 enrolled"
+                        <TextBlock x:Name="StudentsFinishedSub" Text="of 0 enrolled"
                                    FontSize="11"
                                    Foreground="{StaticResource Text.Muted}"
                                    Margin="0,6,0,0"/>
@@ -294,164 +294,8 @@
                         </Grid>
                     </Border>
 
-                    <!-- Row 1: J. Doe — Pending -->
-                    <Border Style="{StaticResource TableRow}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Border Width="28" Height="28" CornerRadius="14"
-                                        Background="#E2E8F0" Margin="0,0,8,0">
-                                    <TextBlock Text="JD"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Secondary}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="J. Doe"
-                                           Style="{StaticResource T.TableCell}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <TextBlock Grid.Column="1" Text="BSCS"
-                                       Style="{StaticResource T.TableCell.Muted}"/>
-
-                            <Border Grid.Column="2" Style="{StaticResource Badge.Success}"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <TextBlock Text="Low"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Status.Success}"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3" Text="85 / 100"
-                                       Style="{StaticResource T.TableCell}"/>
-
-                            <TextBlock Grid.Column="4" Text="—"
-                                       Style="{StaticResource T.TableCell.Muted}"/>
-
-                            <Border Grid.Column="5" Style="{StaticResource Badge.Warning}"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <TextBlock Text="Pending Review"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Status.Warning}"/>
-                            </Border>
-                        </Grid>
-                    </Border>
-
-                    <!-- Row 2: A. Smith — Finalized -->
-                    <Border Style="{StaticResource TableRow}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Border Width="28" Height="28" CornerRadius="14"
-                                        Background="#E2E8F0" Margin="0,0,8,0">
-                                    <TextBlock Text="AS"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Secondary}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="A. Smith"
-                                           Style="{StaticResource T.TableCell}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <TextBlock Grid.Column="1" Text="BSIT"
-                                       Style="{StaticResource T.TableCell.Muted}"/>
-
-                            <Border Grid.Column="2" Style="{StaticResource Badge.Danger}"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <TextBlock Text="High"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Status.Danger}"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3" Text="90 / 100"
-                                       Style="{StaticResource T.TableCell}"/>
-
-                            <TextBlock Grid.Column="4" Text="88 / 100"
-                                       Style="{StaticResource T.TableCell}"/>
-
-                            <Border Grid.Column="5" Style="{StaticResource Badge.Success}"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <TextBlock Text="Finalized"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Status.Success}"/>
-                            </Border>
-                        </Grid>
-                    </Border>
-
-                    <!-- Row 3: placeholder — still taking -->
-                    <Border Padding="16,12">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                <Border Width="28" Height="28" CornerRadius="14"
-                                        Background="#E2E8F0" Margin="0,0,8,0">
-                                    <TextBlock Text="MR"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Secondary}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="M. Reyes"
-                                           Style="{StaticResource T.TableCell}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <TextBlock Grid.Column="1" Text="BSCS"
-                                       Style="{StaticResource T.TableCell.Muted}"/>
-
-                            <Border Grid.Column="2" Style="{StaticResource Badge.Muted}"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <TextBlock Text="—"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Text.Secondary}"/>
-                            </Border>
-
-                            <TextBlock Grid.Column="3" Text="—"
-                                       Style="{StaticResource T.TableCell.Muted}"/>
-
-                            <TextBlock Grid.Column="4" Text="—"
-                                       Style="{StaticResource T.TableCell.Muted}"/>
-
-                            <Border Grid.Column="5" Style="{StaticResource Badge.Muted}"
-                                    HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <Ellipse Width="6" Height="6"
-                                             Fill="{StaticResource Accent.Primary}"
-                                             Margin="0,0,5,0"
-                                             VerticalAlignment="Center"/>
-                                    <TextBlock Text="In Progress"
-                                               FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Accent.Primary}"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </Border>
+                    <!-- Rows populated at runtime by OverviewTab.xaml.cs -->
+                    <StackPanel x:Name="StudentRowsPanel"/>
 
                 </StackPanel>
             </Border>
@@ -492,12 +336,13 @@
                                     Height="22" CornerRadius="3"
                                     Background="{StaticResource Chart.BarBg}"
                                     VerticalAlignment="Center">
-                                <Border HorizontalAlignment="Left"
-                                        Width="210"
+                                <Border x:Name="Bar90_100"
+                                        HorizontalAlignment="Left"
+                                        Width="0"
                                         Height="22" CornerRadius="3"
                                         Background="{StaticResource Chart.Bar}"/>
                             </Border>
-                            <TextBlock Grid.Column="2" Text="21"
+                            <TextBlock x:Name="Count90_100" Grid.Column="2" Text="0"
                                        FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Text.Primary}"
                                        HorizontalAlignment="Right"
@@ -519,12 +364,13 @@
                                     Height="22" CornerRadius="3"
                                     Background="{StaticResource Chart.BarBg}"
                                     VerticalAlignment="Center">
-                                <Border HorizontalAlignment="Left"
-                                        Width="140"
+                                <Border x:Name="Bar80_89"
+                                        HorizontalAlignment="Left"
+                                        Width="0"
                                         Height="22" CornerRadius="3"
                                         Background="{StaticResource Chart.Bar}"/>
                             </Border>
-                            <TextBlock Grid.Column="2" Text="14"
+                            <TextBlock x:Name="Count80_89" Grid.Column="2" Text="0"
                                        FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Text.Primary}"
                                        HorizontalAlignment="Right"
@@ -546,12 +392,13 @@
                                     Height="22" CornerRadius="3"
                                     Background="{StaticResource Chart.BarBg}"
                                     VerticalAlignment="Center">
-                                <Border HorizontalAlignment="Left"
-                                        Width="60"
+                                <Border x:Name="Bar70_79"
+                                        HorizontalAlignment="Left"
+                                        Width="0"
                                         Height="22" CornerRadius="3"
                                         Background="{StaticResource Chart.Bar}"/>
                             </Border>
-                            <TextBlock Grid.Column="2" Text="6"
+                            <TextBlock x:Name="Count70_79" Grid.Column="2" Text="0"
                                        FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Text.Primary}"
                                        HorizontalAlignment="Right"
@@ -573,12 +420,13 @@
                                     Height="22" CornerRadius="3"
                                     Background="{StaticResource Chart.BarBg}"
                                     VerticalAlignment="Center">
-                                <Border HorizontalAlignment="Left"
-                                        Width="20"
+                                <Border x:Name="BarBelow70"
+                                        HorizontalAlignment="Left"
+                                        Width="0"
                                         Height="22" CornerRadius="3"
                                         Background="#EF5350"/>
                             </Border>
-                            <TextBlock Grid.Column="2" Text="2"
+                            <TextBlock x:Name="CountBelow70" Grid.Column="2" Text="0"
                                        FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Status.Danger}"
                                        HorizontalAlignment="Right"
