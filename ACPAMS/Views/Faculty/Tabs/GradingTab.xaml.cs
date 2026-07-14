@@ -7,14 +7,16 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using ACPAMS.Services;
 
 namespace ACPAMS.Views.Faculty.Tabs
 {
-    public partial class GradingTab : UserControl, INotifyPropertyChanged
+    public partial class GradingTab : UserControl, INotifyPropertyChanged, IRefreshableView
     {
         private readonly Guid? _examId;
         private readonly GradingService _service = new();
+        private readonly DispatcherTimer _autoRefreshTimer;
 
         public ObservableCollection<SectionGroupVM> SectionGroups { get; set; } = new();
         public ObservableCollection<QuestionAnswerVM> CurrentQuestions { get; set; } = new();
@@ -59,6 +61,9 @@ namespace ACPAMS.Views.Faculty.Tabs
             DataContext = this;
             _examId = examId;
 
+            _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _autoRefreshTimer.Tick += async (s, e) => await RefreshQueueOnlyAsync();
+
             Loaded += GradingTab_Loaded;
             Unloaded += GradingTab_Unloaded;
         }
@@ -68,6 +73,8 @@ namespace ACPAMS.Views.Faculty.Tabs
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
 
+            _autoRefreshTimer.Start();
+
             await LoadAsync();
         }
 
@@ -75,6 +82,8 @@ namespace ACPAMS.Views.Faculty.Tabs
         {
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+
+            _autoRefreshTimer.Stop();
         }
 
         private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -84,6 +93,51 @@ namespace ACPAMS.Views.Faculty.Tabs
                 e.Handled = true;
                 await LoadAsync(_selectedAttempt?.AttemptId);
             }
+        }
+
+        // ── Auto-refresh (every 10s): queue + KPIs ONLY ──────────────────
+        // Deliberately does NOT touch CurrentQuestions/_selectedAttempt's
+        // loaded detail — if it did, any points you're mid-typing in the
+        // right panel would get wiped out from under you every 10 seconds.
+        // New submissions and status-badge changes still show up in the
+        // queue; your in-progress grading is left alone until you Save,
+        // click a different student, or explicitly press Ctrl+R.
+        private async Task RefreshQueueOnlyAsync()
+        {
+            if (!_examId.HasValue) return;
+
+            var data = await _service.GetGradingDataAsync(_examId.Value);
+
+            var currentSelectionId = _selectedAttempt?.AttemptId;
+
+            SectionGroups.Clear();
+            foreach (var section in data.Sections)
+            {
+                var groupVM = new SectionGroupVM { SectionName = section.SectionName };
+                foreach (var a in section.Attempts)
+                {
+                    var itemVM = new AttemptQueueItemVM
+                    {
+                        AttemptId = a.AttemptId,
+                        StudentName = a.StudentName,
+                        StudentInitials = a.StudentInitials,
+                        PcLabel = a.PcLabel,
+                        SectionName = a.SectionName,
+                        IsFullyGraded = a.IsFullyGraded,
+                        IsSelected = a.AttemptId == currentSelectionId
+                    };
+                    groupVM.Attempts.Add(itemVM);
+
+                    if (itemVM.IsSelected)
+                        _selectedAttempt = itemVM;
+                }
+                SectionGroups.Add(groupVM);
+            }
+
+            TotalSubmissions = data.TotalSubmissions;
+            AiAutoGraded = data.AiAutoGraded;
+            PendingReview = data.PendingReview;
+            Finalized = data.Finalized;
         }
 
         // preserveSelectionId: if provided, re-selects the same attempt after
@@ -166,6 +220,14 @@ namespace ACPAMS.Views.Faculty.Tabs
                     ObtainedPoints = q.ObtainedPoints
                 });
             }
+        }
+
+        // Called by MainWindow.ShowPage on every navigation to this page.
+        // GradingTab is normally constructed fresh per exam, but implementing
+        // this keeps it correct even if a caller ever caches/reuses an instance.
+        public async Task RefreshAsync()
+        {
+            await LoadAsync(_selectedAttempt?.AttemptId);
         }
 
         // Wire to each queue item Border's MouseLeftButtonUp

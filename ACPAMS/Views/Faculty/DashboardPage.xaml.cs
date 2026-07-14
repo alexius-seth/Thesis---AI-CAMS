@@ -2,18 +2,20 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using ACPAMS.Services;
 using ACPAMS.Views.Faculty.Tabs;
 
 namespace ACPAMS.Views.Faculty
 {
-    public partial class DashboardPage : UserControl
+    public partial class DashboardPage : UserControl, IRefreshableView
     {
         // If set, the dashboard shows this specific exam (e.g. opened via
         // "View Dashboard" from a Faculty Home card) instead of auto-detecting
         // whichever exam is currently live for the instructor.
         private readonly Guid? _explicitExamId;
         private Guid? _currentExamId;
+        private readonly DispatcherTimer _autoRefreshTimer;
 
         public DashboardPage() : this(null) { }
 
@@ -21,6 +23,9 @@ namespace ACPAMS.Views.Faculty
         {
             InitializeComponent();
             _explicitExamId = examId;
+
+            _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _autoRefreshTimer.Tick += async (s, e) => await LoadDashboardAsync();
 
             Loaded += DashboardPage_Loaded;
             Unloaded += DashboardPage_Unloaded;
@@ -32,6 +37,8 @@ namespace ACPAMS.Views.Faculty
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
 
+            _autoRefreshTimer.Start();
+
             await LoadDashboardAsync();
         }
 
@@ -39,6 +46,8 @@ namespace ACPAMS.Views.Faculty
         {
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+
+            _autoRefreshTimer.Stop();
         }
 
         private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -83,6 +92,14 @@ namespace ACPAMS.Views.Faculty
             if (instructor == null) return null;
 
             return await service.GetLiveExamAsync(instructor.InstructorId);
+        }
+
+        // Called by MainWindow.ShowPage on every navigation to this page —
+        // including returning to the cached singleton instance via Back or
+        // the sidebar link, where Loaded may not reliably refire.
+        public async System.Threading.Tasks.Task RefreshAsync()
+        {
+            await LoadDashboardAsync();
         }
 
         private void NavigateToHome(object sender, RoutedEventArgs e)

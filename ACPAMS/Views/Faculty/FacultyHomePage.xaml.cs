@@ -6,12 +6,14 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ACPAMS.Views.Faculty
 {
-    public partial class FacultyHomePage : UserControl
+    public partial class FacultyHomePage : UserControl, IRefreshableView
     {
         private readonly FacultyHomePageViewModel _viewModel;
+        private readonly DispatcherTimer _autoRefreshTimer;
 
         public FacultyHomePage()
         {
@@ -25,6 +27,9 @@ namespace ACPAMS.Views.Faculty
             _viewModel = new FacultyHomePageViewModel(instructorId);
             DataContext = _viewModel;
 
+            _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _autoRefreshTimer.Tick += async (s, e) => await _viewModel.LoadExamsAsync();
+
             Loaded += FacultyHomePage_Loaded;
             Unloaded += FacultyHomePage_Unloaded;
         }
@@ -34,6 +39,8 @@ namespace ACPAMS.Views.Faculty
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
 
+            _autoRefreshTimer.Start();
+
             await _viewModel.LoadExamsAsync();
         }
 
@@ -41,6 +48,8 @@ namespace ACPAMS.Views.Faculty
         {
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+
+            _autoRefreshTimer.Stop();
         }
 
         private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -50,6 +59,15 @@ namespace ACPAMS.Views.Faculty
                 e.Handled = true;
                 await _viewModel.LoadExamsAsync();
             }
+        }
+
+        // Called by MainWindow.ShowPage on every navigation to this page.
+        // FacultyHomePage is cached as a singleton in MainWindow, so this is
+        // the main reason "leave and come back" wasn't showing fresh data —
+        // Loaded alone wasn't a reliable enough signal for a reused instance.
+        public async System.Threading.Tasks.Task RefreshAsync()
+        {
+            await _viewModel.LoadExamsAsync();
         }
 
         // ─────────────────────────────────────────────

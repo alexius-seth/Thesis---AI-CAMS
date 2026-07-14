@@ -187,7 +187,7 @@ namespace ACPAMS
 
         // ─── Private Helper ──────────────────────────────────────────
 
-        private void ShowPage(object content)
+        private async void ShowPage(object content)
         {
             // Record where we came from, unless this call IS a "Back" navigation
             // (that would just re-push the page we're leaving and break the trail).
@@ -197,6 +197,15 @@ namespace ACPAMS
             }
 
             MainContent.Content = content;
+
+            // Force a fresh data load on every navigation — including returning
+            // to a cached instance (Home, Dashboard, Reports) via Back or a
+            // sidebar link. Loaded alone isn't a reliable enough signal for
+            // "the user just arrived here and wants current data."
+            if (content is IRefreshableView refreshable)
+            {
+                await refreshable.RefreshAsync();
+            }
         }
     }
 }

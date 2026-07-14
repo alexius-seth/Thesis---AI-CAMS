@@ -4,13 +4,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using ACPAMS.Services;
 
 namespace ACPAMS.Views.Faculty.Tabs
 {
-    public partial class ReportsTab : UserControl
+    public partial class ReportsTab : UserControl, IRefreshableView
     {
         private readonly Guid? _examId;
+        private readonly DispatcherTimer _autoRefreshTimer;
 
         public ReportsTab() : this(null) { }
 
@@ -18,6 +20,10 @@ namespace ACPAMS.Views.Faculty.Tabs
         {
             InitializeComponent();
             _examId = examId;
+
+            _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _autoRefreshTimer.Tick += async (s, e) => await LoadReportsAsync();
+
             Loaded += ReportsTab_Loaded;
             Unloaded += ReportsTab_Unloaded;
         }
@@ -27,6 +33,8 @@ namespace ACPAMS.Views.Faculty.Tabs
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
 
+            _autoRefreshTimer.Start();
+
             await LoadReportsAsync();
         }
 
@@ -34,6 +42,8 @@ namespace ACPAMS.Views.Faculty.Tabs
         {
             if (Application.Current.MainWindow != null)
                 Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+
+            _autoRefreshTimer.Stop();
         }
 
         private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -208,6 +218,14 @@ namespace ACPAMS.Views.Faculty.Tabs
 
                 ReportRowsPanel.Children.Add(row);
             }
+        }
+
+        // Called by MainWindow.ShowPage on every navigation to this page —
+        // matters especially for the cached, unscoped ReportsTab instance
+        // (the generic "View Student Reports" quick-nav).
+        public async System.Threading.Tasks.Task RefreshAsync()
+        {
+            await LoadReportsAsync();
         }
 
         private void ViewReport_Click(object sender, RoutedEventArgs e)
