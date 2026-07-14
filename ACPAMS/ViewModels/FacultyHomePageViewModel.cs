@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using ACPAMS.Data;
 using ACPAMS.Services;
+using ACPAMS.Views.Faculty;
 using ACPAMS.Views.Faculty.Tabs;
 
 namespace ACPAMS.ViewModels
@@ -29,6 +32,12 @@ namespace ACPAMS.ViewModels
         public ICommand ArchiveExamCommand { get; set; }
         public ICommand DeleteExamCommand { get; set; }
         public ICommand ViewReportCommand { get; set; }
+        public ICommand ViewDashboardCommand { get; set; }
+
+        /// <summary>Single command for the "Recently Completed" row action button —
+        /// branches to Review Submissions / Finalize Grades / View Report based on
+        /// the exam's own ActionLabel (computed in ExamStatusService).</summary>
+        public ICommand PrimaryActionCommand { get; set; }
 
         public ObservableCollection<ExamStatusDto> Exams
         {
@@ -37,8 +46,17 @@ namespace ACPAMS.ViewModels
             {
                 _exams = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CompletedExams));
+                OnPropertyChanged(nameof(HasNoCompletedExams));
             }
         }
+
+        /// <summary>Feeds the "Recently Completed" empty-state message.</summary>
+        public bool HasNoCompletedExams => !CompletedExams.Any();
+
+        /// <summary>Feeds the "Recently Completed — Needs Review" table (Section 3).</summary>
+        public IEnumerable<ExamStatusDto> CompletedExams =>
+            Exams?.Where(e => e.IsDone) ?? Enumerable.Empty<ExamStatusDto>();
 
         public ExamStatusDto SelectedExam
         {
@@ -70,11 +88,22 @@ namespace ACPAMS.ViewModels
         {
             _instructorId = instructorId;
             Exams = new ObservableCollection<ExamStatusDto>();
-            Exams.CollectionChanged += (s, e) => OnPropertyChanged(nameof(HasNoExams));
+            Exams.CollectionChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(HasNoExams));
+                OnPropertyChanged(nameof(CompletedExams));
+                OnPropertyChanged(nameof(HasNoCompletedExams));
+            };
 
             MonitorExamCommand = new RelayCommand(param => OnMonitorExam(param as ExamStatusDto));
             EditExamCommand = new RelayCommand(param => OnEditExam(param as ExamStatusDto));
             ViewLogsCommand = new RelayCommand(param => OnViewLogs(param as ExamStatusDto));
+            ViewDashboardCommand = new RelayCommand(param => OnViewDashboard(param as ExamStatusDto));
+            ViewReportCommand = new RelayCommand(param => OnViewReport(param as ExamStatusDto));
+            PrimaryActionCommand = new RelayCommand(async param =>
+            {
+                if (param is ExamStatusDto exam) await OnPrimaryActionAsync(exam);
+            });
             ArchiveExamCommand = new RelayCommand(async param =>
             {
                 if (param is ExamStatusDto exam) await ArchiveExamAsync(exam.ExamId);
@@ -111,6 +140,8 @@ namespace ACPAMS.ViewModels
                     {
                         Exams.Add(exam);
                     }
+                    OnPropertyChanged(nameof(CompletedExams));
+                    OnPropertyChanged(nameof(HasNoCompletedExams));
                 });
             }
             catch (Exception ex)
@@ -211,6 +242,70 @@ namespace ACPAMS.ViewModels
         {
             if (exam == null) return;
             ACPAMS.MainWindow.Navigate(new MonitoringTab(exam.ExamId));
+        }
+
+        // "View Dashboard" — item 4: every Active/Upcoming card gets this button,
+        // opening the Dashboard scoped to that specific exam (not just "whatever's live").
+        private void OnViewDashboard(ExamStatusDto exam)
+        {
+            if (exam == null) return;
+            ACPAMS.MainWindow.Navigate(new DashboardPage(exam.ExamId));
+        }
+
+        // "View Report" — used both as its own command and as the terminal state
+        // of PrimaryActionCommand for fully-graded / fully-objective exams.
+        // Scoped to THIS exam only, so students from other subjects don't show up.
+        private void OnViewReport(ExamStatusDto exam)
+        {
+            if (exam == null) return;
+            ACPAMS.MainWindow.Navigate(new ReportsTab(exam.ExamId));
+        }
+
+        // Item 5: dynamic action for the "Recently Completed" table.
+        // exam.ActionLabel is computed server-side in ExamStatusService, so
+        // this just has to route to the right place per label.
+        private async Task OnPrimaryActionAsync(ExamStatusDto exam)
+        {
+            switch (exam.ActionLabel)
+            {
+                case "Review Submissions":
+                    ACPAMS.MainWindow.Navigate(new GradingTab(exam.ExamId));
+                    break;
+
+                case "Finalize Grades":
+                    await FinalizeGradesAsync(exam.ExamId);
+                    break;
+
+                case "View Report":
+                default:
+                    OnViewReport(exam);
+                    break;
+            }
+        }
+
+        private async Task FinalizeGradesAsync(Guid examId)
+        {
+            var result = MessageBox.Show(
+                "Finalize grades for this exam? Scores will be locked in as final.",
+                "Confirm Finalize", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                using (var context = new AppDbContext())
+                {
+                    var examStatusService = new ExamStatusService(context);
+                    await examStatusService.FinalizeExamGradesAsync(examId);
+                }
+
+                await LoadExamsAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error finalizing grades: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         protected void OnPropertyChanged([CallerMemberName] string name = null)

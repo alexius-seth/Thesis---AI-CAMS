@@ -839,6 +839,13 @@
                                                     Visibility="{Binding IsLive, Converter={StaticResource BoolToVis}}"/>
 
                                             <Button Style="{StaticResource Btn.Outlined}"
+                                                    Content="View Dashboard"
+                                                    Command="{Binding DataContext.ViewDashboardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Margin="0,0,8,8"
+                                                    Visibility="{Binding IsActiveOrUpcoming, Converter={StaticResource BoolToVis}}"/>
+
+                                            <Button Style="{StaticResource Btn.Outlined}"
                                                     Content="Edit Exam"
                                                     Command="{Binding DataContext.EditExamCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
@@ -902,84 +909,97 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Row 1 -->
-                            <Border Style="{StaticResource TableRow}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="180"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="C Pointers Lab"
-                                               Style="{StaticResource T.TableCell}"/>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                VerticalAlignment="Center">
-                                        <Border Style="{StaticResource Badge.Success}">
-                                            <TextBlock Text="✓  100% Pre-Scored"
-                                                       FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Status.Success}"/>
-                                        </Border>
-                                    </StackPanel>
-                                    <Button Grid.Column="2"
-                                            Style="{StaticResource Btn.Primary}"
-                                            Content="Finalize Grades"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
+                            <!-- Empty state -->
+                            <Border Padding="16,20"
+                                    Visibility="{Binding HasNoCompletedExams, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="No completed exams yet."
+                                           Style="{StaticResource T.CardBody}"/>
                             </Border>
 
-                            <!-- Row 2 -->
-                            <Border Style="{StaticResource TableRow}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="180"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="CS101 Quiz 2"
-                                               Style="{StaticResource T.TableCell}"/>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                VerticalAlignment="Center">
-                                        <Border Style="{StaticResource Badge.Warning}">
-                                            <TextBlock Text="⚠  5 Pending Essay Reviews"
-                                                       FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Status.Warning}"/>
-                                        </Border>
-                                    </StackPanel>
-                                    <Button Grid.Column="2"
-                                            Style="{StaticResource Btn.Outlined}"
-                                            Content="Review Submissions"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Border>
+                            <!-- Rows, one per completed exam -->
+                            <ItemsControl ItemsSource="{Binding CompletedExams}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource TableRow}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="180"/>
+                                                </Grid.ColumnDefinitions>
 
-                            <!-- Row 3 — no bottom border (last row) -->
-                            <Border Padding="16,12">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="180"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="Java OOP Exam"
-                                               Style="{StaticResource T.TableCell}"/>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                VerticalAlignment="Center">
-                                        <Border Style="{StaticResource Badge.Success}">
-                                            <TextBlock Text="✓  Grades Finalized"
-                                                       FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource Status.Success}"/>
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Title}"
+                                                           Style="{StaticResource T.TableCell}"/>
+
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                            VerticalAlignment="Center">
+                                                    <Border>
+                                                        <Border.Style>
+                                                            <Style TargetType="Border" BasedOn="{StaticResource Badge.Success}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding GradingStatusIsWarning}" Value="True">
+                                                                        <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="{Binding GradingStatusText}"
+                                                                   FontSize="11" FontWeight="SemiBold">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding GradingStatusIsWarning}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- "Finalize Grades" — primary style, only visible in that state -->
+                                                <Button Grid.Column="2"
+                                                        Content="{Binding ActionLabel}"
+                                                        Command="{Binding DataContext.PrimaryActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        HorizontalAlignment="Left">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource Btn.Primary}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ActionLabel}" Value="Finalize Grades">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+
+                                                <!-- "Review Submissions" / "View Report" — outlined style, visible otherwise -->
+                                                <Button Grid.Column="2"
+                                                        Content="{Binding ActionLabel}"
+                                                        Command="{Binding DataContext.PrimaryActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        HorizontalAlignment="Left">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource Btn.Outlined}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ActionLabel}" Value="Finalize Grades">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </Grid>
                                         </Border>
-                                    </StackPanel>
-                                    <Button Grid.Column="2"
-                                            Style="{StaticResource Btn.Outlined}"
-                                            Click="OpenStudentReportTab"
-                                            Content="View Report"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
                         </StackPanel>
                     </Border>

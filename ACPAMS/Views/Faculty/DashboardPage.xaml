@@ -380,7 +380,8 @@
                         </Button>
 
                         <!-- Grading with badge -->
-                        <Button Style="{StaticResource Btn.Tab}">
+                        <Button Style="{StaticResource Btn.Tab}"
+                                Click="NavigateToGrading">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Grading"
                                            VerticalAlignment="Center"/>

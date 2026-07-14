@@ -169,6 +169,26 @@
         ───────────────────────────────────────── -->
         <StackPanel Grid.Row="0" Margin="32,24,32,0">
 
+            <Button Click="BackButton_Click"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,14"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Padding="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE72B;"
+                               FontFamily="Segoe MDL2 Assets" FontSize="13"
+                               Foreground="{StaticResource Text.Secondary}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,6,0"/>
+                    <TextBlock Text="Back"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
             <TextBlock Text="GRADING PIPELINE"
                        Style="{StaticResource T.SectionLabel}"
                        Margin="0,0,0,12"/>
@@ -213,9 +233,9 @@
                         <TextBlock Text="{Binding AiAutoGraded}"
                                    FontSize="30" FontWeight="Bold"
                                    Foreground="{StaticResource Text.Primary}"/>
-                        <TextBlock Text="100% pre-scored by AI"
+                        <TextBlock Text="AI grading not yet integrated"
                                    FontSize="11"
-                                   Foreground="{StaticResource AI.Text}"
+                                   Foreground="{StaticResource Text.Muted}"
                                    Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>

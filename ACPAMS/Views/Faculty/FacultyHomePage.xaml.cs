@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ACPAMS.Views.Faculty
 {
@@ -25,11 +26,30 @@ namespace ACPAMS.Views.Faculty
             DataContext = _viewModel;
 
             Loaded += FacultyHomePage_Loaded;
+            Unloaded += FacultyHomePage_Unloaded;
         }
 
         private async void FacultyHomePage_Loaded(object sender, RoutedEventArgs e)
         {
+            if (Application.Current.MainWindow != null)
+                Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
+
             await _viewModel.LoadExamsAsync();
+        }
+
+        private void FacultyHomePage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current.MainWindow != null)
+                Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+        }
+
+        private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                await _viewModel.LoadExamsAsync();
+            }
         }
 
         // ─────────────────────────────────────────────

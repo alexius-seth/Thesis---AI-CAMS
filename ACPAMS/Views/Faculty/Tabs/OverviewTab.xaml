@@ -226,9 +226,9 @@
                         <TextBlock Text="Class Pass Rate"
                                    Style="{StaticResource T.KpiLabel}"
                                    Margin="0,0,0,6"/>
-                        <TextBlock Text="83%"
+                        <TextBlock x:Name="PassRateValue" Text="—"
                                    Style="{StaticResource T.KpiNumber}"/>
-                        <TextBlock Text="Based on finished submissions"
+                        <TextBlock x:Name="PassRateSub" Text="Based on finished submissions"
                                    FontSize="11"
                                    Foreground="{StaticResource Text.Muted}"
                                    TextWrapping="Wrap"
@@ -242,9 +242,9 @@
                         <TextBlock Text="Average Score"
                                    Style="{StaticResource T.KpiLabel}"
                                    Margin="0,0,0,6"/>
-                        <TextBlock Text="88"
+                        <TextBlock x:Name="AverageScoreValue" Text="—"
                                    Style="{StaticResource T.KpiNumber}"/>
-                        <TextBlock Text="out of 100"
+                        <TextBlock x:Name="AverageScoreSub" Text="out of 100"
                                    FontSize="11"
                                    Foreground="{StaticResource Text.Muted}"
                                    Margin="0,6,0,0"/>
@@ -252,6 +252,7 @@
                 </Border>
 
             </Grid>
+
 
             <!-- ─────────────────────────────────────────
                  SECTION 2 — ASSESSMENT COMPLETION TABLE

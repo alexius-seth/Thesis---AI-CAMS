@@ -1,47 +1,66 @@
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ACPAMS.Data;
-using ACPAMS.Models;
+using System.Windows.Input;
 using ACPAMS.Services;
 using ACPAMS.Views.Faculty.Tabs;
-using Microsoft.EntityFrameworkCore;
 
 namespace ACPAMS.Views.Faculty
 {
     public partial class DashboardPage : UserControl
     {
-        private Exam? _currentExam;
+        // If set, the dashboard shows this specific exam (e.g. opened via
+        // "View Dashboard" from a Faculty Home card) instead of auto-detecting
+        // whichever exam is currently live for the instructor.
+        private readonly Guid? _explicitExamId;
+        private Guid? _currentExamId;
 
-        public DashboardPage()
+        public DashboardPage() : this(null) { }
+
+        public DashboardPage(Guid? examId)
         {
             InitializeComponent();
+            _explicitExamId = examId;
+
             Loaded += DashboardPage_Loaded;
+            Unloaded += DashboardPage_Unloaded;
         }
 
         private async void DashboardPage_Loaded(object sender, RoutedEventArgs e)
         {
-            // Instructor must be logged in and stored in SessionManager
-            // (set during login, before DashboardPage is ever shown).
-            var instructor = SessionManager.CurrentInstructor;
-            if (instructor == null)
+            // Catch Ctrl+R anywhere in the window while this page is showing.
+            if (Application.Current.MainWindow != null)
+                Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
+
+            await LoadDashboardAsync();
+        }
+
+        private void DashboardPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current.MainWindow != null)
+                Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+        }
+
+        private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                StatusChip.Visibility = Visibility.Collapsed;
-                return;
+                e.Handled = true;
+                await LoadDashboardAsync();
             }
+        }
 
-            string instructorId = instructor.InstructorId;
-
+        private async System.Threading.Tasks.Task LoadDashboardAsync()
+        {
             var service = new DashboardService();
-            var live = await service.GetLiveExamAsync(instructorId);
+
+            LiveExamDto? live = _explicitExamId.HasValue
+                ? await service.GetExamByIdAsync(_explicitExamId.Value)
+                : await GetLiveExamForCurrentInstructorAsync(service);
 
             if (live != null)
             {
-                using (var context = new AppDbContext())
-                {
-                    _currentExam = await context.Exams.FirstOrDefaultAsync(x => x.ExamId == live.ExamId);
-                }
+                _currentExamId = live.ExamId;
 
                 StatusChip.Visibility = Visibility.Visible;
                 StatusChipLabel.Text = $"  ·  {live.CourseCode} {live.Title}";
@@ -53,8 +72,17 @@ namespace ACPAMS.Views.Faculty
             }
             else
             {
+                _currentExamId = null;
                 StatusChip.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private async System.Threading.Tasks.Task<LiveExamDto?> GetLiveExamForCurrentInstructorAsync(DashboardService service)
+        {
+            var instructor = SessionManager.CurrentInstructor;
+            if (instructor == null) return null;
+
+            return await service.GetLiveExamAsync(instructor.InstructorId);
         }
 
         private void NavigateToHome(object sender, RoutedEventArgs e)
@@ -74,12 +102,27 @@ namespace ACPAMS.Views.Faculty
 
         private void NavigateToMonitoring(object sender, RoutedEventArgs e)
         {
-            // MainWindow.NavigateToMonitoringStatic() takes no arguments —
-            // MonitoringTab reads the active exam from SessionManager.CurrentExam.
-            if (_currentExam != null)
+            if (_currentExamId.HasValue)
             {
-                SessionManager.CurrentExam = _currentExam;
-                MainWindow.NavigateToMonitoringStatic();
+                // Same pattern FacultyHomePage.OpenMonitoringTab uses, so this
+                // page participates correctly in MainWindow's navigation history.
+                MainWindow.Navigate(new MonitoringTab(_currentExamId.Value));
+            }
+            else
+            {
+                ToastNotification.Show("No active exam to monitor", Application.Current.MainWindow, 3);
+            }
+        }
+
+        private void NavigateToGrading(object sender, RoutedEventArgs e)
+        {
+            if (_currentExamId.HasValue)
+            {
+                MainWindow.Navigate(new GradingTab(_currentExamId.Value));
+            }
+            else
+            {
+                ToastNotification.Show("No exam selected to grade", Application.Current.MainWindow, 3);
             }
         }
     }

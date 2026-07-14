@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using ACPAMS.Views.Faculty;
@@ -18,6 +19,12 @@ namespace ACPAMS
         private ReportsTab _reportsControl;
         private GradingTab _gradingControl;
         private string _selectedTaskCategory = "Examination";
+
+        // ─── Navigation history ──────────────────────────────────────
+        // Tracks where the user came from so Back can return them to the
+        // actual previous page, instead of hardcoding Home.
+        private readonly Stack<object> _navigationHistory = new();
+        private bool _isNavigatingBack = false;
 
         public MainWindow()
         {
@@ -96,6 +103,31 @@ namespace ACPAMS
             }
         }
 
+        // ─── Back navigation ──────────────────────────────────────
+        // Returns to whichever page the user was actually on before the
+        // current one — not a hardcoded destination.
+        public void NavigateBack()
+        {
+            if (_navigationHistory.Count == 0)
+            {
+                // Nothing to go back to — fall back to Home.
+                NavigateToHome();
+                return;
+            }
+
+            var previous = _navigationHistory.Pop();
+
+            _isNavigatingBack = true;
+            try
+            {
+                ShowPage(previous);
+            }
+            finally
+            {
+                _isNavigatingBack = false;
+            }
+        }
+
         // ─── Static Navigation Methods ──────────────────────────────
 
         public static void Navigate(object content)
@@ -139,6 +171,11 @@ namespace ACPAMS
             Instance?.ShowPage(reportPage);
         }
 
+        public static void NavigateBackStatic()
+        {
+            Instance?.NavigateBack();
+        }
+
         public static void Resize(double width, double height)
         {
             if (Instance == null) return;
@@ -152,6 +189,13 @@ namespace ACPAMS
 
         private void ShowPage(object content)
         {
+            // Record where we came from, unless this call IS a "Back" navigation
+            // (that would just re-push the page we're leaving and break the trail).
+            if (!_isNavigatingBack && MainContent.Content != null && MainContent.Content != content)
+            {
+                _navigationHistory.Push(MainContent.Content);
+            }
+
             MainContent.Content = content;
         }
     }

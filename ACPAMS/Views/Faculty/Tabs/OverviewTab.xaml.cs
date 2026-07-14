@@ -21,11 +21,29 @@ namespace ACPAMS.Views.Faculty.Tabs
 
             var rows = await service.GetStudentRowsAsync(liveExam.ExamId);
             var dist = await service.AutoGradeAndGetDistributionAsync(liveExam.ExamId);
+            var summary = await service.GetClassSummaryAsync(liveExam.ExamId);
 
             ExamLabel.Text = $"{liveExam.CourseCode} — {liveExam.Title}".ToUpper();
             StudentsTakingValue.Text = rows.Count(r => r.Status == "in_progress").ToString();
             StudentsFinishedValue.Text = rows.Count(r => r.Status == "submitted" || r.Status == "graded").ToString();
             StudentsFinishedSub.Text = $"of {rows.Count} enrolled";
+
+            if (summary.HasData)
+            {
+                PassRateValue.Text = $"{summary.PassRatePercent:0}%";
+                PassRateSub.Text = $"Based on {summary.GradedCount} finished submission{(summary.GradedCount == 1 ? "" : "s")}";
+
+                AverageScoreValue.Text = $"{summary.AverageScorePercent:0}%";
+                AverageScoreSub.Text = "of maximum exam score";
+            }
+            else
+            {
+                PassRateValue.Text = "—";
+                PassRateSub.Text = "No finished submissions yet";
+
+                AverageScoreValue.Text = "—";
+                AverageScoreSub.Text = "No finished submissions yet";
+            }
 
             BuildStudentRows(rows);
             BuildScoreDistribution(dist);

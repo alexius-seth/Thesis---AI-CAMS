@@ -21,6 +21,8 @@ namespace ACPAMS.Services
         {
             var exams = await _context.Exams
                 .Include(e => e.Attempts)
+                    .ThenInclude(a => a.Answers)
+                .Include(e => e.Questions)
                 .Where(e => e.InstructorId == instructorId)
                 .OrderByDescending(e => e.CreatedAt)
                 .ToListAsync();
@@ -40,6 +42,76 @@ namespace ACPAMS.Services
                     status = "done";
                 else
                     status = "pending";
+
+                // ── Grading progress, for the "Recently Completed" action button ──
+                bool hasSubjective = exam.Questions != null &&
+                    exam.Questions.Any(q => q.QuestionType == "essay" || q.QuestionType == "coding");
+
+                var subjectiveQuestionIds = exam.Questions?
+                    .Where(q => q.QuestionType == "essay" || q.QuestionType == "coding")
+                    .Select(q => q.QuestionId)
+                    .ToHashSet() ?? new HashSet<Guid>();
+
+                var gradableAttempts = exam.Attempts?
+                    .Where(a => a.Status == "submitted" || a.Status == "graded")
+                    .ToList() ?? new List<StudentExamAttempt>();
+
+                int pendingReviewCount = 0;
+                int readyToFinalizeCount = 0;
+                int gradedCount = 0;
+
+                foreach (var attempt in gradableAttempts)
+                {
+                    if (attempt.Status == "graded")
+                    {
+                        gradedCount++;
+                        continue;
+                    }
+
+                    if (!hasSubjective)
+                        continue; // nothing to manually review — objective exams auto-score
+
+                    var subjectiveAnswers = attempt.Answers?
+                        .Where(a => a.QuestionId.HasValue && subjectiveQuestionIds.Contains(a.QuestionId.Value))
+                        .ToList() ?? new List<StudentAnswer>();
+
+                    bool allSubjectiveScored = subjectiveQuestionIds.Count > 0 &&
+                        subjectiveQuestionIds.All(qid => subjectiveAnswers.Any(a => a.QuestionId == qid && a.ObtainedPoints.HasValue));
+
+                    if (allSubjectiveScored)
+                        readyToFinalizeCount++;
+                    else
+                        pendingReviewCount++;
+                }
+
+                string actionLabel;
+                string gradingStatusText;
+                bool gradingStatusIsWarning;
+
+                if (!hasSubjective)
+                {
+                    actionLabel = "View Report";
+                    gradingStatusText = "✓  100% Pre-Scored";
+                    gradingStatusIsWarning = false;
+                }
+                else if (pendingReviewCount > 0)
+                {
+                    actionLabel = "Review Submissions";
+                    gradingStatusText = $"⚠  {pendingReviewCount} Pending Review{(pendingReviewCount == 1 ? "" : "s")}";
+                    gradingStatusIsWarning = true;
+                }
+                else if (readyToFinalizeCount > 0)
+                {
+                    actionLabel = "Finalize Grades";
+                    gradingStatusText = $"⚠  {readyToFinalizeCount} Ready to Finalize";
+                    gradingStatusIsWarning = true;
+                }
+                else
+                {
+                    actionLabel = "View Report";
+                    gradingStatusText = "✓  Grades Finalized";
+                    gradingStatusIsWarning = false;
+                }
 
                 result.Add(new ExamStatusDto
                 {
@@ -62,7 +134,13 @@ namespace ACPAMS.Services
                     DurationMinutes = exam.DurationMinutes ?? 0,
                     TotalPoints = exam.TotalPoints ?? 0,
                     HasAttempts = totalAttempts > 0,
-                    Attempts = exam.Attempts?.ToList() ?? new List<StudentExamAttempt>()
+                    Attempts = exam.Attempts?.ToList() ?? new List<StudentExamAttempt>(),
+                    HasSubjectiveQuestions = hasSubjective,
+                    PendingReviewCount = pendingReviewCount,
+                    ReadyToFinalizeCount = readyToFinalizeCount,
+                    ActionLabel = actionLabel,
+                    GradingStatusText = gradingStatusText,
+                    GradingStatusIsWarning = gradingStatusIsWarning
                 });
             }
 
@@ -118,6 +196,26 @@ namespace ACPAMS.Services
             }
         }
 
+        // ── "Finalize Grades" action: lock in scores for every fully-graded attempt ──
+        public async Task FinalizeExamGradesAsync(Guid examId)
+        {
+            var attempts = await _context.StudentExamAttempts
+                .Include(a => a.Answers)
+                .Where(a => a.ExamId == examId && a.Status == "submitted")
+                .ToListAsync();
+
+            foreach (var attempt in attempts)
+            {
+                if (attempt.Answers.Count > 0 && attempt.Answers.All(a => a.ObtainedPoints.HasValue))
+                {
+                    attempt.TotalScore = attempt.Answers.Sum(a => a.ObtainedPoints ?? 0);
+                    attempt.Status = "graded";
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
         private string GetExamType(Exam exam)
         {
             if (exam.Questions == null || !exam.Questions.Any())
@@ -156,10 +254,23 @@ namespace ACPAMS.Services
         public bool HasAttempts { get; set; }
         public List<StudentExamAttempt> Attempts { get; set; } = new();
 
+        // ── Grading progress (populated for "done" exams) ──────
+        public bool HasSubjectiveQuestions { get; set; }
+        public int PendingReviewCount { get; set; }
+        public int ReadyToFinalizeCount { get; set; }
+
+        /// <summary>"Review Submissions" | "Finalize Grades" | "View Report" — drives the
+        /// Recently Completed action button per item 5's rules.</summary>
+        public string ActionLabel { get; set; } = "View Report";
+
+        public string GradingStatusText { get; set; } = string.Empty;
+        public bool GradingStatusIsWarning { get; set; }
+
         // ── Display helpers for FacultyHomePage cards ──────────
         public bool IsLive => Status == "live";
         public bool IsPending => Status == "pending";
         public bool IsDone => Status == "done";
+        public bool IsActiveOrUpcoming => IsLive || IsPending;
 
         /// <summary>Pending and Done cards both get Archive/Delete actions.</summary>
         public bool ShowArchiveDelete => IsPending || IsDone;

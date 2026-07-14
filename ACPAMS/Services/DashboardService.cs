@@ -6,6 +6,30 @@ namespace ACPAMS.Services
 {
     public class DashboardService
     {
+        // ── Load a specific exam directly (e.g. "View Dashboard" from Faculty Home) ──
+        public async Task<LiveExamDto?> GetExamByIdAsync(Guid examId)
+        {
+            using var context = new AppDbContext();
+
+            var exam = await context.Exams
+                .Include(e => e.Attempts)
+                .FirstOrDefaultAsync(e => e.ExamId == examId);
+
+            if (exam == null) return null;
+
+            var attempts = exam.Attempts ?? new List<StudentExamAttempt>();
+
+            return new LiveExamDto
+            {
+                ExamId = exam.ExamId,
+                Title = exam.Title ?? exam.ExamName ?? "Untitled Exam",
+                CourseCode = exam.CourseCode ?? "N/A",
+                StudentsTaking = attempts.Count(a => a.Status == "in_progress"),
+                StudentsFinished = attempts.Count(a => a.Status == "submitted" || a.Status == "graded"),
+                TotalAttempts = attempts.Count
+            };
+        }
+
         // ── Find the exam currently being taken by this instructor ──────
         public async Task<LiveExamDto?> GetLiveExamAsync(string instructorId)
         {
@@ -73,10 +97,12 @@ namespace ACPAMS.Services
         }
 
         // ── Auto-grade objective questions and build score distribution ──
-        // NOTE: TotalScore is only auto-set for exams with ZERO essay/coding
-        // questions, since a mixed exam's real total isn't known until the
-        // subjective parts are graded (manually or by AI). Score Distribution
-        // for mixed exams will be empty until that grading exists.
+        // Distribution bands are % of THIS EXAM'S maximum possible score
+        // (sum of every question's points, objective + subjective combined),
+        // not a fixed 100. An attempt only counts once ALL of its questions
+        // have a score — for objective-only exams that happens immediately
+        // here; for mixed exams it happens once grading is finished via
+        // GradingService.SaveGradesAsync / ExamStatusService.FinalizeExamGradesAsync.
         public async Task<ScoreDistributionDto> AutoGradeAndGetDistributionAsync(Guid examId)
         {
             using var context = new AppDbContext();
@@ -89,22 +115,21 @@ namespace ACPAMS.Services
                 .Where(q => q.QuestionType != "essay" && q.QuestionType != "coding")
                 .ToList();
 
-            bool hasSubjective = allQuestions.Any(q => q.QuestionType == "essay" || q.QuestionType == "coding");
-            decimal maxObjectivePoints = objectiveQuestions.Sum(q => q.Points ?? 0);
+            decimal maxExamPoints = allQuestions.Sum(q => q.Points ?? 0);
 
             var attempts = await context.StudentExamAttempts
                 .Include(a => a.Answers)
                 .Where(a => a.ExamId == examId && (a.Status == "submitted" || a.Status == "graded"))
                 .ToListAsync();
 
+            bool anyChanges = false;
+
             foreach (var attempt in attempts)
             {
-                decimal objectiveTotal = 0;
-
                 foreach (var q in objectiveQuestions)
                 {
                     var ans = attempt.Answers.FirstOrDefault(x => x.QuestionId == q.QuestionId);
-                    if (ans == null) continue;
+                    if (ans == null || ans.ObtainedPoints.HasValue) continue; // don't clobber an existing/manual grade
 
                     bool isCorrect = string.Equals(
                         (ans.AnswerText ?? "").Trim(),
@@ -115,22 +140,29 @@ namespace ACPAMS.Services
                     ans.GradedBy = "system";
                     ans.GradedAt = DateTime.Now;
                     ans.IsManualGrade = false;
-
-                    if (isCorrect) objectiveTotal += q.Points ?? 0;
+                    anyChanges = true;
                 }
 
-                if (!hasSubjective)
-                    attempt.TotalScore = objectiveTotal;
+                // Once every question on this attempt has a score (whether just
+                // auto-graded above, or previously graded manually/by AI for the
+                // subjective ones), compute the attempt's total.
+                if (!attempt.TotalScore.HasValue &&
+                    attempt.Answers.Count > 0 &&
+                    attempt.Answers.All(a => a.ObtainedPoints.HasValue))
+                {
+                    attempt.TotalScore = attempt.Answers.Sum(a => a.ObtainedPoints ?? 0);
+                    anyChanges = true;
+                }
             }
 
-            await context.SaveChangesAsync();
+            if (anyChanges)
+                await context.SaveChangesAsync();
 
             var dist = new ScoreDistributionDto();
-            decimal denominator = hasSubjective ? 0 : maxObjectivePoints;
 
-            foreach (var attempt in attempts.Where(a => a.TotalScore.HasValue && !hasSubjective))
+            foreach (var attempt in attempts.Where(a => a.TotalScore.HasValue))
             {
-                double pct = denominator > 0 ? (double)(attempt.TotalScore!.Value / denominator) * 100 : 0;
+                double pct = maxExamPoints > 0 ? (double)(attempt.TotalScore!.Value / maxExamPoints) * 100 : 0;
 
                 if (pct >= 90) dist.Band90to100++;
                 else if (pct >= 80) dist.Band80to89++;
@@ -139,6 +171,46 @@ namespace ACPAMS.Services
             }
 
             return dist;
+        }
+
+        // ── Class Pass Rate + Average Score KPIs ──────────────────────
+        // Both are computed as a % of the exam's maximum possible score,
+        // across every attempt that already has a final TotalScore.
+        // Passing threshold is a guess (75%, common in PH grading) —
+        // adjust PASSING_PERCENT below if your actual cutoff differs.
+        private const decimal PASSING_PERCENT = 75m;
+
+        public async Task<ClassSummaryDto> GetClassSummaryAsync(Guid examId)
+        {
+            using var context = new AppDbContext();
+
+            decimal maxExamPoints = await context.Questions
+                .Where(q => q.ExamId == examId)
+                .SumAsync(q => q.Points ?? 0);
+
+            var scores = await context.StudentExamAttempts
+                .Where(a => a.ExamId == examId && a.TotalScore.HasValue)
+                .Select(a => a.TotalScore!.Value)
+                .ToListAsync();
+
+            if (scores.Count == 0 || maxExamPoints <= 0)
+            {
+                return new ClassSummaryDto { HasData = false };
+            }
+
+            decimal passingScore = maxExamPoints * PASSING_PERCENT / 100m;
+            int passCount = scores.Count(s => s >= passingScore);
+
+            decimal avgPercent = scores.Average(s => (s / maxExamPoints) * 100m);
+            decimal passRatePercent = (decimal)passCount / scores.Count * 100m;
+
+            return new ClassSummaryDto
+            {
+                HasData = true,
+                PassRatePercent = Math.Round(passRatePercent),
+                AverageScorePercent = Math.Round(avgPercent),
+                GradedCount = scores.Count
+            };
         }
     }
 
@@ -169,5 +241,13 @@ namespace ACPAMS.Services
         public int Band70to79 { get; set; }
         public int BelowSeventy { get; set; }
         public int Max => Math.Max(1, new[] { Band90to100, Band80to89, Band70to79, BelowSeventy }.Max());
+    }
+
+    public class ClassSummaryDto
+    {
+        public bool HasData { get; set; }
+        public decimal PassRatePercent { get; set; }
+        public decimal AverageScorePercent { get; set; }
+        public int GradedCount { get; set; }
     }
 }

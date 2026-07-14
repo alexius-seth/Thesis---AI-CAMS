@@ -487,7 +487,7 @@ namespace ACPAMS.Views.Faculty.Tabs
         private void BackToHome_Click(object sender, RoutedEventArgs e)
         {
             _refreshTimer?.Stop();
-            MainWindow.NavigateToHomeStatic();
+            MainWindow.NavigateBackStatic();
         }
     }
 }
