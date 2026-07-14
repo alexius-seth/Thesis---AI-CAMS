@@ -71,7 +71,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("ai_assessments");
+                    b.ToTable("ai_assessments", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.AiEvaluation", b =>
@@ -147,7 +147,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("RubricUsedId");
 
-                    b.ToTable("ai_evaluations");
+                    b.ToTable("ai_evaluations", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.AiJob", b =>
@@ -201,7 +201,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("ModelId");
 
-                    b.ToTable("ai_jobs");
+                    b.ToTable("ai_jobs", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.AiModel", b =>
@@ -241,7 +241,7 @@ namespace ACPAMS.Migrations
 
                     b.HasKey("ModelId");
 
-                    b.ToTable("ai_models");
+                    b.ToTable("ai_models", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.AiRubricEvaluation", b =>
@@ -290,7 +290,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("LevelId");
 
-                    b.ToTable("ai_rubric_evaluations");
+                    b.ToTable("ai_rubric_evaluations", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.Attachment", b =>
@@ -332,7 +332,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("UploadedBy");
 
-                    b.ToTable("attachments");
+                    b.ToTable("attachments", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.AuditLog", b =>
@@ -379,7 +379,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("audit_logs");
+                    b.ToTable("audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.Exam", b =>
@@ -447,7 +447,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("InstructorId");
 
-                    b.ToTable("exams");
+                    b.ToTable("exams", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.ExamAttemptLog", b =>
@@ -484,7 +484,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("AttemptId");
 
-                    b.ToTable("exam_attempt_logs");
+                    b.ToTable("exam_attempt_logs", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.Instructor", b =>
@@ -529,7 +529,7 @@ namespace ACPAMS.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("instructors");
+                    b.ToTable("instructors", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.Question", b =>
@@ -599,7 +599,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("ExamId");
 
-                    b.ToTable("questions");
+                    b.ToTable("questions", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.QuestionOption", b =>
@@ -628,7 +628,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("question_options");
+                    b.ToTable("question_options", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.Rubric", b =>
@@ -682,7 +682,7 @@ namespace ACPAMS.Migrations
                         .IsUnique()
                         .HasFilter("[question_id] IS NOT NULL");
 
-                    b.ToTable("rubrics");
+                    b.ToTable("rubrics", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.RubricCriteria", b =>
@@ -724,7 +724,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("RubricId");
 
-                    b.ToTable("rubric_criteria");
+                    b.ToTable("rubric_criteria", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.RubricLevel", b =>
@@ -761,7 +761,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("CriteriaId");
 
-                    b.ToTable("rubric_levels");
+                    b.ToTable("rubric_levels", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.Student", b =>
@@ -806,7 +806,7 @@ namespace ACPAMS.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("students");
+                    b.ToTable("students", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.StudentAnswer", b =>
@@ -872,7 +872,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("student_answers");
+                    b.ToTable("student_answers", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.StudentExamAttempt", b =>
@@ -931,7 +931,7 @@ namespace ACPAMS.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("student_exam_attempts");
+                    b.ToTable("student_exam_attempts", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.User", b =>
@@ -973,7 +973,7 @@ namespace ACPAMS.Migrations
                         .IsUnique()
                         .HasFilter("[username] IS NOT NULL");
 
-                    b.ToTable("users");
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("ACPAMS.Models.AiAssessment", b =>
