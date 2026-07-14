@@ -586,6 +586,10 @@ namespace ACPAMS.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("requires_rubric");
 
+                    b.Property<string>("SectionName")
+                   .HasColumnType("nvarchar(max)")
+                   .HasColumnName("section_name");
+
                     b.Property<string>("StarterCode")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("starter_code");
