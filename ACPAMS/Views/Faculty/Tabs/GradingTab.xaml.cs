@@ -208,7 +208,7 @@ namespace ACPAMS.Views.Faculty.Tabs
 
             foreach (var q in questions)
             {
-                CurrentQuestions.Add(new QuestionAnswerVM
+                var vm = new QuestionAnswerVM
                 {
                     AnswerId = q.AnswerId,
                     QuestionId = q.QuestionId,
@@ -217,8 +217,25 @@ namespace ACPAMS.Views.Faculty.Tabs
                     QuestionType = q.QuestionType,
                     StudentAnswerText = q.StudentAnswerText,
                     MaxPoints = q.MaxPoints,
-                    ObtainedPoints = q.ObtainedPoints
-                });
+                    ObtainedPoints = q.ObtainedPoints,
+                    GradedBy = q.GradedBy,
+                    AiOverallFeedback = q.AiOverallFeedback,
+                    AiGradingFailed = q.AiGradingFailed,
+                    AiGradingError = q.AiGradingError
+                };
+
+                foreach (var criterion in q.AiCriteriaBreakdown)
+                {
+                    vm.AiCriteriaBreakdown.Add(new AiCriterionBreakdownVM
+                    {
+                        CriteriaName = criterion.CriteriaName,
+                        MatchedTier = criterion.MatchedTier,
+                        AwardedScore = criterion.AwardedScore,
+                        Justification = criterion.Justification
+                    });
+                }
+
+                CurrentQuestions.Add(vm);
             }
         }
 

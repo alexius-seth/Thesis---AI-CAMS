@@ -31,9 +31,37 @@ namespace ACPAMS.Views.Faculty.Tabs
 
         public bool IsGraded => ObtainedPoints.HasValue;
 
+        // ── AI grading reasoning ──────────────────────────────────────────
+        // "ai" | "instructor" | null (never graded yet).
+        public string GradedBy { get; set; }
+
+        /// <summary>True if the current score/justification came from AI and the
+        /// instructor hasn't overridden it yet (GradedBy stays "ai" until they Save).</summary>
+        public bool IsAiSuggested => GradedBy == "ai";
+
+        public string AiOverallFeedback { get; set; }
+
+        public ObservableCollection<AiCriterionBreakdownVM> AiCriteriaBreakdown { get; set; } = new();
+
+        public bool HasAiBreakdown => AiCriteriaBreakdown.Count > 0;
+
+        /// <summary>True if AI grading was attempted for this answer and failed
+        /// after all retries — distinct from "AI hasn't gotten to this yet."</summary>
+        public bool AiGradingFailed { get; set; }
+        public string AiGradingError { get; set; }
+
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    // One criterion's AI-assigned tier/score/justification, for display under a question.
+    public class AiCriterionBreakdownVM
+    {
+        public string CriteriaName { get; set; } = string.Empty;
+        public string MatchedTier { get; set; } = string.Empty;
+        public decimal AwardedScore { get; set; }
+        public string Justification { get; set; } = string.Empty;
     }
 
     // One row in the left queue — one student's attempt.

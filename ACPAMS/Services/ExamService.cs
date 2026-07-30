@@ -66,10 +66,16 @@ namespace ACPAMS.Services
                 attempt.SubmittedAt = DateTime.Now;
                 await context.SaveChangesAsync();
             }
+
+            // Kick off AI grading for any essay/coding answers in this attempt.
+            // Runs in the background (AiJobProcessorService's poller) — this
+            // just enqueues, it does NOT wait for grading to finish, so
+            // submission stays instant for the student.
+            await new AiJobService().EnqueueGradingJobsForAttemptAsync(attemptId);
         }
 
         public async Task<StudentAnswer?> GetAnswerAsync(Guid attemptId, Guid questionId)
-        { 
+        {
             using var context = new AppDbContext();
             return await context.StudentAnswers
                 .FirstOrDefaultAsync(a => a.AttemptId == attemptId
@@ -97,7 +103,7 @@ namespace ACPAMS.Services
             public string OptionC { get; set; } = string.Empty;
             public string OptionD { get; set; } = string.Empty;
             public string ExpectedAnswer { get; set; } = string.Empty;
-            public string ExpectedAnswers { get; set; } = string.Empty;  
+            public string ExpectedAnswers { get; set; } = string.Empty;
             public string ProgrammingLanguage { get; set; } = string.Empty;
             public string SectionId { get; set; } = string.Empty;
             public double Points { get; set; }
@@ -132,6 +138,8 @@ namespace ACPAMS.Services
             context.Exams.Add(exam);
 
             int orderIndex = 1;
+            var originalIdToQuestionId = new Dictionary<string, Guid>();
+
             foreach (var section in sections)
             {
                 foreach (var q in section.Questions)
@@ -164,6 +172,7 @@ namespace ACPAMS.Services
                     };
 
                     context.Questions.Add(question);
+                    originalIdToQuestionId[q.Id] = question.QuestionId;
 
                     if (normalizedType == "multiple_choice")
                     {
@@ -180,6 +189,27 @@ namespace ACPAMS.Services
             }
 
             await context.SaveChangesAsync();
+
+            // ── Persist rubric data collected from AIRubricModal ──────────
+            // rubricData is keyed by the ORIGINAL client-side question ID
+            // (QuestionItemData.Id), not the freshly-generated Question.QuestionId
+            // above — originalIdToQuestionId bridges the two so each rubric
+            // (criteria, tiers, AI instructions, attachment) lands on the
+            // correct saved Question.
+            var rubricService = new RubricService();
+
+            foreach (var (originalQuestionId, rubric) in rubricData)
+            {
+                if (!originalIdToQuestionId.TryGetValue(originalQuestionId, out var savedQuestionId))
+                    continue; // question wasn't found in this save (shouldn't normally happen)
+
+                await rubricService.SaveRubricForQuestionAsync(
+                    savedQuestionId,
+                    rubric,
+                    rubric.AttachmentFilePath,
+                    instructorId);
+            }
+
             return exam;
         }
     }

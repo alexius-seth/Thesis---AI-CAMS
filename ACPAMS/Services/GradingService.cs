@@ -91,12 +91,56 @@ namespace ACPAMS.Services
                 .Where(a => a.AttemptId == attemptId)
                 .ToListAsync();
 
+            var answerIds = answers.Select(a => a.AnswerId).ToList();
+
+            // Latest AiEvaluation per answer (an answer could in principle have
+            // more than one if it was ever re-graded — take the most recent).
+            var evaluations = await context.Set<AiEvaluation>()
+                .Where(ev => ev.AnswerId.HasValue && answerIds.Contains(ev.AnswerId.Value))
+                .OrderByDescending(ev => ev.EvaluatedAt)
+                .ToListAsync();
+
+            var evaluationIds = evaluations.Select(ev => ev.EvaluationId).ToList();
+
+            var rubricEvaluations = await context.Set<AiRubricEvaluation>()
+                .Include(re => re.Criteria)
+                .Include(re => re.Level)
+                .Where(re => re.EvaluationId.HasValue && evaluationIds.Contains(re.EvaluationId.Value))
+                .ToListAsync();
+
+            // Most recent failed AiJob per answer, so we can show "AI grading
+            // failed" instead of the question just silently having no score.
+            var failedJobs = await context.Set<AiJob>()
+                .Where(j => j.AnswerId.HasValue && answerIds.Contains(j.AnswerId.Value) && j.Status == "failed")
+                .OrderByDescending(j => j.CompletedAt)
+                .ToListAsync();
+
             var result = new List<GradingQuestionDto>();
             int number = 1;
 
             foreach (var q in questions)
             {
                 var ans = answers.FirstOrDefault(a => a.QuestionId == q.QuestionId);
+
+                var evaluation = ans != null
+                    ? evaluations.FirstOrDefault(ev => ev.AnswerId == ans.AnswerId)
+                    : null;
+
+                var criteriaBreakdown = evaluation != null
+                    ? rubricEvaluations
+                        .Where(re => re.EvaluationId == evaluation.EvaluationId)
+                        .Select(re => new AiCriterionBreakdownDto
+                        {
+                            CriteriaName = re.Criteria?.CriteriaName ?? "Unknown criterion",
+                            MatchedTier = re.Level?.LevelName ?? "Unknown tier",
+                            AwardedScore = re.AssignedScore ?? 0,
+                            Justification = re.Feedback ?? string.Empty
+                        }).ToList()
+                    : new List<AiCriterionBreakdownDto>();
+
+                var failedJob = ans != null
+                    ? failedJobs.FirstOrDefault(j => j.AnswerId == ans.AnswerId)
+                    : null;
 
                 result.Add(new GradingQuestionDto
                 {
@@ -113,7 +157,12 @@ namespace ACPAMS.Services
                     MaxPoints = (int)(q.Points ?? 0),
                     ObtainedPoints = ans?.ObtainedPoints.HasValue == true
                         ? (int)ans.ObtainedPoints.Value
-                        : (int?)null
+                        : (int?)null,
+                    GradedBy = ans?.GradedBy,
+                    AiOverallFeedback = evaluation?.Feedback,
+                    AiCriteriaBreakdown = criteriaBreakdown,
+                    AiGradingFailed = failedJob != null,
+                    AiGradingError = failedJob?.LastError
                 });
             }
 
@@ -193,5 +242,28 @@ namespace ACPAMS.Services
         public string StudentAnswerText { get; set; } = string.Empty;
         public int MaxPoints { get; set; }
         public int? ObtainedPoints { get; set; }
+
+        /// <summary>"ai" | "instructor" | null (never graded). Drives the
+        /// "AI-Suggested" vs "Instructor Confirmed" badge in GradingTab.</summary>
+        public string? GradedBy { get; set; }
+
+        /// <summary>Null if the AI hasn't graded this yet (or grading failed).</summary>
+        public string? AiOverallFeedback { get; set; }
+
+        /// <summary>Empty if no AI evaluation exists yet for this answer.</summary>
+        public List<AiCriterionBreakdownDto> AiCriteriaBreakdown { get; set; } = new();
+
+        /// <summary>True if AI grading was attempted and failed (exhausted retries) —
+        /// distinguishes "AI hasn't gotten to this yet" from "AI tried and couldn't."</summary>
+        public bool AiGradingFailed { get; set; }
+        public string? AiGradingError { get; set; }
+    }
+
+    public class AiCriterionBreakdownDto
+    {
+        public string CriteriaName { get; set; } = string.Empty;
+        public string MatchedTier { get; set; } = string.Empty;
+        public decimal AwardedScore { get; set; }
+        public string Justification { get; set; } = string.Empty;
     }
 }

@@ -32,6 +32,10 @@
         <SolidColorBrush x:Key="AI.Border"        Color="#7C3AED"/>
         <SolidColorBrush x:Key="AI.Text"          Color="#5B21B6"/>
 
+        <!-- Used by the AI assessment panel's Visibility bindings — this was
+             missing entirely and is what caused the StaticResourceHolder crash. -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
         <!-- TYPOGRAPHY -->
         <Style x:Key="T.SectionLabel" TargetType="TextBlock">
             <Setter Property="FontSize"   Value="11"/>
@@ -441,6 +445,108 @@
                                                     Padding="10,8" Margin="0,0,0,10">
                                                 <TextBlock Text="{Binding StudentAnswerText}"
                                                            Style="{StaticResource T.Body}"/>
+                                            </Border>
+
+                                            <!-- AI grading failed — shown instead of a score, not silently blank -->
+                                            <Border Background="{StaticResource Status.DangerBg}"
+                                                    BorderBrush="{StaticResource Status.Danger}"
+                                                    BorderThickness="1" CornerRadius="4"
+                                                    Padding="10,8" Margin="0,0,0,10"
+                                                    Visibility="{Binding AiGradingFailed, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="&#xE783;"
+                                                               FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                                               Foreground="{StaticResource Status.Danger}"
+                                                               Margin="0,0,8,0" VerticalAlignment="Top"/>
+                                                    <StackPanel>
+                                                        <TextBlock Text="AI grading failed for this answer"
+                                                                   FontSize="12" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource Status.Danger}"/>
+                                                        <TextBlock Text="{Binding AiGradingError}"
+                                                                   FontSize="11"
+                                                                   Foreground="{StaticResource Status.Danger}"
+                                                                   TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                        <TextBlock Text="Grade this manually below."
+                                                                   FontSize="11"
+                                                                   Foreground="{StaticResource Text.Muted}"
+                                                                   Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- AI assessment — badge + overall feedback + per-criterion breakdown -->
+                                            <Border BorderBrush="{StaticResource AI.Border}"
+                                                    Background="{StaticResource AI.Bg}"
+                                                    BorderThickness="1" CornerRadius="4"
+                                                    Padding="12,10" Margin="0,0,0,10"
+                                                    Visibility="{Binding HasAiBreakdown, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                        <TextBlock Text="&#xE9D2;"
+                                                                   FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                                   Foreground="{StaticResource AI.Text}"
+                                                                   Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="AI ASSESSMENT"
+                                                                   FontSize="11" FontWeight="Bold"
+                                                                   Foreground="{StaticResource AI.Text}"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="0,0,8,0"/>
+                                                        <!-- Badge flips once the instructor edits & saves (GradedBy → "instructor") -->
+                                                        <Border Background="{StaticResource Status.WarningBg}"
+                                                                BorderBrush="{StaticResource Status.Warning}"
+                                                                BorderThickness="1" CornerRadius="10"
+                                                                Padding="7,1"
+                                                                Visibility="{Binding IsAiSuggested, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="AI-Suggested — Pending Your Review"
+                                                                       FontSize="10" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource Status.Warning}"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="{Binding AiOverallFeedback}"
+                                                               Style="{StaticResource T.Body}"
+                                                               FontStyle="Italic"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,0,0,8"/>
+
+                                                    <ItemsControl ItemsSource="{Binding AiCriteriaBreakdown}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border BorderBrush="{StaticResource AI.Border}"
+                                                                        BorderThickness="0,0,0,1"
+                                                                        Padding="0,6">
+                                                                    <StackPanel>
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="{Binding CriteriaName}"
+                                                                                       FontSize="12" FontWeight="SemiBold"
+                                                                                       Foreground="{StaticResource Text.Primary}"/>
+                                                                            <TextBlock Text=" — "
+                                                                                       FontSize="12"
+                                                                                       Foreground="{StaticResource Text.Muted}"/>
+                                                                            <TextBlock Text="{Binding MatchedTier}"
+                                                                                       FontSize="12" FontWeight="SemiBold"
+                                                                                       Foreground="{StaticResource AI.Text}"/>
+                                                                            <TextBlock Text=" ("
+                                                                                       FontSize="12"
+                                                                                       Foreground="{StaticResource Text.Muted}"/>
+                                                                            <TextBlock Text="{Binding AwardedScore}"
+                                                                                       FontSize="12" FontWeight="SemiBold"
+                                                                                       Foreground="{StaticResource Text.Primary}"/>
+                                                                            <TextBlock Text=" pts)"
+                                                                                       FontSize="12"
+                                                                                       Foreground="{StaticResource Text.Muted}"/>
+                                                                        </StackPanel>
+                                                                        <TextBlock Text="{Binding Justification}"
+                                                                                   FontSize="12"
+                                                                                   Foreground="{StaticResource Text.Secondary}"
+                                                                                   TextWrapping="Wrap"
+                                                                                   Margin="0,2,0,0"/>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
                                             </Border>
 
                                             <!-- Editable points -->

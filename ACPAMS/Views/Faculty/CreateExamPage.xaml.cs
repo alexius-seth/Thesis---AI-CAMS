@@ -1471,14 +1471,13 @@ namespace ACPAMS.Views.Faculty
                 {
                     var rubricData = rubricModal.GetRubricData();
 
-                    if (!_rubricData.ContainsKey(q.Id))
-                    {
-                        _rubricData[q.Id] = rubricData;
-                    }
-                    else
-                    {
-                        _rubricData[q.Id] = rubricData;
-                    }
+                    // FIX: rubricModal.FilePath (the attached reference PDF) was
+                    // never being read here before — it was silently discarded
+                    // the moment the modal closed. Now it travels with the rest
+                    // of the rubric data so ExamService/RubricService can save it.
+                    rubricData.AttachmentFilePath = rubricModal.FilePath;
+
+                    _rubricData[q.Id] = rubricData;
 
                     ToastNotification.Show("Rubric saved successfully!", Application.Current.MainWindow);
                 }
