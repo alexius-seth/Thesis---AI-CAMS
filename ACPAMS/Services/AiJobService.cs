@@ -18,7 +18,10 @@ namespace ACPAMS.Services
     /// </summary>
     public class AiJobService
     {
-        private const string GeminiModelName = "gemini-1.5-flash";
+        // Must match GeminiRubricGradingService.ModelEndpoint — see that file's
+        // comment for the model-retirement history and when this will need
+        // to change again.
+        private const string GeminiModelName = "gemini-3.1-flash-lite";
         private const int MaxAttempts = 3; // retry a failed job up to this many times before giving up
 
         // ── Called from ExamService.SubmitExamAsync ──────────────────────
@@ -209,7 +212,7 @@ namespace ACPAMS.Services
                 ModelId = Guid.NewGuid(),
                 ModelName = GeminiModelName,
                 Provider = "Google",
-                ModelVersion = "1.5-flash",
+                ModelVersion = "3.1-flash-lite",
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };

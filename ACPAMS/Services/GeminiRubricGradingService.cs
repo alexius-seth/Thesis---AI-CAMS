@@ -17,9 +17,15 @@ namespace ACPAMS.Services
     /// </summary>
     public class GeminiRubricGradingService
     {
-        // Gemini 1.5 Flash, per the project's existing model choice.
+        // Gemini 1.5 Flash was fully retired by Google (confirmed via the 404
+        // NOT_FOUND error this project actually hit). Team decision: using
+        // gemini-3.1-flash-lite — confirmed current and PDF-capable per
+        // Google's docs as of this writing. Google retires model generations
+        // on a rolling basis; if this ever 404s again, check
+        // https://ai.google.dev/gemini-api/docs/changelog for the current
+        // name and swap it in here (and in AiJobService.GeminiModelName).
         private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 
         private static readonly HttpClient _http = new();
 
@@ -57,7 +63,13 @@ namespace ACPAMS.Services
                 },
                 generationConfig = new
                 {
-                    temperature = 0.2,           // low temperature — we want consistent, rubric-anchored grading, not creative variance
+                    // NOTE: Google's Gemini 3.x docs list temperature as a
+                    // deprecated parameter (superseded by thinking_config).
+                    // Leaving it here since it's still accepted for now —
+                    // if grading ever seems less consistent than expected on
+                    // this model line, that's the first thing to revisit
+                    // (migrate to thinking_config with thinking_level="low").
+                    temperature = 0.2,
                     response_mime_type = "application/json"
                 }
             };
