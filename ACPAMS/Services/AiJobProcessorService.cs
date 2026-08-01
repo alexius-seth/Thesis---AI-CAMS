@@ -36,6 +36,11 @@ namespace ACPAMS.Services
 
             try
             {
+                // Recover anything orphaned by the app being closed/restarted
+                // mid-job before draining the queue — otherwise a stuck job
+                // sits there forever, invisible, needing manual SQL fixes.
+                await _jobService.ReclaimStaleJobsAsync();
+
                 // Drain the whole queue each tick, not just one job at a time,
                 // so a backlog doesn't linger across multiple intervals.
                 bool didWork;

@@ -14,10 +14,10 @@ namespace ACPAMS.Views.Faculty.Tabs
         public string QuestionText { get; set; }
         public string QuestionType { get; set; }   // "MCQ", "TrueFalse", "Identification", "Essay", "Enumeration", "Coding"
         public string StudentAnswerText { get; set; }
-        public int MaxPoints { get; set; }         // questions.points (assumes this column exists; else default 10)
+        public decimal MaxPoints { get; set; }         // questions.points (assumes this column exists; else default 10)
 
-        private int? _obtainedPoints;
-        public int? ObtainedPoints
+        private decimal? _obtainedPoints;
+        public decimal? ObtainedPoints
         {
             get => _obtainedPoints;
             set

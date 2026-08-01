@@ -19,10 +19,44 @@ namespace ACPAMS.Services
     public class AiJobService
     {
         // Must match GeminiRubricGradingService.ModelEndpoint — see that file's
-        // comment for the model-retirement history and when this will need
-        // to change again.
-        private const string GeminiModelName = "gemini-3.1-flash-lite";
+        // comment for the model history and when this will need to change again.
+        private const string GeminiModelName = "gemini-3.5-flash";
         private const int MaxAttempts = 3; // retry a failed job up to this many times before giving up
+
+        // If the app (or debugger) gets closed/restarted while a job is
+        // mid-flight — e.g. during the Gemini HTTP call — nothing ever runs
+        // the catch block, and the job stays stuck at Status="processing"
+        // forever. ProcessNextQueuedJobAsync only ever looks at "queued" jobs,
+        // so without this, an orphaned job requires manual SQL intervention
+        // every time. This threshold is deliberately generous — a real Gemini
+        // call plus PDF upload shouldn't take anywhere near 2 minutes.
+        private static readonly TimeSpan StaleProcessingThreshold = TimeSpan.FromMinutes(2);
+
+        // ── Called once per poller tick, before draining the queue ───────
+        public async Task ReclaimStaleJobsAsync()
+        {
+            using var context = new AppDbContext();
+            var cutoff = DateTime.Now - StaleProcessingThreshold;
+
+            var staleJobs = await context.Set<AiJob>()
+                .Where(j => j.Status == "processing" && j.StartedAt.HasValue && j.StartedAt.Value < cutoff)
+                .ToListAsync();
+
+            foreach (var job in staleJobs)
+            {
+                job.AttemptCount++;
+                bool exhausted = job.AttemptCount >= MaxAttempts;
+
+                job.Status = exhausted ? "failed" : "queued";
+                job.StartedAt = null;
+                job.LastError = exhausted
+                    ? "Job was stuck in 'processing' (the app likely closed/restarted mid-grading) and has exhausted its retries."
+                    : "Job was stuck in 'processing' (the app likely closed/restarted mid-grading) — reset to retry.";
+            }
+
+            if (staleJobs.Count > 0)
+                await context.SaveChangesAsync();
+        }
 
         // ── Called from ExamService.SubmitExamAsync ──────────────────────
         public async Task EnqueueGradingJobsForAttemptAsync(Guid attemptId)
@@ -143,7 +177,16 @@ namespace ACPAMS.Services
             var result = await gradingService.GradeAsync(request);
 
             // ── PRELIMINARY score — not final until an instructor finalizes ──
-            answer.ObtainedPoints = result.TotalScore;
+            // Gemini's TotalScore is on the RUBRIC's own scale (whatever the
+            // criteria's points summed to in AIRubricModal — e.g. out of 10,
+            // out of 100), which is NOT necessarily the same as this question's
+            // actual point value (Question.Points). Scale proportionally so a
+            // 1-point question doesn't end up with a score like "5.40".
+            decimal scaledScore = result.MaxScore > 0 && question.Points.HasValue
+                ? Math.Round((result.TotalScore / result.MaxScore) * question.Points.Value, 2)
+                : result.TotalScore; // fallback: no question point value to scale against
+
+            answer.ObtainedPoints = scaledScore;
             answer.GradedBy = "ai";
             answer.GradedAt = DateTime.Now;
             answer.IsManualGrade = false;
@@ -159,7 +202,7 @@ namespace ACPAMS.Services
                 ModelId = job.ModelId,
                 RubricUsedId = rubricEntity?.RubricId,
                 EvaluatedAt = DateTime.Now,
-                Score = result.TotalScore,
+                Score = scaledScore,
                 Feedback = result.OverallFeedback,
                 AiResponseRaw = result.RawResponseJson
             };
@@ -212,7 +255,7 @@ namespace ACPAMS.Services
                 ModelId = Guid.NewGuid(),
                 ModelName = GeminiModelName,
                 Provider = "Google",
-                ModelVersion = "3.1-flash-lite",
+                ModelVersion = "3.5-flash",
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };

@@ -154,10 +154,8 @@ namespace ACPAMS.Services
                     StudentAnswerText = q.QuestionType == "coding"
                         ? (ans?.SourceCode ?? "(no submission)")
                         : (ans?.AnswerText ?? "(no submission)"),
-                    MaxPoints = (int)(q.Points ?? 0),
-                    ObtainedPoints = ans?.ObtainedPoints.HasValue == true
-                        ? (int)ans.ObtainedPoints.Value
-                        : (int?)null,
+                    MaxPoints = q.Points ?? 0,
+                    ObtainedPoints = ans?.ObtainedPoints,
                     GradedBy = ans?.GradedBy,
                     AiOverallFeedback = evaluation?.Feedback,
                     AiCriteriaBreakdown = criteriaBreakdown,
@@ -240,8 +238,8 @@ namespace ACPAMS.Services
         public string QuestionText { get; set; } = string.Empty;
         public string QuestionType { get; set; } = string.Empty;
         public string StudentAnswerText { get; set; } = string.Empty;
-        public int MaxPoints { get; set; }
-        public int? ObtainedPoints { get; set; }
+        public decimal MaxPoints { get; set; }
+        public decimal? ObtainedPoints { get; set; }
 
         /// <summary>"ai" | "instructor" | null (never graded). Drives the
         /// "AI-Suggested" vs "Instructor Confirmed" badge in GradingTab.</summary>

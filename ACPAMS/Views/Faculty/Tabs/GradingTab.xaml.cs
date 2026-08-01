@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -52,6 +53,14 @@ namespace ACPAMS.Views.Faculty.Tabs
         }
 
         private AttemptQueueItemVM _selectedAttempt;
+
+        // Guards LoadAsync/LoadQuestionsAsync against overlapping calls.
+        // GradingTab_Loaded and RefreshAsync (called by MainWindow.ShowPage on
+        // every navigation) can both fire within milliseconds of each other —
+        // without this, two concurrent LoadQuestionsAsync calls could interleave
+        // their Clear()+Add() sequences, producing duplicate question cards or
+        // a stale (blank) result winning over the correct one.
+        private readonly SemaphoreSlim _loadLock = new(1, 1);
 
         public GradingTab() : this(null) { }
 
@@ -144,6 +153,19 @@ namespace ACPAMS.Views.Faculty.Tabs
         // reload (instead of always jumping back to the first one) so Ctrl+R
         // and post-save refreshes don't yank focus away from what you're grading.
         private async Task LoadAsync(Guid? preserveSelectionId = null)
+        {
+            await _loadLock.WaitAsync();
+            try
+            {
+                await LoadAsyncCore(preserveSelectionId);
+            }
+            finally
+            {
+                _loadLock.Release();
+            }
+        }
+
+        private async Task LoadAsyncCore(Guid? preserveSelectionId)
         {
             if (!_examId.HasValue)
             {
@@ -296,6 +318,39 @@ namespace ACPAMS.Views.Faculty.Tabs
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        private async void FinalizeGrades_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_examId.HasValue)
+            {
+                MessageBox.Show("No exam context.", "Grading", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                "Finalize grades for this ENTIRE exam? This locks in every fully-graded " +
+                "attempt as final — including any AI-suggested scores you haven't overridden. " +
+                "Make sure you've reviewed submissions you care about before continuing.",
+                "Confirm Finalize", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                using var context = new ACPAMS.Data.AppDbContext();
+                var examStatusService = new ExamStatusService(context);
+                await examStatusService.FinalizeExamGradesAsync(_examId.Value);
+
+                MessageBox.Show("Grades finalized.", "Grading", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                await LoadAsync(_selectedAttempt?.AttemptId);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error finalizing grades: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {

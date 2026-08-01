@@ -17,15 +17,17 @@ namespace ACPAMS.Services
     /// </summary>
     public class GeminiRubricGradingService
     {
-        // Gemini 1.5 Flash was fully retired by Google (confirmed via the 404
-        // NOT_FOUND error this project actually hit). Team decision: using
-        // gemini-3.1-flash-lite — confirmed current and PDF-capable per
-        // Google's docs as of this writing. Google retires model generations
-        // on a rolling basis; if this ever 404s again, check
-        // https://ai.google.dev/gemini-api/docs/changelog for the current
-        // name and swap it in here (and in AiJobService.GeminiModelName).
+        // Model history: gemini-1.5-flash was retired by Google (404).
+        // gemini-3.1-flash-lite hit a 403 PERMISSION_DENIED (account/billing
+        // issue on the Google Cloud project, unrelated to this code). Team
+        // decision: using gemini-3.5-flash. If this ever 404s/403s again,
+        // check https://ai.google.dev/gemini-api/docs/changelog for the
+        // current model name and swap it in here (and in
+        // AiJobService.GeminiModelName) — and if it's a 403 specifically,
+        // check Google Cloud Console billing/API-enablement first, since
+        // that's an account issue, not a code issue.
         private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
         private static readonly HttpClient _http = new();
 

@@ -100,9 +100,9 @@ namespace ACPAMS.ViewModels
             ViewLogsCommand = new RelayCommand(param => OnViewLogs(param as ExamStatusDto));
             ViewDashboardCommand = new RelayCommand(param => OnViewDashboard(param as ExamStatusDto));
             ViewReportCommand = new RelayCommand(param => OnViewReport(param as ExamStatusDto));
-            PrimaryActionCommand = new RelayCommand(async param =>
+            PrimaryActionCommand = new RelayCommand(param =>
             {
-                if (param is ExamStatusDto exam) await OnPrimaryActionAsync(exam);
+                if (param is ExamStatusDto exam) OnPrimaryActionAsync(exam);
             });
             ArchiveExamCommand = new RelayCommand(async param =>
             {
@@ -264,47 +264,26 @@ namespace ACPAMS.ViewModels
         // Item 5: dynamic action for the "Recently Completed" table.
         // exam.ActionLabel is computed server-side in ExamStatusService, so
         // this just has to route to the right place per label.
-        private async Task OnPrimaryActionAsync(ExamStatusDto exam)
+        //
+        // IMPORTANT: "Finalize Grades" does NOT finalize anything from here.
+        // It used to call FinalizeGradesAsync directly — a single click would
+        // lock in every score with no chance to actually look at any answer
+        // first. Both this state and "Review Submissions" now open GradingTab;
+        // the actual Finalize action lives there, as something the instructor
+        // does only after reviewing, not as a blind one-click from a list.
+        private void OnPrimaryActionAsync(ExamStatusDto exam)
         {
             switch (exam.ActionLabel)
             {
                 case "Review Submissions":
-                    ACPAMS.MainWindow.Navigate(new GradingTab(exam.ExamId));
-                    break;
-
                 case "Finalize Grades":
-                    await FinalizeGradesAsync(exam.ExamId);
+                    ACPAMS.MainWindow.Navigate(new GradingTab(exam.ExamId));
                     break;
 
                 case "View Report":
                 default:
                     OnViewReport(exam);
                     break;
-            }
-        }
-
-        private async Task FinalizeGradesAsync(Guid examId)
-        {
-            var result = MessageBox.Show(
-                "Finalize grades for this exam? Scores will be locked in as final.",
-                "Confirm Finalize", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            try
-            {
-                using (var context = new AppDbContext())
-                {
-                    var examStatusService = new ExamStatusService(context);
-                    await examStatusService.FinalizeExamGradesAsync(examId);
-                }
-
-                await LoadExamsAsync();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error finalizing grades: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
