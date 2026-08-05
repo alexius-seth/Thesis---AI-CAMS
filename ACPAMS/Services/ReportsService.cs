@@ -121,6 +121,7 @@ namespace ACPAMS.Services
                 result.Rows.Add(new ReportRowDto
                 {
                     AttemptId = a.AttemptId,
+                    StudentId = a.StudentId ?? string.Empty,
                     StudentName = a.Student != null ? $"{a.Student.FirstName} {a.Student.LastName}" : "Unknown Student",
                     Initials = a.Student != null && a.Student.FirstName.Length > 0 && a.Student.LastName.Length > 0
                         ? $"{a.Student.FirstName[0]}{a.Student.LastName[0]}".ToUpper()
@@ -135,6 +136,85 @@ namespace ACPAMS.Services
             }
 
             return result;
+        }
+
+        // ── Class-wide average score, per SECTION, for ONE exam ──────────
+        // Replaces the old "Class Mastery Profile" radar (which needed
+        // per-question skill tagging that doesn't exist) with something
+        // genuinely real: the same section grouping ExamScoresPage already
+        // shows, just averaged across every student instead of per-student.
+        public async Task<List<SectionAverageDto>> GetSectionAveragesForExamAsync(Guid examId)
+        {
+            using var context = new AppDbContext();
+
+            var questions = await context.Questions
+                .Where(q => q.ExamId == examId)
+                .ToListAsync();
+
+            var sectionNames = questions
+                .Select(q => q.SectionName ?? "General")
+                .Distinct()
+                .ToList();
+
+            var attempts = await context.StudentExamAttempts
+                .Include(a => a.Answers)
+                .Where(a => a.ExamId == examId && (a.Status == "submitted" || a.Status == "graded"))
+                .ToListAsync();
+
+            var result = new List<SectionAverageDto>();
+
+            foreach (var sectionName in sectionNames)
+            {
+                var sectionQuestionIds = questions
+                    .Where(q => (q.SectionName ?? "General") == sectionName)
+                    .Select(q => q.QuestionId)
+                    .ToHashSet();
+
+                decimal sectionMax = questions
+                    .Where(q => sectionQuestionIds.Contains(q.QuestionId))
+                    .Sum(q => q.Points ?? 0);
+
+                var studentPercents = new List<decimal>();
+
+                foreach (var attempt in attempts)
+                {
+                    var sectionAnswers = attempt.Answers
+                        .Where(a => a.QuestionId.HasValue && sectionQuestionIds.Contains(a.QuestionId.Value))
+                        .ToList();
+
+                    if (sectionAnswers.Count == 0) continue;
+                    if (!sectionAnswers.All(a => a.ObtainedPoints.HasValue)) continue; // section not fully scored for this student yet
+                    if (sectionMax <= 0) continue;
+
+                    decimal earned = sectionAnswers.Sum(a => a.ObtainedPoints ?? 0);
+                    studentPercents.Add(earned / sectionMax * 100m);
+                }
+
+                result.Add(new SectionAverageDto
+                {
+                    SectionName = sectionName,
+                    HasData = studentPercents.Count > 0,
+                    AveragePercent = studentPercents.Count > 0 ? Math.Round(studentPercents.Average(), 1) : 0
+                });
+            }
+
+            return result;
+        }
+
+        // ── For the exam-selector dropdown on ReportsTab's generic view ──
+        public async Task<List<ExamOptionDto>> GetInstructorExamsAsync(string instructorId)
+        {
+            using var context = new AppDbContext();
+
+            return await context.Exams
+                .Where(e => e.InstructorId == instructorId)
+                .OrderByDescending(e => e.CreatedAt)
+                .Select(e => new ExamOptionDto
+                {
+                    ExamId = e.ExamId,
+                    Title = e.Title ?? e.ExamName ?? "Untitled Exam"
+                })
+                .ToListAsync();
         }
     }
 
@@ -162,11 +242,25 @@ namespace ACPAMS.Services
     public class ReportRowDto
     {
         public Guid AttemptId { get; set; }
+        public string StudentId { get; set; } = string.Empty;
         public string StudentName { get; set; } = string.Empty;
         public string Initials { get; set; } = string.Empty;
         public string FinalScoreText { get; set; } = string.Empty;
         public bool IsPassing { get; set; }
         public int AnomalyCount { get; set; }
         public string RiskLevel { get; set; } = "Low";
+    }
+
+    public class SectionAverageDto
+    {
+        public string SectionName { get; set; } = string.Empty;
+        public bool HasData { get; set; }
+        public decimal AveragePercent { get; set; }
+    }
+
+    public class ExamOptionDto
+    {
+        public Guid ExamId { get; set; }
+        public string Title { get; set; } = string.Empty;
     }
 }

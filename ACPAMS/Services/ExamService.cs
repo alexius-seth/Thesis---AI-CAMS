@@ -161,9 +161,27 @@ namespace ACPAMS.Services
                         ExamId = exam.ExamId,
                         QuestionType = normalizedType,
                         Text = q.Text,
-                        CorrectAnswer = q.CorrectAnswer,
+                        // FIX: CorrectAnswer was only ever set from q.CorrectAnswer,
+                        // but that field is never actually populated for two question
+                        // types — true_false stores its answer in q.IsTrue (never read
+                        // here at all), and identification stores its answer in
+                        // q.ExpectedAnswer (which was instead being routed into
+                        // ExpectedOutput below, the field meant for coding questions).
+                        // Both auto-checking failures traced back to this one line.
+                        CorrectAnswer = normalizedType switch
+                        {
+                            "true_false" => q.IsTrue == true ? "True"
+                                           : q.IsTrue == false ? "False"
+                                           : q.CorrectAnswer,
+                            "identification" => !string.IsNullOrWhiteSpace(q.ExpectedAnswer)
+                                           ? q.ExpectedAnswer
+                                           : q.CorrectAnswer,
+                            _ => q.CorrectAnswer
+                        },
                         ProgrammingLanguage = q.ProgrammingLanguage,
-                        ExpectedOutput = q.ExpectedAnswer,
+                        // Only coding questions should use ExpectedOutput now that
+                        // identification's answer is correctly routed to CorrectAnswer above.
+                        ExpectedOutput = normalizedType == "coding" ? q.ExpectedAnswer : null,
                         Points = (decimal)q.Points,
                         SectionName = sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General",
                         OrderIndex = orderIndex++,

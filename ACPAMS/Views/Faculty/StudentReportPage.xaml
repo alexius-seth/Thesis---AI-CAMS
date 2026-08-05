@@ -208,7 +208,10 @@
 
                     <!-- Student Info -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Report.StudentName}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Text.Primary}"/>
+                        <TextBlock Text="{Binding Report.StudentName}" FontSize="20" FontWeight="Bold"
+                                   Foreground="{StaticResource Accent.Primary}"
+                                   TextDecorations="Underline" Cursor="Hand"
+                                   MouseLeftButtonUp="StudentName_Click"/>
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <TextBlock Text="{Binding Report.StudentId}" FontSize="12" Foreground="{StaticResource Text.Secondary}" Margin="0,0,12,0"/>
                             <TextBlock Text="•" FontSize="12" Foreground="{StaticResource Text.Muted}" Margin="0,0,12,0"/>
@@ -361,6 +364,129 @@
 
             </Grid>
 
+            <!-- PERFORMANCE ASSESSMENT (Strengths / Weaknesses) -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="PERFORMANCE ASSESSMENT" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center"/>
+                <TextBlock Text="AI-generated — based on this exam's finalized scores"
+                           FontSize="11" Foreground="{StaticResource Text.Muted}"
+                           Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Border Style="{StaticResource Card}" Padding="18" Margin="0,0,0,24">
+                <StackPanel>
+
+                    <!-- Not finalized yet — no button available -->
+                    <StackPanel>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Report.IsFinalized}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock Text="Finalize grading for this attempt in the Grading tab before generating an assessment."
+                                   FontSize="12" Foreground="{StaticResource Text.Muted}" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- Finalized but no assessment generated yet -->
+                    <StackPanel>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Report.IsFinalized}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Report.HasAssessment}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="No assessment generated yet for this attempt."
+                                       FontSize="12" Foreground="{StaticResource Text.Muted}"
+                                       VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <Button Content="Generate AI Assessment"
+                                    Click="GenerateAssessment_Click"
+                                    Style="{StaticResource Btn.Primary}"/>
+                        </StackPanel>
+
+                        <!-- Existing assessment -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Report.HasAssessment}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="{Binding Report.AssessmentSummary}"
+                                       FontSize="13" FontStyle="Italic"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="STRENGTHS" FontSize="11" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Success}" Margin="0,0,0,8"/>
+                                    <ItemsControl ItemsSource="{Binding Report.Strengths}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13"
+                                                           Foreground="{StaticResource Text.Primary}"
+                                                           TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="WEAKNESSES" FontSize="11" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Warning}" Margin="0,0,0,8"/>
+                                    <ItemsControl ItemsSource="{Binding Report.Weaknesses}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13"
+                                                           Foreground="{StaticResource Text.Primary}"
+                                                           TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Grid>
+
+                            <Button Content="Regenerate Assessment"
+                                    Click="GenerateAssessment_Click"
+                                    Style="{StaticResource Btn.Outlined}"
+                                    HorizontalAlignment="Left" Margin="0,14,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+
             <!-- FLAG HISTORY TABLE -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                 <TextBlock Text="FLAG HISTORY" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center"/>
@@ -493,20 +619,33 @@
                                         <TextBlock Grid.Column="0" Text="{Binding Number}" Style="{StaticResource T.TableCell}" HorizontalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Text}" Style="{StaticResource T.TableCell}" FontSize="12" TextWrapping="Wrap" MaxHeight="40" TextTrimming="WordEllipsis"/>
                                         <TextBlock Grid.Column="2" Text="{Binding Type}" Style="{StaticResource T.TableCell.Muted}" FontSize="12"/>
-                                        <TextBlock Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Text" Value="{Binding ObtainedPoints, StringFormat={}{0} / {1}}"/>
-                                                    <Setter Property="Foreground" Value="{StaticResource Text.Primary}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding ObtainedPoints}" Value="{x:Null}">
-                                                            <Setter Property="Text" Value="—"/>
-                                                            <Setter Property="Foreground" Value="{StaticResource Text.Muted}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                                        <Grid Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Foreground="{StaticResource Text.Primary}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ObtainedPoints}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                                <Run Text="{Binding ObtainedPoints}"/><Run Text=" / "/><Run Text="{Binding MaxPoints}"/>
+                                            </TextBlock>
+                                            <TextBlock Text="—" Foreground="{StaticResource Text.Muted}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding ObtainedPoints}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
                                         <Border Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="10" Padding="8,2">
                                             <Border.Style>
                                                 <Style TargetType="Border">

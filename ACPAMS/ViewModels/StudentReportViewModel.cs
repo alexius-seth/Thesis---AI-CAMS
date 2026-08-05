@@ -28,6 +28,16 @@ namespace ACPAMS.ViewModels
         public List<QuestionAnswerDto> QuestionAnswers { get; set; } = new();
         public List<CheatingScoreSnapshotDto> CheatingScoreHistory { get; set; } = new();
 
+        // ── Performance assessment (Strengths/Weaknesses/Summary) ────────
+        // Gates the "Generate Assessment" button — should only run once
+        // grading is actually finalized, not on still-pending AI-suggested scores.
+        public bool IsFinalized { get; set; }
+        public bool HasAssessment { get; set; }
+        public List<string> Strengths { get; set; } = new();
+        public List<string> Weaknesses { get; set; } = new();
+        public string AssessmentSummary { get; set; } = string.Empty;
+        public DateTime? AssessmentGeneratedAt { get; set; }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

@@ -33,6 +33,7 @@ namespace ACPAMS.ViewModels
         public ICommand DeleteExamCommand { get; set; }
         public ICommand ViewReportCommand { get; set; }
         public ICommand ViewDashboardCommand { get; set; }
+        public ICommand ViewScoresCommand { get; set; }
 
         /// <summary>Single command for the "Recently Completed" row action button —
         /// branches to Review Submissions / Finalize Grades / View Report based on
@@ -99,6 +100,7 @@ namespace ACPAMS.ViewModels
             EditExamCommand = new RelayCommand(param => OnEditExam(param as ExamStatusDto));
             ViewLogsCommand = new RelayCommand(param => OnViewLogs(param as ExamStatusDto));
             ViewDashboardCommand = new RelayCommand(param => OnViewDashboard(param as ExamStatusDto));
+            ViewScoresCommand = new RelayCommand(param => OnViewScores(param as ExamStatusDto));
             ViewReportCommand = new RelayCommand(param => OnViewReport(param as ExamStatusDto));
             PrimaryActionCommand = new RelayCommand(param =>
             {
@@ -250,6 +252,17 @@ namespace ACPAMS.ViewModels
         {
             if (exam == null) return;
             ACPAMS.MainWindow.Navigate(new DashboardPage(exam.ExamId));
+        }
+
+        // "View Scores" — dedicated per-exam scores view (ExamScoresPage), showing
+        // every student's score broken down by section, with a way to jump back
+        // into GradingTab for anything not yet finalized. Makes sense for
+        // Active/Upcoming AND Recently Completed exams alike — a live exam can
+        // still have some already-submitted, already-graded attempts worth checking.
+        private void OnViewScores(ExamStatusDto exam)
+        {
+            if (exam == null) return;
+            ACPAMS.MainWindow.Navigate(new ExamScoresPage(exam.ExamId));
         }
 
         // "View Report" — used both as its own command and as the terminal state

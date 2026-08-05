@@ -4,14 +4,26 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using ACPAMS.Services;
+using ACPAMS.Views.Faculty;
 
 namespace ACPAMS.Views.Faculty.Tabs
 {
     public partial class ReportsTab : UserControl, IRefreshableView
     {
         private readonly Guid? _examId;
+        // Set only when this page is opened generically (no _examId) and the
+        // instructor picks something from ExamSelectorCombo. Separate from
+        // _examId because that one represents "opened already scoped to a
+        // specific exam via its own View Report button" — a different,
+        // earlier decision point than picking from this page's dropdown.
+        private Guid? _selectedGenericExamId;
+
+        // Whichever exam is actually in effect right now, regardless of
+        // which of the two selection paths produced it.
+        private Guid? EffectiveExamId => _examId ?? _selectedGenericExamId;
         private readonly DispatcherTimer _autoRefreshTimer;
 
         public ReportsTab() : this(null) { }
@@ -62,13 +74,20 @@ namespace ACPAMS.Views.Faculty.Tabs
 
             if (_examId.HasValue)
             {
-                // Scoped to one exam — only students who took THIS exam show up.
+                // Opened via a specific exam's "View Report" button — the
+                // instructor already made their choice by clicking it.
+                // Statistics show immediately, no selector needed.
+                ExamSelectorContainer.Visibility = Visibility.Collapsed;
+                StatisticsSections.Visibility = Visibility.Visible;
+
                 summary = await service.GetSummaryForExamAsync(_examId.Value);
             }
             else
             {
-                // No exam specified (generic "View Student Reports" quick-nav) —
-                // browse across every exam this instructor owns.
+                // Generic "View Student Reports" quick-nav — require an
+                // explicit exam choice before showing anything, instead of
+                // silently defaulting to whichever exam happens to be most
+                // recent. The dropdown itself only needs populating once.
                 var instructor = SessionManager.CurrentInstructor;
                 if (instructor == null)
                 {
@@ -76,7 +95,23 @@ namespace ACPAMS.Views.Faculty.Tabs
                     return;
                 }
 
-                summary = await service.GetSummaryAsync(instructor.InstructorId);
+                if (ExamSelectorCombo.ItemsSource == null)
+                {
+                    var exams = await service.GetInstructorExamsAsync(instructor.InstructorId);
+                    ExamSelectorCombo.ItemsSource = exams;
+                }
+
+                ExamSelectorContainer.Visibility = Visibility.Visible;
+
+                if (!_selectedGenericExamId.HasValue)
+                {
+                    // Nothing chosen yet — show the selector, hide everything else.
+                    StatisticsSections.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                StatisticsSections.Visibility = Visibility.Visible;
+                summary = await service.GetSummaryForExamAsync(_selectedGenericExamId.Value);
             }
 
             // ── KPIs ──
@@ -104,8 +139,99 @@ namespace ACPAMS.Views.Faculty.Tabs
             WindowSwitchCount.Text = summary.WindowSwitchCount.ToString();
             ClipboardCount.Text = summary.ClipboardCount.ToString();
 
+            UpdateInfractionWedges(summary.GazeDeviationCount, summary.WindowSwitchCount, summary.ClipboardCount);
+
+            // ── Section Performance (real, replaces the old placeholder radar) ──
+            await LoadSectionPerformanceAsync(service);
+
             // ── Detailed Performance Data table ──
             BuildReportRows(summary.Rows);
+        }
+
+        // Only meaningful for ONE specific exam — sections belong to a single
+        // exam's structure, so this has nothing sensible to show in the
+        // generic "browse all exams" mode (_examId == null).
+        private async System.Threading.Tasks.Task LoadSectionPerformanceAsync(ReportsService service)
+        {
+            if (!EffectiveExamId.HasValue)
+            {
+                SectionPerformanceList.ItemsSource = null;
+                SectionPerformanceEmptyHint.Text = "Open a specific exam's report to see section performance.";
+                SectionPerformanceEmptyHint.Visibility = Visibility.Visible;
+                return;
+            }
+
+            var sectionAverages = await service.GetSectionAveragesForExamAsync(EffectiveExamId.Value);
+            var withData = sectionAverages.Where(s => s.HasData).ToList();
+
+            if (withData.Count == 0)
+            {
+                SectionPerformanceList.ItemsSource = null;
+                SectionPerformanceEmptyHint.Text = "No fully-graded sections yet.";
+                SectionPerformanceEmptyHint.Visibility = Visibility.Visible;
+                return;
+            }
+
+            SectionPerformanceEmptyHint.Visibility = Visibility.Collapsed;
+
+            // BarWidth is in pixels against the ItemsControl's ~200px available
+            // track width (Grid.Column="*" between the 70px label and 36px
+            // percent columns) — scaled directly off AveragePercent (0-100).
+            const double maxBarWidth = 200;
+
+            SectionPerformanceList.ItemsSource = withData.Select(s => new SectionPerformanceRowVM
+            {
+                SectionName = s.SectionName,
+                PercentText = $"{s.AveragePercent:0.#}%",
+                BarWidth = Math.Max(4, (double)s.AveragePercent / 100.0 * maxBarWidth)
+            }).ToList();
+        }
+
+        // ── Compute real donut wedge proportions from actual infraction counts ──
+        // A WPF Ellipse stroke can fake a pie wedge via StrokeDashArray: set a
+        // "dash" (visible) length and "gap" (invisible) length in units of
+        // StrokeThickness, then rotate the whole ellipse so the dash starts
+        // at the right position. For a circle of radius r with stroke
+        // thickness t, the full circumference in dash-array units is
+        // 2πr / t. Each segment's dash length is (its share of the total) ×
+        // that circumference; everything else is gap. Rotation starts each
+        // segment exactly where the previous one ended, beginning at 12
+        // o'clock (-90°) and proceeding clockwise.
+        private void UpdateInfractionWedges(int gazeCount, int windowCount, int clipboardCount)
+        {
+            const double radius = 60;
+            const double strokeThickness = 40;
+            double circumferenceUnits = 2 * Math.PI * radius / strokeThickness;
+
+            int total = gazeCount + windowCount + clipboardCount;
+
+            if (total == 0)
+            {
+                // Nothing to show — collapse all three so only the base
+                // (empty) circle + center label remain visible.
+                GazeSegment.StrokeDashArray = new DoubleCollection { 0, circumferenceUnits };
+                WindowSegment.StrokeDashArray = new DoubleCollection { 0, circumferenceUnits };
+                ClipboardSegment.StrokeDashArray = new DoubleCollection { 0, circumferenceUnits };
+                return;
+            }
+
+            double gazeFraction = (double)gazeCount / total;
+            double windowFraction = (double)windowCount / total;
+            double clipboardFraction = (double)clipboardCount / total;
+
+            SetWedge(GazeSegment, GazeSegmentRotate, gazeFraction, cumulativeFractionBefore: 0, circumferenceUnits);
+            SetWedge(WindowSegment, WindowSegmentRotate, windowFraction, cumulativeFractionBefore: gazeFraction, circumferenceUnits);
+            SetWedge(ClipboardSegment, ClipboardSegmentRotate, clipboardFraction, cumulativeFractionBefore: gazeFraction + windowFraction, circumferenceUnits);
+        }
+
+        private static void SetWedge(Ellipse segment, RotateTransform rotate, double fraction,
+            double cumulativeFractionBefore, double circumferenceUnits)
+        {
+            double dashLength = fraction * circumferenceUnits;
+            double gapLength = circumferenceUnits - dashLength;
+
+            segment.StrokeDashArray = new DoubleCollection { dashLength, gapLength };
+            rotate.Angle = -90 + (cumulativeFractionBefore * 360);
         }
 
         private void BuildReportRows(System.Collections.Generic.List<ReportRowDto> rows)
@@ -147,9 +273,24 @@ namespace ACPAMS.Views.Faculty.Tabs
                         VerticalAlignment = VerticalAlignment.Center
                     }
                 };
-                var namePanel = new StackPanel { Orientation = Orientation.Horizontal };
+                var namePanel = new StackPanel { Orientation = Orientation.Horizontal, Cursor = System.Windows.Input.Cursors.Hand };
                 namePanel.Children.Add(avatar);
-                namePanel.Children.Add(new TextBlock { Text = r.StudentName, FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
+                var nameLink = new TextBlock
+                {
+                    Text = r.StudentName,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = Brush("#1976D2"),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextDecorations = TextDecorations.Underline
+                };
+                string clickedStudentId = r.StudentId; // captured per-row for the closure below
+                namePanel.MouseLeftButtonUp += (s, e) =>
+                {
+                    if (!string.IsNullOrEmpty(clickedStudentId))
+                        MainWindow.Navigate(new StudentInformationTab(clickedStudentId));
+                };
+                namePanel.Children.Add(nameLink);
                 Grid.SetColumn(namePanel, 0);
 
                 // AI Score / AI Conf — pending AI integration, honestly shown as "—"
@@ -246,11 +387,29 @@ namespace ACPAMS.Views.Faculty.Tabs
         private static Brush Brush(string hex) =>
             new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
 
+        private async void ExamSelectorCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ExamSelectorCombo.SelectedItem is ExamOptionDto selected)
+            {
+                _selectedGenericExamId = selected.ExamId;
+                await LoadReportsAsync();
+            }
+        }
+
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             // Returns to whichever page opened Reports, via MainWindow's navigation
             // history — same pattern as Monitoring/Grading's Back buttons.
             MainWindow.NavigateBackStatic();
         }
+    }
+
+    // Backs the Section Performance ItemsControl — one row per exam section,
+    // with a pre-computed pixel bar width so the XAML template stays a plain binding.
+    public class SectionPerformanceRowVM
+    {
+        public string SectionName { get; set; } = string.Empty;
+        public string PercentText { get; set; } = string.Empty;
+        public double BarWidth { get; set; }
     }
 }

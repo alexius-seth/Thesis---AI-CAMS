@@ -331,6 +331,33 @@
             </Button>
 
             <!-- ─────────────────────────────────────────
+                 EXAM SELECTOR — only shown when this page was opened
+                 generically (no specific exam), i.e. via the "View Student
+                 Reports" quick-nav rather than a specific exam's "View
+                 Report" button. Statistics stay hidden until one is chosen.
+            ───────────────────────────────────────── -->
+            <Border x:Name="ExamSelectorContainer"
+                    Style="{StaticResource Card}"
+                    Padding="20" Margin="0,0,0,24"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="SELECT AN EXAM TO VIEW ITS REPORT"
+                               Style="{StaticResource T.SectionLabel}"
+                               Margin="0,0,0,10"/>
+                    <ComboBox x:Name="ExamSelectorCombo"
+                              DisplayMemberPath="Title"
+                              SelectionChanged="ExamSelectorCombo_SelectionChanged"
+                              FontSize="13" Padding="10,8"
+                              HorizontalAlignment="Stretch"/>
+                    <TextBlock Text="Statistics won't display until you choose a specific exam above."
+                               FontSize="11" Foreground="{StaticResource Text.Muted}"
+                               Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel x:Name="StatisticsSections" Visibility="Collapsed">
+
+            <!-- ─────────────────────────────────────────
                  SECTION 1 — AGGREGATE CLASS METRICS
             ───────────────────────────────────────── -->
             <TextBlock Text="AGGREGATE CLASS METRICS"
@@ -540,42 +567,42 @@
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
                                      Fill="{StaticResource Chart.BgAmber}"/>
-                            <!-- Segment 1: Gaze ~50% -->
-                            <Ellipse Width="120" Height="120"
+                            <!-- Segment 1: Gaze -->
+                            <Ellipse x:Name="GazeSegment" Width="120" Height="120"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
                                      Fill="Transparent"
                                      Stroke="{StaticResource Chart.Amber}"
                                      StrokeThickness="40"
-                                     StrokeDashArray="1.57 3.14">
+                                     StrokeDashArray="0 9.42">
                                 <Ellipse.RenderTransform>
-                                    <RotateTransform Angle="-90"
+                                    <RotateTransform x:Name="GazeSegmentRotate" Angle="-90"
                                                      CenterX="60" CenterY="60"/>
                                 </Ellipse.RenderTransform>
                             </Ellipse>
-                            <!-- Segment 2: Window ~33% -->
-                            <Ellipse Width="120" Height="120"
+                            <!-- Segment 2: Window -->
+                            <Ellipse x:Name="WindowSegment" Width="120" Height="120"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
                                      Fill="Transparent"
                                      Stroke="{StaticResource Chart.Red}"
                                      StrokeThickness="40"
-                                     StrokeDashArray="1.04 3.67">
+                                     StrokeDashArray="0 9.42">
                                 <Ellipse.RenderTransform>
-                                    <RotateTransform Angle="90"
+                                    <RotateTransform x:Name="WindowSegmentRotate" Angle="-90"
                                                      CenterX="60" CenterY="60"/>
                                 </Ellipse.RenderTransform>
                             </Ellipse>
-                            <!-- Segment 3: Clipboard ~17% -->
-                            <Ellipse Width="120" Height="120"
+                            <!-- Segment 3: Clipboard -->
+                            <Ellipse x:Name="ClipboardSegment" Width="120" Height="120"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"
                                      Fill="Transparent"
                                      Stroke="{StaticResource Chart.Blue}"
                                      StrokeThickness="40"
-                                     StrokeDashArray="0.534 4.21">
+                                     StrokeDashArray="0 9.42">
                                 <Ellipse.RenderTransform>
-                                    <RotateTransform Angle="208"
+                                    <RotateTransform x:Name="ClipboardSegmentRotate" Angle="-90"
                                                      CenterX="60" CenterY="60"/>
                                 </Ellipse.RenderTransform>
                             </Ellipse>
@@ -636,141 +663,54 @@
                     </StackPanel>
                 </Border>
 
-                <!-- CHART 3: Class Mastery Radar
-                     PENDING: needs each Question tagged with a skill area
-                     (Logic/Syntax/OOP/Debug/Design). That doesn't exist in the
-                     schema yet, so this stays on its original static mock data. -->
+                <!-- CHART 3: Section Performance
+                     Real data — average % score per section (Identification/
+                     TOF/Code/etc.) across every graded student in this exam,
+                     reusing ExamScoresService's per-section breakdown. Number
+                     of sections varies per exam, so this is a dynamic bar
+                     list (built in code-behind) rather than a fixed radar. -->
                 <Border Grid.Column="4" Style="{StaticResource Card}" Padding="20,18">
                     <StackPanel>
-                        <TextBlock Text="Class Mastery Profile"
+                        <TextBlock Text="Section Performance"
                                    Style="{StaticResource T.CardTitle}"
                                    Margin="0,0,0,3"/>
-                        <TextBlock Text="Competency across assessed skill areas — pending skill tagging"
+                        <TextBlock Text="Average score per section, across all graded students"
                                    Style="{StaticResource T.CardSubtitle}"
                                    Margin="0,0,0,16"/>
 
-                        <!-- Radar chart simulation using a Canvas -->
-                        <Canvas Height="140" Width="140"
-                                HorizontalAlignment="Center"
-                                Margin="0,0,0,16">
-                            <!-- Background rings -->
-                            <Ellipse Canvas.Left="10" Canvas.Top="10"
-                                     Width="120" Height="120"
-                                     Stroke="{StaticResource Border.Subtle}"
-                                     StrokeThickness="1" Fill="Transparent"/>
-                            <Ellipse Canvas.Left="25" Canvas.Top="25"
-                                     Width="90" Height="90"
-                                     Stroke="{StaticResource Border.Subtle}"
-                                     StrokeThickness="1" Fill="Transparent"/>
-                            <Ellipse Canvas.Left="40" Canvas.Top="40"
-                                     Width="60" Height="60"
-                                     Stroke="{StaticResource Border.Subtle}"
-                                     StrokeThickness="1" Fill="Transparent"/>
-                            <!-- Axis lines from center -->
-                            <Line X1="70" Y1="70" X2="70" Y2="10"
-                                  Stroke="{StaticResource Border.Subtle}"
-                                  StrokeThickness="1"/>
-                            <Line X1="70" Y1="70" X2="124" Y2="43"
-                                  Stroke="{StaticResource Border.Subtle}"
-                                  StrokeThickness="1"/>
-                            <Line X1="70" Y1="70" X2="103" Y2="123"
-                                  Stroke="{StaticResource Border.Subtle}"
-                                  StrokeThickness="1"/>
-                            <Line X1="70" Y1="70" X2="37" Y2="123"
-                                  Stroke="{StaticResource Border.Subtle}"
-                                  StrokeThickness="1"/>
-                            <Line X1="70" Y1="70" X2="16" Y2="43"
-                                  Stroke="{StaticResource Border.Subtle}"
-                                  StrokeThickness="1"/>
-                            <!-- Data polygon (filled, semi-transparent) -->
-                            <Polygon Points="70,22 112,52 96,108 44,108 28,52"
-                                     Fill="#3B1976D2"
-                                     Stroke="{StaticResource Accent.Primary}"
-                                     StrokeThickness="1.5"/>
-                            <!-- Axis labels -->
-                            <TextBlock Canvas.Left="58" Canvas.Top="0"
-                                       Text="Logic" FontSize="9"
-                                       Foreground="{StaticResource Text.Secondary}"/>
-                            <TextBlock Canvas.Left="118" Canvas.Top="38"
-                                       Text="Syntax" FontSize="9"
-                                       Foreground="{StaticResource Text.Secondary}"/>
-                            <TextBlock Canvas.Left="100" Canvas.Top="124"
-                                       Text="Design" FontSize="9"
-                                       Foreground="{StaticResource Text.Secondary}"/>
-                            <TextBlock Canvas.Left="22" Canvas.Top="124"
-                                       Text="Debug" FontSize="9"
-                                       Foreground="{StaticResource Text.Secondary}"/>
-                            <TextBlock Canvas.Left="0" Canvas.Top="38"
-                                       Text="OOP" FontSize="9"
-                                       Foreground="{StaticResource Text.Secondary}"/>
-                        </Canvas>
+                        <ItemsControl x:Name="SectionPerformanceList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="36"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding SectionName}"
+                                                   FontSize="11" Foreground="{StaticResource Text.Secondary}"
+                                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                                Background="{StaticResource Chart.BgBlue}"
+                                                VerticalAlignment="Center">
+                                            <Border HorizontalAlignment="Left"
+                                                    Width="{Binding BarWidth}"
+                                                    Height="6" CornerRadius="3"
+                                                    Background="{StaticResource Chart.Blue}"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="2" Text="{Binding PercentText}"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource Chart.Blue}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                        <!-- Skill score bars -->
-                        <StackPanel>
-                            <Grid Margin="0,0,0,5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="52"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="30"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Logic"
-                                           FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
-                                <Border Grid.Column="1" Height="6" CornerRadius="3"
-                                        Background="{StaticResource Chart.BgBlue}"
-                                        VerticalAlignment="Center">
-                                    <Border HorizontalAlignment="Left" Width="170"
-                                            Height="6" CornerRadius="3"
-                                            Background="{StaticResource Chart.Blue}"
-                                            MaxWidth="200"/>
-                                </Border>
-                                <TextBlock Grid.Column="2" Text="85%"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Chart.Blue}"
-                                           HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="52"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="30"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Syntax"
-                                           FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
-                                <Border Grid.Column="1" Height="6" CornerRadius="3"
-                                        Background="{StaticResource Chart.BgBlue}"
-                                        VerticalAlignment="Center">
-                                    <Border HorizontalAlignment="Left" Width="156"
-                                            Height="6" CornerRadius="3"
-                                            Background="{StaticResource Chart.Blue}"
-                                            MaxWidth="200"/>
-                                </Border>
-                                <TextBlock Grid.Column="2" Text="78%"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Chart.Blue}"
-                                           HorizontalAlignment="Right"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="52"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="30"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Design"
-                                           FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
-                                <Border Grid.Column="1" Height="6" CornerRadius="3"
-                                        Background="{StaticResource Chart.BgBlue}"
-                                        VerticalAlignment="Center">
-                                    <Border HorizontalAlignment="Left" Width="144"
-                                            Height="6" CornerRadius="3"
-                                            Background="{StaticResource Chart.Blue}"
-                                            MaxWidth="200"/>
-                                </Border>
-                                <TextBlock Grid.Column="2" Text="72%"
-                                           FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Chart.Blue}"
-                                           HorizontalAlignment="Right"/>
-                            </Grid>
-                        </StackPanel>
+                        <TextBlock x:Name="SectionPerformanceEmptyHint"
+                                   Text="No fully-graded sections yet."
+                                   FontSize="12" Foreground="{StaticResource Text.Muted}"
+                                   Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
 
@@ -837,6 +777,8 @@
 
                 </StackPanel>
             </Border>
+
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

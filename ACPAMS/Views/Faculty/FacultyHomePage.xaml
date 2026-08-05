@@ -845,6 +845,16 @@
                                                     Margin="0,0,8,8"
                                                     Visibility="{Binding IsActiveOrUpcoming, Converter={StaticResource BoolToVis}}"/>
 
+                                            <!-- Visible whenever anyone has actually taken the exam,
+                                                 whether it's still live, upcoming-with-early-submits,
+                                                 or already completed. -->
+                                            <Button Style="{StaticResource Btn.Outlined}"
+                                                    Content="View Scores"
+                                                    Command="{Binding DataContext.ViewScoresCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Margin="0,0,8,8"
+                                                    Visibility="{Binding HasAttempts, Converter={StaticResource BoolToVis}}"/>
+
                                             <Button Style="{StaticResource Btn.Outlined}"
                                                     Content="Edit Exam"
                                                     Command="{Binding DataContext.EditExamCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using ACPAMS.Data;
 using ACPAMS.Models;
+using ACPAMS.Services;
 using ACPAMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,8 @@ namespace ACPAMS.Views.Faculty
     {
         public StudentReportViewModel Report { get; set; } = new();
         private Guid _attemptId;
+        private string? _studentId;
+        private Guid? _examId;
 
         public StudentReportPage(Guid attemptId)
         {
@@ -66,6 +69,7 @@ namespace ACPAMS.Views.Faculty
                 Report.StartedAt = attempt.StartedAt ?? DateTime.Now;
                 Report.SubmittedAt = attempt.SubmittedAt;
                 Report.Status = attempt.Status ?? "in_progress";
+                Report.IsFinalized = attempt.Status == "graded";
 
                 // Calculate scores - convert decimal to double
                 var answers = attempt.Answers?.ToList() ?? new List<StudentAnswer>();
@@ -131,6 +135,27 @@ namespace ACPAMS.Views.Faculty
                     Report.CheatingScore = Math.Min(100, Report.FlagHistory.Count * 15 + 5);
                 }
 
+                // ── Performance assessment (Strengths/Weaknesses) ────────
+                // Remember these for GenerateAssessment_Click, then load
+                // whatever assessment (if any) was already generated before.
+                _studentId = attempt.StudentId;
+                _examId = attempt.ExamId;
+
+                if (_studentId != null && _examId.HasValue)
+                {
+                    var existingAssessment = await new PerformanceAssessmentService()
+                        .GetExistingAssessmentAsync(_studentId, _examId.Value);
+
+                    if (existingAssessment != null)
+                    {
+                        Report.HasAssessment = true;
+                        Report.Strengths = existingAssessment.Strengths;
+                        Report.Weaknesses = existingAssessment.Weaknesses;
+                        Report.AssessmentSummary = existingAssessment.Summary;
+                        Report.AssessmentGeneratedAt = existingAssessment.GeneratedAt;
+                    }
+                }
+
                 // Update UI
                 DataContext = null;
                 DataContext = this;
@@ -154,6 +179,50 @@ namespace ACPAMS.Views.Faculty
         private void BackToMonitoring_Click(object sender, RoutedEventArgs e)
         {
             MainWindow.NavigateToMonitoringStatic();
+        }
+
+        private void StudentName_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_studentId != null)
+                MainWindow.Navigate(new StudentInformationTab(_studentId));
+        }
+
+        private async void GenerateAssessment_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Report.IsFinalized)
+            {
+                MessageBox.Show(
+                    "Grades for this attempt aren't finalized yet. Finalize grading in " +
+                    "GradingTab first, so this assessment reflects confirmed scores, not " +
+                    "AI-suggested ones still pending your review.",
+                    "Not Finalized", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (sender is Button button) button.IsEnabled = false;
+
+            try
+            {
+                var result = await new PerformanceAssessmentService().GenerateAssessmentAsync(_attemptId);
+
+                Report.HasAssessment = true;
+                Report.Strengths = result.Strengths;
+                Report.Weaknesses = result.Weaknesses;
+                Report.AssessmentSummary = result.Summary;
+                Report.AssessmentGeneratedAt = DateTime.Now;
+
+                DataContext = null;
+                DataContext = this;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error generating assessment: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (sender is Button btn) btn.IsEnabled = true;
+            }
         }
     }
 }
