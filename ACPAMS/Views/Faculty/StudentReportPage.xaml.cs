@@ -178,7 +178,7 @@ namespace ACPAMS.Views.Faculty
 
         private void BackToMonitoring_Click(object sender, RoutedEventArgs e)
         {
-            MainWindow.NavigateToMonitoringStatic();
+            MainWindow.NavigateBackStatic();
         }
 
         private void StudentName_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
