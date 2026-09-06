@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -110,8 +110,10 @@ namespace ACPAMS
         {
             if (_navigationHistory.Count == 0)
             {
-                // Nothing to go back to — fall back to Home.
-                NavigateToHome();
+                if (Services.SessionManager.IsInstructor)
+                    NavigateToHome();
+                else
+                    ShowPage(new Views.Auth.LoginPage());
                 return;
             }
 
@@ -126,6 +128,11 @@ namespace ACPAMS
             {
                 _isNavigatingBack = false;
             }
+        }
+
+        public void ClearHistory()
+        {
+            _navigationHistory.Clear();
         }
 
         // ─── Static Navigation Methods ──────────────────────────────
@@ -174,6 +181,11 @@ namespace ACPAMS
         public static void NavigateBackStatic()
         {
             Instance?.NavigateBack();
+        }
+
+        public static void ClearNavigationHistory()
+        {
+            Instance?.ClearHistory();
         }
 
         public static void Resize(double width, double height)

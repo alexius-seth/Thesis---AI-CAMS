@@ -27,3 +27,6 @@ secrets.json
 # Populated at runtime by RubricService when instructors attach a
 # reference PDF via AIRubricModal — not something to commit.
 RubricAttachments/
+
+# ── Secrets & environment files (defense in depth) ──────────────
+graphify-out

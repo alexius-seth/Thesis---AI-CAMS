@@ -1,4 +1,4 @@
-﻿using ACPAMS.Data;
+using ACPAMS.Data;
 using ACPAMS.Models;
 using DlibDotNet;
 using Microsoft.EntityFrameworkCore;
@@ -137,8 +137,18 @@ namespace ACPAMS.Services
 
         public void Stop()
         {
-            _cts?.Cancel();
-            _captureTask?.Wait(2000);
+            try
+            {
+                if (_cts != null && !_cts.IsCancellationRequested)
+                    _cts.Cancel();
+            }
+            catch (ObjectDisposedException) { }
+
+            try
+            {
+                _captureTask?.Wait(2000);
+            }
+            catch { }
         }
 
         private void CaptureLoop(CancellationToken token)
@@ -433,10 +443,15 @@ namespace ACPAMS.Services
         {
             Stop();
             _capture?.Dispose();
+            _capture = null;
             _faceDetector?.Dispose();
+            _faceDetector = null;
             _shapePredictor?.Dispose();
+            _shapePredictor = null;
             _dlibDetector?.Dispose();
+            _dlibDetector = null;
             _cts?.Dispose();
+            _cts = null;
         }
 
         // ─── Get Active Students ──────────────────────────────────────

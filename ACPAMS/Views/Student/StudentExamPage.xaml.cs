@@ -155,8 +155,12 @@ namespace ACPAMS.Views.Student
 
         private void StopMonitoring()
         {
-            _monitoring?.Stop();
-            _monitoring?.Dispose();
+            if (_monitoring != null)
+            {
+                _monitoring.Stop();
+                _monitoring.Dispose();
+                _monitoring = null;
+            }
 
             if (_keyboardHookHandle != nint.Zero)
             {
@@ -555,12 +559,9 @@ namespace ACPAMS.Views.Student
             SessionManager.CurrentAttempt = null;
             SessionManager.CurrentExam = null;
 
-            MessageBox.Show(
-                "Your exam has been submitted successfully. Good luck!",
-                "Submitted", MessageBoxButton.OK, MessageBoxImage.Information);
-
-            ACPAMS.MainWindow.Resize(520, 480);
-            ACPAMS.MainWindow.Navigate(new ExamEntryPage());
+            ACPAMS.MainWindow.ClearNavigationHistory();
+            ACPAMS.MainWindow.Resize(520, 520);
+            ACPAMS.MainWindow.Navigate(new ExamSubmissionConfirmationPage());
         }
     }
 
