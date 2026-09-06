@@ -22,7 +22,8 @@ namespace ACPAMS.Services
         MultipleFacesDetected,
         ClipboardAttempt,
         AltTabAttempt,
-        WindowFocusLost
+        WindowFocusLost,
+        GazeDiverted
     }
 
     public class MonitoringService : IDisposable
@@ -31,12 +32,15 @@ namespace ACPAMS.Services
         public event Action<System.Windows.Media.Imaging.BitmapSource>? FrameReady;
         public event Action<SuspiciousEventType, string>? SuspiciousActivityDetected;
         public event Action<double>? CheatingScoreUpdated;
+        public event Action<string>? GazeDirectionUpdated;
+        public event Action<double, bool>? EyeStatusUpdated;
 
         // ── OpenCV / Dlib ─────────────────────────────────────────────────
         private VideoCapture? _capture;
         private CascadeClassifier? _faceDetector;
         private ShapePredictor? _shapePredictor;
         private FrontalFaceDetector? _dlibDetector;
+        private byte[]? _frameBuffer;
 
         // ── Threading ─────────────────────────────────────────────────────
         private CancellationTokenSource? _cts;
@@ -50,6 +54,9 @@ namespace ACPAMS.Services
         private const int FRAME_THRESHOLD = 45;
         private const double YAW_THRESHOLD = 25.0;
         private const double PITCH_THRESHOLD = 20.0;
+        private const double EAR_THRESHOLD = 0.20;
+        private const int GAZE_DIVERTED_THRESHOLD = 45;
+        private int _gazeDivertedFrameCount = 0;
 
         // ── Cheating Score System ─────────────────────────────────────────
         private double _cheatingScore = 0.0;
@@ -223,20 +230,28 @@ namespace ACPAMS.Services
                 _multiFaceFrameCount = 0;
             }
 
-            // ── Head pose (only if exactly one face) ──────────────────────────
+            // ── Head pose & eye tracking (only if exactly one face) ───────────
             if (faces.Length == 1)
             {
                 try
                 {
-                    bool headTurned = EstimateHeadPose(frame, display, faces[0]);
-                    if (headTurned) isLookingAway = true;
+                    bool headOrGazeDiverted = AnalyzePoseAndEyes(frame, gray, display, faces[0]);
+                    if (headOrGazeDiverted) isLookingAway = true;
                 }
                 catch (Exception ex)
                 {
-                    // Side profile — treat as looking away
                     isLookingAway = true;
-                    System.Diagnostics.Debug.WriteLine($"Head pose error: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Head/eye analysis error: {ex.Message}");
                 }
+            }
+            else
+            {
+                _gazeDivertedFrameCount = 0;
+                _dispatcher.BeginInvoke(() =>
+                {
+                    GazeDirectionUpdated?.Invoke("Unavailable");
+                    EyeStatusUpdated?.Invoke(0.0, false);
+                });
             }
 
             // ── Cheating score update ─────────────────────────────────────────
@@ -305,16 +320,26 @@ namespace ACPAMS.Services
                 _dispatcher.BeginInvoke(() => CheatingScoreUpdated?.Invoke(_cheatingScore));
         }
 
-        private bool EstimateHeadPose(Mat frame, Mat display, OpenCvSharp.Rect face)
+        private bool AnalyzePoseAndEyes(Mat frame, Mat gray, Mat display, OpenCvSharp.Rect face)
         {
-            var dlibRect = new DlibDotNet.Rectangle(face.Left, face.Top, face.Right, face.Bottom);
+            int left = Math.Clamp(face.Left, 0, frame.Cols - 1);
+            int top = Math.Clamp(face.Top, 0, frame.Rows - 1);
+            int right = Math.Clamp(face.Right, left + 1, frame.Cols - 1);
+            int bottom = Math.Clamp(face.Bottom, top + 1, frame.Rows - 1);
+            var dlibRect = new DlibDotNet.Rectangle(left, top, right, bottom);
 
-            var tempPath = Path.Combine(Path.GetTempPath(), "acpams_frame.jpg");
-            Cv2.ImWrite(tempPath, frame);
+            int stride = (int)frame.Step();
+            int size = frame.Rows * stride;
+            if (_frameBuffer == null || _frameBuffer.Length != size)
+                _frameBuffer = new byte[size];
 
-            using var dlibImg = Dlib.LoadImage<BgrPixel>(tempPath);
-            var shape = _shapePredictor!.Detect(dlibImg, dlibRect);
+            Marshal.Copy(frame.Data, _frameBuffer, 0, size);
 
+            // In-memory Dlib conversion via pinned byte buffer — zero disk I/O, no unpinned native pointer faults
+            using var dlibImg = Dlib.LoadImageData<BgrPixel>(_frameBuffer, (uint)frame.Rows, (uint)frame.Cols, (uint)stride);
+            using var shape = _shapePredictor!.Detect(dlibImg, dlibRect);
+
+            // 1. Head Pose Estimation
             var imagePoints = new double[,]
             {
                 { shape.GetPart(30).X, shape.GetPart(30).Y },
@@ -351,34 +376,136 @@ namespace ACPAMS.Services
                             Math.Sqrt(rmat.Get<double>(2, 1) * rmat.Get<double>(2, 1) +
                                       rmat.Get<double>(2, 2) * rmat.Get<double>(2, 2))) * 180 / Math.PI;
 
-            Cv2.PutText(display, $"Yaw: {yaw:F1}", new OpenCvSharp.Point(10, 30),
-                HersheyFonts.HersheySimplex, 0.6, Scalar.Yellow, 2);
-            Cv2.PutText(display, $"Pitch: {pitch:F1}", new OpenCvSharp.Point(10, 55),
-                HersheyFonts.HersheySimplex, 0.6, Scalar.Yellow, 2);
+            bool headTurned = (yaw > YAW_THRESHOLD || yaw < -YAW_THRESHOLD || pitch < -PITCH_THRESHOLD);
 
-            bool headTurned = false;
+            // 2. Eye Aspect Ratio (EAR)
+            double leftEar = CalculateEyeAspectRatio(shape, 36, 37, 38, 39, 40, 41);
+            double rightEar = CalculateEyeAspectRatio(shape, 42, 43, 44, 45, 46, 47);
+            double ear = (leftEar + rightEar) / 2.0;
+            bool eyesOpen = ear >= EAR_THRESHOLD;
 
-            // ── Head movement alerts are disabled ────────────────────────────
-            // Head yaw tracking is still performed for cheating score calculation
-            // but no alerts are sent to the teacher dashboard
-            if (yaw > YAW_THRESHOLD)
+            // 3. Gaze Direction
+            string gazeDirection = eyesOpen
+                ? DetectGazeDirection(gray, shape, display)
+                : "Closed";
+
+            _dispatcher.BeginInvoke(() =>
             {
-                // HeadTurnedRight alert disabled
-                headTurned = true;
-            }
-            else if (yaw < -YAW_THRESHOLD)
+                EyeStatusUpdated?.Invoke(ear, eyesOpen);
+                GazeDirectionUpdated?.Invoke(gazeDirection);
+            });
+
+            // 4. Gaze Diverted Alert
+            bool gazeDiverted = eyesOpen && (gazeDirection == "Left" || gazeDirection == "Right");
+            if (gazeDiverted)
             {
-                // HeadTurnedLeft alert disabled
-                headTurned = true;
+                _gazeDivertedFrameCount++;
+                if (_gazeDivertedFrameCount == GAZE_DIVERTED_THRESHOLD)
+                {
+                    RaiseSuspiciousEvent(SuspiciousEventType.GazeDiverted,
+                        $"Gaze diverted ({gazeDirection}) away from screen.");
+                }
+            }
+            else
+            {
+                _gazeDivertedFrameCount = 0;
             }
 
-            if (pitch < -PITCH_THRESHOLD)
+            // Display overlay
+            Cv2.PutText(display, $"Yaw: {yaw:F1}", new OpenCvSharp.Point(10, 25),
+                HersheyFonts.HersheySimplex, 0.45, Scalar.Yellow, 1);
+            Cv2.PutText(display, $"Pitch: {pitch:F1}", new OpenCvSharp.Point(10, 45),
+                HersheyFonts.HersheySimplex, 0.45, Scalar.Yellow, 1);
+            Cv2.PutText(display, $"Gaze: {gazeDirection}", new OpenCvSharp.Point(10, 65),
+                HersheyFonts.HersheySimplex, 0.45, gazeDiverted ? Scalar.Red : Scalar.Cyan, 1);
+            Cv2.PutText(display, $"EAR: {ear:F2} ({(eyesOpen ? "Open" : "Closed")})", new OpenCvSharp.Point(10, 85),
+                HersheyFonts.HersheySimplex, 0.45, eyesOpen ? Scalar.LimeGreen : Scalar.Orange, 1);
+
+            return headTurned || gazeDiverted;
+        }
+
+        private static double Distance(DlibDotNet.Point p1, DlibDotNet.Point p2)
+        {
+            double dx = p1.X - p2.X;
+            double dy = p1.Y - p2.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        private static double CalculateEyeAspectRatio(FullObjectDetection shape, int p1, int p2, int p3, int p4, int p5, int p6)
+        {
+            double vertical1 = Distance(shape.GetPart((uint)p2), shape.GetPart((uint)p6));
+            double vertical2 = Distance(shape.GetPart((uint)p3), shape.GetPart((uint)p5));
+            double horizontal = Distance(shape.GetPart((uint)p1), shape.GetPart((uint)p4));
+            return horizontal > 0 ? (vertical1 + vertical2) / (2.0 * horizontal) : 0.0;
+        }
+
+        private static string DetectGazeDirection(Mat gray, FullObjectDetection shape, Mat display)
+        {
+            var leftEyeBox = GetEyeBoundingBox(shape, 36, 41, gray.Cols, gray.Rows);
+            var rightEyeBox = GetEyeBoundingBox(shape, 42, 47, gray.Cols, gray.Rows);
+
+            double leftRatio = GetPupilHorizontalRatio(gray, leftEyeBox);
+            double rightRatio = GetPupilHorizontalRatio(gray, rightEyeBox);
+
+            // Draw eye bounding boxes on preview
+            Cv2.Rectangle(display, leftEyeBox, Scalar.Cyan, 1);
+            Cv2.Rectangle(display, rightEyeBox, Scalar.Cyan, 1);
+
+            double avgRatio = (leftRatio + rightRatio) / 2.0;
+
+            if (avgRatio < 0.38)
+                return "Left";
+            if (avgRatio > 0.62)
+                return "Right";
+
+            return "Center";
+        }
+
+        private static OpenCvSharp.Rect GetEyeBoundingBox(FullObjectDetection shape, int startIdx, int endIdx, int imgWidth, int imgHeight)
+        {
+            int minX = int.MaxValue, maxX = int.MinValue;
+            int minY = int.MaxValue, maxY = int.MinValue;
+
+            for (int i = startIdx; i <= endIdx; i++)
             {
-                // HeadTiltedDown alert disabled
-                headTurned = true;
+                var pt = shape.GetPart((uint)i);
+                if (pt.X < minX) minX = pt.X;
+                if (pt.X > maxX) maxX = pt.X;
+                if (pt.Y < minY) minY = pt.Y;
+                if (pt.Y > maxY) maxY = pt.Y;
             }
 
-            return headTurned;
+            int padX = Math.Max(2, (maxX - minX) / 8);
+            int padY = Math.Max(2, (maxY - minY) / 6);
+
+            int x = Math.Clamp(minX - padX, 0, imgWidth - 1);
+            int y = Math.Clamp(minY - padY, 0, imgHeight - 1);
+            int w = Math.Clamp(maxX - minX + padX * 2, 1, imgWidth - x);
+            int h = Math.Clamp(maxY - minY + padY * 2, 1, imgHeight - y);
+
+            return new OpenCvSharp.Rect(x, y, w, h);
+        }
+
+        private static double GetPupilHorizontalRatio(Mat gray, OpenCvSharp.Rect eyeBox)
+        {
+            if (eyeBox.Width < 5 || eyeBox.Height < 5 ||
+                eyeBox.X < 0 || eyeBox.Y < 0 ||
+                eyeBox.Right > gray.Cols || eyeBox.Bottom > gray.Rows)
+                return 0.5;
+
+            using var eyeROI = new Mat(gray, eyeBox);
+            using var blurred = new Mat();
+            Cv2.GaussianBlur(eyeROI, blurred, new OpenCvSharp.Size(7, 7), 0);
+
+            Cv2.MinMaxLoc(blurred, out double minVal, out double maxVal, out OpenCvSharp.Point minLoc, out _);
+
+            using var thresh = new Mat();
+            Cv2.Threshold(blurred, thresh, minVal + (maxVal - minVal) * 0.25, 255, ThresholdTypes.BinaryInv);
+
+            var moments = Cv2.Moments(thresh, true);
+            double pupilX = moments.M00 > 0 ? (moments.M10 / moments.M00) : minLoc.X;
+
+            return Math.Clamp(pupilX / eyeBox.Width, 0.0, 1.0);
         }
 
         private void RaiseSuspiciousEvent(SuspiciousEventType type, string description)

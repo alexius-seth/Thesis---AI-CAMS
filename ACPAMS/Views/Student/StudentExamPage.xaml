@@ -424,11 +424,25 @@
                                     <TextBlock x:Name="ClipboardStatusText" Text="Clipboard monitoring..."
                                          FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                     <Ellipse x:Name="AltTabStatusDot" Width="6" Height="6"
                                         Fill="{StaticResource Status.Warning}"
                                         Margin="0,0,6,0" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="AltTabStatusText" Text="Alt+Tab monitoring..."
+                                        FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Ellipse x:Name="EyeStatusDot" Width="6" Height="6"
+                                        Fill="{StaticResource Status.Warning}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="EyeStatusText" Text="Eyes: Detecting..."
+                                        FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse x:Name="GazeStatusDot" Width="6" Height="6"
+                                        Fill="{StaticResource Status.Warning}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GazeStatusText" Text="Gaze: Detecting..."
                                         FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
                             </StackPanel>

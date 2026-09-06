@@ -98,6 +98,28 @@ namespace ACPAMS.Views.Student
                 }
             };
 
+            _monitoring.EyeStatusUpdated += (ear, isOpen) =>
+            {
+                EyeStatusDot.Fill = isOpen
+                    ? new SolidColorBrush(Color.FromRgb(21, 128, 61))
+                    : new SolidColorBrush(Color.FromRgb(180, 83, 9));
+                EyeStatusText.Text = $"Eyes: {(isOpen ? "Open" : "Closed")} (EAR: {ear:F2})";
+            };
+
+            _monitoring.GazeDirectionUpdated += direction =>
+            {
+                var (color, text) = direction switch
+                {
+                    "Center" => (Color.FromRgb(21, 128, 61), "Gaze: Center"),
+                    "Left" => (Color.FromRgb(198, 40, 40), "Gaze: Looking Left"),
+                    "Right" => (Color.FromRgb(198, 40, 40), "Gaze: Looking Right"),
+                    "Closed" => (Color.FromRgb(180, 83, 9), "Gaze: Closed"),
+                    _ => (Color.FromRgb(100, 116, 139), $"Gaze: {direction}")
+                };
+                GazeStatusDot.Fill = new SolidColorBrush(color);
+                GazeStatusText.Text = text;
+            };
+
             var attemptId = SessionManager.CurrentAttempt?.AttemptId ?? Guid.Empty;
             bool initialized = _monitoring.Initialize(attemptId);
 
@@ -125,13 +147,15 @@ namespace ACPAMS.Views.Student
             // Only show alerts for these specific events
             if (type == SuspiciousEventType.ClipboardAttempt ||
                 type == SuspiciousEventType.AltTabAttempt ||
-                type == SuspiciousEventType.WindowFocusLost)
+                type == SuspiciousEventType.WindowFocusLost ||
+                type == SuspiciousEventType.GazeDiverted)
             {
                 ShowAlert(type switch
                 {
                     SuspiciousEventType.ClipboardAttempt => "Clipboard Attempt",
                     SuspiciousEventType.AltTabAttempt => "Alt+Tab Blocked",
                     SuspiciousEventType.WindowFocusLost => "Window Focus Lost",
+                    SuspiciousEventType.GazeDiverted => "Gaze Diverted",
                     _ => "Warning"
                 }, description);
                 return;

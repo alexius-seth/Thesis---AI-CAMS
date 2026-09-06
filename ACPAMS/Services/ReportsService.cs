@@ -89,7 +89,7 @@ namespace ACPAMS.Services
                 .Where(l => l.EntityType == "StudentExamAttempt" && attemptIds.Contains(l.EntityId))
                 .ToListAsync();
 
-            int gazeCount = relevantLogs.Count(l => l.Action.Contains("NoFaceDetected") || l.Action.Contains("MultipleFaces"));
+            int gazeCount = relevantLogs.Count(l => l.Action.Contains("NoFaceDetected") || l.Action.Contains("MultipleFaces") || l.Action.Contains("GazeDiverted"));
             int windowCount = relevantLogs.Count(l => l.Action.Contains("AltTab") || l.Action.Contains("WindowFocus"));
             int clipboardCount = relevantLogs.Count(l => l.Action.Contains("Clipboard"));
 
