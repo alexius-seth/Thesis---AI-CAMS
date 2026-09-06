@@ -16,10 +16,10 @@ namespace ACPAMS.Views.Faculty
         private List<ExamSection> _sections = new List<ExamSection>();
         private ExamSection _selectedSection;
         private string _selectedQuestionType = string.Empty;
+        private string _taskCategory = "Examination";
 
         // Store rubric data per question
         private Dictionary<string, RubricData> _rubricData = new Dictionary<string, RubricData>();
-
 
         // Supported programming languages
         private readonly string[] _supportedLanguages = new[] { "Java", "C", "C#", "C++", "Python" };
@@ -54,8 +54,15 @@ namespace ACPAMS.Views.Faculty
             public string ExpectedAnswers { get; set; } // comma-separated for enumeration
         }
 
-        public CreateExamPage()
+        // Default constructor
+        public CreateExamPage() : this("Examination")
         {
+        }
+
+        // Constructor with category
+        public CreateExamPage(string category)
+        {
+            _taskCategory = category;
             InitializeComponent();
 
             _sections = new List<ExamSection>();
@@ -66,6 +73,52 @@ namespace ACPAMS.Views.Faculty
             UpdateQuestionsDisplay();
             UpdateActiveSectionHeader();
             ResetAllTypeButtons();
+            UpdateHeaderWithCategory();
+        }
+
+        private void UpdateHeaderWithCategory()
+        {
+            var label = FindName("CreateExamManagerLabel") as TextBlock;
+            if (label != null)
+            {
+                string categoryDisplay = _taskCategory switch
+                {
+                    "Examination" => "CREATE EXAM MANAGER",
+                    "Quiz" => "CREATE QUIZ MANAGER",
+                    "Activity" => "CREATE ACTIVITY MANAGER",
+                    _ => "CREATE EXAM MANAGER"
+                };
+                label.Text = categoryDisplay;
+            }
+
+            // Show the category badge
+            var badge = FindName("CategoryBadge") as Border;
+            var badgeText = FindName("CategoryBadgeText") as TextBlock;
+            if (badge != null && badgeText != null)
+            {
+                badge.Visibility = Visibility.Visible;
+                badgeText.Text = _taskCategory.ToUpper();
+
+                // Change colors based on category
+                switch (_taskCategory)
+                {
+                    case "Examination":
+                        badge.Background = (Brush)FindResource("Accent.PrimaryBg");
+                        badge.BorderBrush = (Brush)FindResource("Accent.Primary");
+                        badgeText.Foreground = (Brush)FindResource("Accent.Primary");
+                        break;
+                    case "Quiz":
+                        badge.Background = (Brush)FindResource("Status.SuccessBg");
+                        badge.BorderBrush = (Brush)FindResource("Status.Success");
+                        badgeText.Foreground = (Brush)FindResource("Status.Success");
+                        break;
+                    case "Activity":
+                        badge.Background = (Brush)FindResource("Status.WarningBg");
+                        badge.BorderBrush = (Brush)FindResource("Status.Warning");
+                        badgeText.Foreground = (Brush)FindResource("Status.Warning");
+                        break;
+                }
+            }
         }
 
         private void UpdateActiveSectionHeader()
@@ -160,7 +213,7 @@ namespace ACPAMS.Views.Faculty
                 try
                 {
                     ToastNotification.Show("Publishing exam...", Application.Current.MainWindow, 2, false);
-                    
+
                     var dbContext = new ACPAMS.Data.AppDbContext();
                     var instructorId = SessionManager.CurrentInstructor?.InstructorId;
 
@@ -923,7 +976,7 @@ namespace ACPAMS.Views.Faculty
                             Style = (Style)FindResource("Input.Text"),
                             Height = 60,
                             FontFamily = new FontFamily("Consolas"),
-                            AcceptsReturn = true,   
+                            AcceptsReturn = true,
                             IsReadOnly = false
                         };
                         bodyStack.Children.Add(stubBox);
@@ -1150,7 +1203,7 @@ namespace ACPAMS.Views.Faculty
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
-            newQuestion.SectionId = _selectedSection.Id; 
+            newQuestion.SectionId = _selectedSection.Id;
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
@@ -1223,7 +1276,7 @@ namespace ACPAMS.Views.Faculty
 
             var newQuestion = CreateQuestionByType(questionType);
             newQuestion.Order = _selectedSection.Questions.Count + 1;
-            newQuestion.SectionId = _selectedSection.Id; 
+            newQuestion.SectionId = _selectedSection.Id;
             _selectedSection.Questions.Add(newQuestion);
 
             UpdateQuestionsDisplay();
@@ -1418,14 +1471,13 @@ namespace ACPAMS.Views.Faculty
                 {
                     var rubricData = rubricModal.GetRubricData();
 
-                    if (!_rubricData.ContainsKey(q.Id))
-                    {
-                        _rubricData[q.Id] = rubricData;
-                    }
-                    else
-                    {
-                        _rubricData[q.Id] = rubricData;
-                    }
+                    // FIX: rubricModal.FilePath (the attached reference PDF) was
+                    // never being read here before — it was silently discarded
+                    // the moment the modal closed. Now it travels with the rest
+                    // of the rubric data so ExamService/RubricService can save it.
+                    rubricData.AttachmentFilePath = rubricModal.FilePath;
+
+                    _rubricData[q.Id] = rubricData;
 
                     ToastNotification.Show("Rubric saved successfully!", Application.Current.MainWindow);
                 }
@@ -1437,19 +1489,358 @@ namespace ACPAMS.Views.Faculty
             return border;
         }
 
+        // ─── Import exam questions from a .txt file ──────────────────
+        // Populates _sections exactly like manually adding sections/
+        // questions — nothing is saved to the database and nothing is
+        // published. The imported draft just appears on this page for
+        // the instructor to review, edit, and Publish when ready.
+        private async void ImportFromTxt_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Text files (*.txt)|*.txt",
+                Title = "Import Exam Questions from Text File"
+            };
+
+            if (dialog.ShowDialog() != true) return;
+
+            var importBtn = sender as Button;
+            if (importBtn != null) importBtn.IsEnabled = false;
+
+            try
+            {
+                List<ExamSection> importedSections;
+                bool usedAiParsing;
+
+                try
+                {
+                    ToastNotification.Show("Reading file with AI...", Application.Current.MainWindow, 3, false);
+
+                    var rawText = System.IO.File.ReadAllText(dialog.FileName);
+                    var aiSections = await new GeminiExamImportService().ParseExamTextAsync(rawText);
+
+                    importedSections = aiSections.SelectMany(ConvertImportedSection).ToList();
+                    usedAiParsing = true;
+                }
+                catch (Exception aiEx)
+                {
+                    // AI parsing failed or returned something unusable — fall back to
+                    // the strict SECTION:/Q:/ANSWER: format instead of silently
+                    // producing a broken exam from a bad AI response.
+                    System.Diagnostics.Debug.WriteLine($"AI import failed, falling back to strict parser: {aiEx.Message}");
+
+                    importedSections = ParseExamTxtFile(dialog.FileName);
+                    usedAiParsing = false;
+                }
+
+                if (importedSections.Count == 0)
+                {
+                    ToastNotification.Show("No valid sections or questions were found in that file.",
+                        Application.Current.MainWindow, 4, true);
+                    return;
+                }
+
+                foreach (var section in importedSections)
+                {
+                    foreach (var q in section.Questions)
+                        q.SectionId = section.Id;
+
+                    _sections.Add(section);
+                }
+
+                foreach (var s in _sections)
+                    s.IsActive = false;
+
+                var lastImported = importedSections.Last();
+                lastImported.IsActive = true;
+                _selectedSection = lastImported;
+
+                SelectTypeButton(lastImported.Type);
+
+                UpdateSectionList();
+                UpdateQuestionsDisplay();
+                UpdateActiveSectionHeader();
+
+                int totalQuestions = importedSections.Sum(s => s.Questions.Count);
+                string parsedBy = usedAiParsing ? "AI-parsed" : "parsed using the standard format";
+                ToastNotification.Show(
+                    $"Imported {importedSections.Count} section(s) and {totalQuestions} question(s) ({parsedBy}). " +
+                    "Review the questions, then Publish when ready — nothing has been saved yet.",
+                    Application.Current.MainWindow);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to import file:\n\n{ex.Message}", "Import Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (importBtn != null) importBtn.IsEnabled = true;
+            }
+        }
+
+        // Maps the AI service's DTOs onto this page's own ExamSection/QuestionItem
+        // shape, running the same type-normalization (GetProperTypeName) used
+        // everywhere else on this page so AI-produced type strings match what
+        // the UI/section buttons expect.
+        // The rest of ACPAMS (AddSectionModal, AutoCheckerService, GradingTab)
+        // assumes one question type per section — a real file the AI parses
+        // often has mixed types in what's conceptually "one quiz". Rather than
+        // force everything into one type (losing questions) or one "Mixed"
+        // section (which the rest of the app was never built to expect), split
+        // the AI's section into one ACPAMS section per distinct type, each
+        // named after the original section plus its type, e.g.
+        // "Chapter 3 Quiz — Multiple Choice", "Chapter 3 Quiz — Coding".
+        private List<ExamSection> ConvertImportedSection(ImportedSectionDto dto)
+        {
+            var baseName = string.IsNullOrWhiteSpace(dto.Name) ? "Imported Section" : dto.Name;
+            var instructions = dto.Instructions ?? string.Empty;
+
+            var questionsByType = dto.Questions
+                .Select(q => new
+                {
+                    Dto = q,
+                    ProperType = GetProperTypeName(string.IsNullOrWhiteSpace(q.Type) ? "Identification" : q.Type)
+                })
+                .GroupBy(x => x.ProperType)
+                .ToList();
+
+            bool isMixed = questionsByType.Count > 1;
+            var result = new List<ExamSection>();
+
+            foreach (var group in questionsByType)
+            {
+                var section = new ExamSection
+                {
+                    Name = isMixed ? $"{baseName} — {group.Key}" : baseName,
+                    Type = group.Key,
+                    Instructions = instructions,
+                    IsActive = false,
+                    Questions = new List<QuestionItem>()
+                };
+
+                int order = 0;
+                foreach (var item in group)
+                {
+                    var q = item.Dto;
+                    section.Questions.Add(new QuestionItem
+                    {
+                        Text = q.Text,
+                        Type = group.Key,
+                        Points = q.Points > 0 ? q.Points : 5,
+                        Order = order++,
+                        CorrectAnswer = q.CorrectAnswer,
+                        OptionA = q.OptionA,
+                        OptionB = q.OptionB,
+                        OptionC = q.OptionC,
+                        OptionD = q.OptionD,
+                        ExpectedAnswer = q.ExpectedAnswer,
+                        ExpectedAnswers = q.ExpectedAnswers,
+                        IsTrue = q.IsTrue,
+                        ProgrammingLanguage = q.ProgrammingLanguage
+                    });
+                }
+
+                result.Add(section);
+            }
+
+            return result;
+        }
+
+        private List<ExamSection> ParseExamTxtFile(string filePath)
+        {
+            var lines = System.IO.File.ReadAllLines(filePath);
+            var sections = new List<ExamSection>();
+
+            ExamSection currentSection = null;
+            QuestionItem currentQuestion = null;
+            var mcOptions = new Dictionary<string, string>();
+            int order = 0;
+
+            void FlushQuestion()
+            {
+                if (currentQuestion == null || currentSection == null) return;
+
+                if (string.IsNullOrEmpty(currentQuestion.Type))
+                    currentQuestion.Type = DetectQuestionType(currentQuestion, mcOptions);
+
+                ApplyOptionsForType(currentQuestion, mcOptions);
+
+                currentQuestion.Order = order++;
+                currentSection.Questions.Add(currentQuestion);
+                currentQuestion = null;
+                mcOptions = new Dictionary<string, string>();
+            }
+
+            ExamSection EnsureSection()
+            {
+                if (currentSection != null) return currentSection;
+
+                currentSection = new ExamSection
+                {
+                    Name = "Imported Section",
+                    Type = "Identification",
+                    Instructions = string.Empty,
+                    IsActive = false
+                };
+                sections.Add(currentSection);
+                order = 0;
+                return currentSection;
+            }
+
+            foreach (var rawLine in lines)
+            {
+                var trimmed = rawLine.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed)) continue;
+
+                if (trimmed.StartsWith("SECTION:", StringComparison.OrdinalIgnoreCase))
+                {
+                    FlushQuestion();
+                    currentSection = new ExamSection
+                    {
+                        Name = trimmed.Substring("SECTION:".Length).Trim(),
+                        Type = "Identification", // refined below once questions are known
+                        Instructions = string.Empty,
+                        IsActive = false
+                    };
+                    sections.Add(currentSection);
+                    order = 0;
+                }
+                else if (trimmed.StartsWith("INSTRUCTIONS:", StringComparison.OrdinalIgnoreCase))
+                {
+                    EnsureSection().Instructions = trimmed.Substring("INSTRUCTIONS:".Length).Trim();
+                }
+                else if (trimmed.StartsWith("Q:", StringComparison.OrdinalIgnoreCase))
+                {
+                    FlushQuestion();
+                    EnsureSection();
+
+                    currentQuestion = new QuestionItem
+                    {
+                        Text = trimmed.Substring(2).Trim(),
+                        Points = 5
+                    };
+                }
+                else if (trimmed.StartsWith("TYPE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var typeValue = GetProperTypeName(trimmed.Substring("TYPE:".Length).Trim());
+                    if (currentQuestion != null)
+                        currentQuestion.Type = typeValue;
+                    else
+                        EnsureSection().Type = typeValue;
+                }
+                else if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^[A-Da-d]\)"))
+                {
+                    var letter = trimmed.Substring(0, 1).ToUpper();
+                    mcOptions[letter] = trimmed.Substring(2).Trim();
+                }
+                else if (trimmed.StartsWith("ANSWERS:", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (currentQuestion != null)
+                        currentQuestion.ExpectedAnswers = trimmed.Substring("ANSWERS:".Length).Trim();
+                }
+                else if (trimmed.StartsWith("ANSWER:", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (currentQuestion != null)
+                    {
+                        var value = trimmed.Substring("ANSWER:".Length).Trim();
+                        currentQuestion.CorrectAnswer = value;
+                        currentQuestion.ExpectedAnswer = value;
+
+                        if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            currentQuestion.IsTrue = true;
+                        else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            currentQuestion.IsTrue = false;
+                    }
+                }
+                else if (trimmed.StartsWith("LANGUAGE:", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (currentQuestion != null)
+                        currentQuestion.ProgrammingLanguage = trimmed.Substring("LANGUAGE:".Length).Trim();
+                }
+                else if (trimmed.StartsWith("POINTS:", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (currentQuestion != null &&
+                        int.TryParse(trimmed.Substring("POINTS:".Length).Trim(), out int pts))
+                        currentQuestion.Points = pts;
+                }
+                else if (currentQuestion != null)
+                {
+                    // Wrapped continuation of the question text.
+                    currentQuestion.Text += " " + trimmed;
+                }
+            }
+
+            FlushQuestion();
+
+            // The data model gives each section a single Type. A TYPE: line is
+            // optional per-question, so once a section's questions are all known,
+            // settle the section (and every question in it) on whichever type
+            // was most common — keeps mixed/ambiguous files from producing a
+            // section that silently doesn't match its own questions.
+            foreach (var section in sections)
+            {
+                if (section.Questions.Count == 0) continue;
+
+                var mostCommon = section.Questions
+                    .GroupBy(q => q.Type)
+                    .OrderByDescending(g => g.Count())
+                    .First().Key;
+
+                section.Type = mostCommon;
+                foreach (var q in section.Questions)
+                    q.Type = mostCommon;
+            }
+
+            return sections;
+        }
+
+        private string DetectQuestionType(QuestionItem question, Dictionary<string, string> mcOptions)
+        {
+            if (mcOptions.Count >= 2)
+                return "Multiple Choice";
+
+            if (!string.IsNullOrEmpty(question.ProgrammingLanguage))
+                return "Coding";
+
+            if (!string.IsNullOrEmpty(question.ExpectedAnswers))
+                return "Enumeration";
+
+            var answer = question.CorrectAnswer;
+            if (!string.IsNullOrEmpty(answer) &&
+                (answer.Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                 answer.Equals("False", StringComparison.OrdinalIgnoreCase)))
+                return "True or False";
+
+            if (!string.IsNullOrEmpty(answer))
+                return "Identification";
+
+            return "Essay";
+        }
+
+        private void ApplyOptionsForType(QuestionItem question, Dictionary<string, string> mcOptions)
+        {
+            if (question.Type != "Multiple Choice") return;
+
+            mcOptions.TryGetValue("A", out var a); question.OptionA = a;
+            mcOptions.TryGetValue("B", out var b); question.OptionB = b;
+            mcOptions.TryGetValue("C", out var c); question.OptionC = c;
+            mcOptions.TryGetValue("D", out var d); question.OptionD = d;
+        }
+
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new FacultyHomePage());
+            MainWindow.NavigateToHomeStatic();
         }
 
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new DashboardPage());
+            MainWindow.NavigateToDashboardStatic();
         }
 
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)
         {
-            // Already here
+            MainWindow.NavigateToCreateExamStatic();
         }
     }
 

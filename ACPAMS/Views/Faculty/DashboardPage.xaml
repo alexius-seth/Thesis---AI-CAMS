@@ -307,9 +307,12 @@
         ══════════════════ -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>   <!-- Header bar -->
-                <RowDefinition Height="Auto"/>   <!-- Tab bar -->
-                <RowDefinition Height="*"/>      <!-- Tab content -->
+                <RowDefinition Height="Auto"/>
+                <!-- Header bar -->
+                <RowDefinition Height="Auto"/>
+                <!-- Tab bar -->
+                <RowDefinition Height="*"/>
+                <!-- Tab content -->
             </Grid.RowDefinitions>
 
             <!-- HEADER BAR -->
@@ -356,7 +359,8 @@
                                 Content="Overview"/>
 
                         <!-- Monitoring with badge -->
-                        <Button Style="{StaticResource Btn.Tab}">
+                        <Button Style="{StaticResource Btn.Tab}"
+                                Click="NavigateToMonitoring">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Monitoring"
                                            VerticalAlignment="Center"/>
@@ -376,7 +380,8 @@
                         </Button>
 
                         <!-- Grading with badge -->
-                        <Button Style="{StaticResource Btn.Tab}">
+                        <Button Style="{StaticResource Btn.Tab}"
+                                Click="NavigateToGrading">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Grading"
                                            VerticalAlignment="Center"/>
@@ -401,13 +406,15 @@
                     </StackPanel>
 
                     <!-- Status chip -->
-                    <Border Grid.Column="1"
+                    <Border x:Name="StatusChip"
+                            Grid.Column="1"
                             Background="#F0FDF4"
                             BorderBrush="#2E7D32"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="10,5"
-                            VerticalAlignment="Center">
+                            VerticalAlignment="Center"
+                            Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse Width="7" Height="7"
                                      Fill="#2E7D32"
@@ -417,7 +424,8 @@
                                        FontSize="12" FontWeight="SemiBold"
                                        Foreground="#2E7D32"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Text="  ·  CS101 Midterms"
+                            <TextBlock x:Name="StatusChipLabel"
+                                       Text=""
                                        FontSize="12"
                                        Foreground="#2E7D32"
                                        VerticalAlignment="Center"/>
@@ -429,7 +437,7 @@
 
             <!-- TAB CONTENT — Overview is shown by default -->
             <!-- Replace this ContentControl with your tab switching logic -->
-            <ContentControl Grid.Row="2">
+            <ContentControl x:Name="TabContent" Grid.Row="2">
                 <tabs:OverviewTab/>
             </ContentControl>
 

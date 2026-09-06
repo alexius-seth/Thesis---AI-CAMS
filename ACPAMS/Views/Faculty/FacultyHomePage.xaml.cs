@@ -1,16 +1,78 @@
-﻿using ACPAMS.Views.Faculty.Tabs;
+﻿using ACPAMS.Services;
+using ACPAMS.ViewModels;
+using ACPAMS.Views.Faculty.Tabs;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ACPAMS.Views.Faculty
 {
-    public partial class FacultyHomePage : UserControl
+    public partial class FacultyHomePage : UserControl, IRefreshableView
     {
+        private readonly FacultyHomePageViewModel _viewModel;
+        private readonly DispatcherTimer _autoRefreshTimer;
+
         public FacultyHomePage()
         {
             InitializeComponent();
+
+            // SessionManager.CurrentInstructor is set at login (see LoginPage.xaml.cs).
+            // NOTE: if SessionManager doesn't resolve, add the correct
+            // "using ACPAMS.XYZ;" for wherever it actually lives.
+            var instructorId = SessionManager.CurrentInstructor?.InstructorId;
+
+            _viewModel = new FacultyHomePageViewModel(instructorId);
+            DataContext = _viewModel;
+
+            _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _autoRefreshTimer.Tick += async (s, e) => await _viewModel.LoadExamsAsync();
+
+            Loaded += FacultyHomePage_Loaded;
+            Unloaded += FacultyHomePage_Unloaded;
         }
+
+        private async void FacultyHomePage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current.MainWindow != null)
+                Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
+
+            _autoRefreshTimer.Start();
+
+            await _viewModel.LoadExamsAsync();
+        }
+
+        private void FacultyHomePage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current.MainWindow != null)
+                Application.Current.MainWindow.PreviewKeyDown -= Window_PreviewKeyDown;
+
+            _autoRefreshTimer.Stop();
+        }
+
+        private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.R && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                await _viewModel.LoadExamsAsync();
+            }
+        }
+
+        // Called by MainWindow.ShowPage on every navigation to this page.
+        // FacultyHomePage is cached as a singleton in MainWindow, so this is
+        // the main reason "leave and come back" wasn't showing fresh data —
+        // Loaded alone wasn't a reliable enough signal for a reused instance.
+        public async System.Threading.Tasks.Task RefreshAsync()
+        {
+            await _viewModel.LoadExamsAsync();
+        }
+
+        // ─────────────────────────────────────────────
+        // Sidebar / quick-nav (unchanged from before)
+        // ─────────────────────────────────────────────
 
         private void NavigateToHome(object sender, RoutedEventArgs e)
         {
@@ -19,14 +81,14 @@ namespace ACPAMS.Views.Faculty
 
         private void OpenDashboardPage(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new DashboardPage());
+            MainWindow.NavigateToDashboardStatic();
         }
 
         private void OpenCreateExamPage(object sender, RoutedEventArgs e)
         {
             try
             {
-                ACPAMS.MainWindow.Navigate(new CreateExamPage());
+                MainWindow.NavigateToCreateExamStatic();
             }
             catch (Exception ex)
             {
@@ -37,12 +99,20 @@ namespace ACPAMS.Views.Faculty
 
         private void OpenMonitoringTab(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new MonitoringTab());
+            var liveExam = _viewModel.Exams.FirstOrDefault(x => x.IsLive);
+
+            if (liveExam == null)
+            {
+                ToastNotification.Show("No Current Active Exam", Application.Current.MainWindow, 3);
+                return;
+            }
+
+            MainWindow.Navigate(new MonitoringTab(liveExam.ExamId));
         }
 
         private void OpenStudentReportTab(object sender, RoutedEventArgs e)
         {
-            ACPAMS.MainWindow.Navigate(new StudentPerformanceReportTab());
+            MainWindow.NavigateToReportsStatic();
         }
 
         private void ManageLiveSession(object sender, RoutedEventArgs e)

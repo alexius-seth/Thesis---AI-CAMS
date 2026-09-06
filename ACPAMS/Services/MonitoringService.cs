@@ -1,4 +1,10 @@
-﻿using System;
+using ACPAMS.Data;
+using ACPAMS.Models;
+using DlibDotNet;
+using Microsoft.EntityFrameworkCore;
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -7,11 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using ACPAMS.Data;
-using ACPAMS.Models;
-using DlibDotNet;
-using OpenCvSharp;
-using OpenCvSharp.Extensions;
 
 namespace ACPAMS.Services
 {
@@ -19,9 +20,6 @@ namespace ACPAMS.Services
     {
         NoFaceDetected,
         MultipleFacesDetected,
-        HeadTurnedLeft,
-        HeadTurnedRight,
-        HeadTiltedDown,
         ClipboardAttempt,
         AltTabAttempt,
         WindowFocusLost
@@ -139,8 +137,18 @@ namespace ACPAMS.Services
 
         public void Stop()
         {
-            _cts?.Cancel();
-            _captureTask?.Wait(2000);
+            try
+            {
+                if (_cts != null && !_cts.IsCancellationRequested)
+                    _cts.Cancel();
+            }
+            catch (ObjectDisposedException) { }
+
+            try
+            {
+                _captureTask?.Wait(2000);
+            }
+            catch { }
         }
 
         private void CaptureLoop(CancellationToken token)
@@ -296,6 +304,7 @@ namespace ACPAMS.Services
             if (totalFrames % 10 == 0)
                 _dispatcher.BeginInvoke(() => CheatingScoreUpdated?.Invoke(_cheatingScore));
         }
+
         private bool EstimateHeadPose(Mat frame, Mat display, OpenCvSharp.Rect face)
         {
             var dlibRect = new DlibDotNet.Rectangle(face.Left, face.Top, face.Right, face.Bottom);
@@ -349,23 +358,23 @@ namespace ACPAMS.Services
 
             bool headTurned = false;
 
+            // ── Head movement alerts are disabled ────────────────────────────
+            // Head yaw tracking is still performed for cheating score calculation
+            // but no alerts are sent to the teacher dashboard
             if (yaw > YAW_THRESHOLD)
             {
-                RaiseSuspiciousEvent(SuspiciousEventType.HeadTurnedRight,
-                    $"Head turned right ({yaw:F1}°)");
+                // HeadTurnedRight alert disabled
                 headTurned = true;
             }
             else if (yaw < -YAW_THRESHOLD)
             {
-                RaiseSuspiciousEvent(SuspiciousEventType.HeadTurnedLeft,
-                    $"Head turned left ({yaw:F1}°)");
+                // HeadTurnedLeft alert disabled
                 headTurned = true;
             }
 
             if (pitch < -PITCH_THRESHOLD)
             {
-                RaiseSuspiciousEvent(SuspiciousEventType.HeadTiltedDown,
-                    $"Head tilted down ({pitch:F1}°)");
+                // HeadTiltedDown alert disabled
                 headTurned = true;
             }
 
@@ -434,10 +443,206 @@ namespace ACPAMS.Services
         {
             Stop();
             _capture?.Dispose();
+            _capture = null;
             _faceDetector?.Dispose();
+            _faceDetector = null;
             _shapePredictor?.Dispose();
+            _shapePredictor = null;
             _dlibDetector?.Dispose();
+            _dlibDetector = null;
             _cts?.Dispose();
+            _cts = null;
+        }
+
+        // ─── Get Active Students ──────────────────────────────────────
+        public async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid? examId = null)
+        {
+            using var context = new AppDbContext();
+            var query = context.StudentExamAttempts
+                .Include(a => a.Student)
+                .Include(a => a.Exam)
+                .Where(a => a.Status == "in_progress" || a.Status == "submitted");
+
+            if (examId.HasValue)
+                query = query.Where(a => a.ExamId == examId);
+
+            var attempts = await query
+                .OrderByDescending(a => a.StartedAt)
+                .ToListAsync();
+
+            var result = new List<ActiveStudentDto>();
+
+            foreach (var attempt in attempts)
+            {
+                // Get recent flags for this attempt (excluding head movement events)
+                var recentFlags = await context.AuditLogs
+                    .Where(l => l.EntityId == attempt.AttemptId.ToString()
+                                && l.EntityType == "StudentExamAttempt"
+                                && l.CreatedAt >= DateTime.Now.AddMinutes(-5)
+                                && !l.Action.Contains("HeadTurned")
+                                && !l.Action.Contains("HeadTilted"))
+                    .ToListAsync();
+
+                // Get all flags count (excluding head movement events)
+                var totalFlags = await context.AuditLogs
+                    .CountAsync(l => l.EntityId == attempt.AttemptId.ToString()
+                                     && l.EntityType == "StudentExamAttempt"
+                                     && !l.Action.Contains("HeadTurned")
+                                     && !l.Action.Contains("HeadTilted"));
+
+                // Determine risk level
+                var riskLevel = GetRiskLevel(totalFlags, recentFlags);
+
+                result.Add(new ActiveStudentDto
+                {
+                    AttemptId = attempt.AttemptId,
+                    StudentName = attempt.Student != null
+                        ? $"{attempt.Student.FirstName} {attempt.Student.LastName}"
+                        : "Unknown Student",
+                    StudentInitials = attempt.Student != null
+                        ? $"{attempt.Student.FirstName[0]}.{attempt.Student.LastName[0]}"
+                        : "??",
+                    Station = attempt.IpAddress ?? "N/A",
+                    Status = attempt.Status ?? "in_progress",
+                    StartedAt = attempt.StartedAt ?? DateTime.Now,
+                    RiskLevel = riskLevel,
+                    FlagCount = totalFlags,
+                    RecentFlags = recentFlags.Take(3).Select(l => new FlagDto
+                    {
+                        Action = l.Action ?? "Unknown",
+                        Details = l.Details ?? "",
+                        CreatedAt = l.CreatedAt
+                    }).ToList()
+                });
+            }
+
+            return result;
+        }
+
+        // ─── Get Recent Flags ──────────────────────────────────────────
+        public async Task<List<AuditLog>> GetRecentFlagsAsync(int minutes = 5)
+        {
+            using var context = new AppDbContext();
+            var cutoff = DateTime.Now.AddMinutes(-minutes);
+            return await context.AuditLogs
+                .Include(l => l.User)
+                .Where(l => l.EntityType == "StudentExamAttempt"
+                            && l.CreatedAt >= cutoff
+                            && (l.Action.Contains("NoFaceDetected") ||
+                                l.Action.Contains("MultipleFaces") ||
+                                l.Action.Contains("Clipboard") ||
+                                l.Action.Contains("AltTab") ||
+                                l.Action.Contains("WindowFocus")))
+                .OrderByDescending(l => l.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+        }
+
+        // ─── Issue Warning ─────────────────────────────────────────────
+        public async Task<AuditLog> IssueWarningAsync(Guid attemptId, string warningType, string details, Guid? userId = null)
+        {
+            using var context = new AppDbContext();
+
+            var log = new AuditLog
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                Action = $"Warning_{warningType}",
+                EntityType = "StudentExamAttempt",
+                EntityId = attemptId.ToString(),
+                Details = $"{details} | Issued at: {DateTime.Now:HH:mm:ss}",
+                CreatedAt = DateTime.Now
+            };
+
+            context.AuditLogs.Add(log);
+            await context.SaveChangesAsync();
+
+            // Also log to exam attempt logs
+            var attemptLog = new ExamAttemptLog
+            {
+                LogId = Guid.NewGuid(),
+                AttemptId = attemptId,
+                Action = $"Warning_{warningType}",
+                Details = details,
+                ActionTime = DateTime.Now
+            };
+            context.ExamAttemptLogs.Add(attemptLog);
+            await context.SaveChangesAsync();
+
+            return log;
+        }
+
+        // ─── Get Statistics ────────────────────────────────────────────
+        public async Task<MonitoringStatsDto> GetStatisticsAsync(Guid? examId = null)
+        {
+            using var context = new AppDbContext();
+            var query = context.StudentExamAttempts.Where(a => a.Status == "in_progress");
+            if (examId.HasValue)
+                query = query.Where(a => a.ExamId == examId);
+
+            var activeCount = await query.CountAsync();
+
+            var flagCount = await context.AuditLogs
+                .Where(l => l.EntityType == "StudentExamAttempt"
+                            && l.CreatedAt >= DateTime.Now.AddMinutes(-30)
+                            && !l.Action.Contains("HeadTurned")
+                            && !l.Action.Contains("HeadTilted"))
+                .CountAsync();
+
+            var highRiskCount = await context.AuditLogs
+                .Where(l => l.EntityType == "StudentExamAttempt"
+                            && (l.Action.Contains("NoFaceDetected") ||
+                                l.Action.Contains("AltTab") ||
+                                l.Action.Contains("WindowFocus"))
+                            && l.CreatedAt >= DateTime.Now.AddMinutes(-30))
+                .CountAsync();
+
+            return new MonitoringStatsDto
+            {
+                ActiveStudents = activeCount,
+                TotalFlags = flagCount,
+                HighRiskFlags = highRiskCount
+            };
+        }
+
+        // ─── Helper Methods ────────────────────────────────────────────
+        private string GetRiskLevel(int totalFlags, List<AuditLog> recentFlags)
+        {
+            if (totalFlags >= 5 || recentFlags.Count >= 3)
+                return "high";
+            if (totalFlags >= 3 || recentFlags.Count >= 2)
+                return "medium";
+            return "low";
+        }
+
+        // ─── DTO Classes ──────────────────────────────────────────────
+        public class ActiveStudentDto
+        {
+            public Guid AttemptId { get; set; }
+            public string StudentName { get; set; } = string.Empty;
+            public string StudentInitials { get; set; } = string.Empty;
+            public string Station { get; set; } = string.Empty;
+            public string Status { get; set; } = "in_progress";
+            public DateTime StartedAt { get; set; }
+            public string RiskLevel { get; set; } = "low";
+            public int FlagCount { get; set; }
+            public bool IsSelected { get; set; } = false;
+            public List<FlagDto> RecentFlags { get; set; } = new();
+
+        }
+
+        public class FlagDto
+        {
+            public string Action { get; set; } = string.Empty;
+            public string Details { get; set; } = string.Empty;
+            public DateTime CreatedAt { get; set; }
+        }
+
+        public class MonitoringStatsDto
+        {
+            public int ActiveStudents { get; set; }
+            public int TotalFlags { get; set; }
+            public int HighRiskFlags { get; set; }
         }
     }
 }

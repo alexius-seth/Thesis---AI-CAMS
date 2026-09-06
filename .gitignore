@@ -6,3 +6,27 @@ obj/
 *.suo
 *.db
 *.opendb
+# ── Secrets & environment files (defense in depth) ──────────────
+# We use .NET User Secrets (stored outside the repo, in %APPDATA%),
+# so nothing here should ever actually contain a real key — but this
+# blocks anything that might accidentally hold one if someone adds a
+# config file later.
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.key
+# ── SQL Server LocalDB (per-machine, not shared) ─────────────────
+*.mdf
+*.ldf
+
+# ── Runtime-created rubric attachment storage ────────────────────
+# Populated at runtime by RubricService when instructors attach a
+# reference PDF via AIRubricModal — not something to commit.
+RubricAttachments/
+
+# ── Secrets & environment files (defense in depth) ──────────────
+graphify-out

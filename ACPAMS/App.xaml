@@ -2,7 +2,15 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ACPAMS"
+             xmlns:converters="clr-namespace:ACPAMS.Converters"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <ResourceDictionary>
+            <converters:RiskLevelToColorConverter x:Key="RiskLevelToColorConverter"/>
+            <converters:RiskLevelToForegroundConverter x:Key="RiskLevelToForegroundConverter"/>
+            <converters:FlagSeverityToColorConverter x:Key="FlagSeverityToColorConverter"/>
+            <converters:InitialsConverter x:Key="InitialsConverter"/>
+            <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

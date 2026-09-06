@@ -1,6 +1,7 @@
 <UserControl x:Class="ACPAMS.Views.Faculty.Tabs.MonitoringTab"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:ACPAMS.Converters"
              Background="#F4F5F7"
              FontFamily="Segoe UI">
 
@@ -27,6 +28,13 @@
         <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEF2F2"/>
         <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
         <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
+
+        <!-- ═══════════════════════════════
+             CONVERTERS
+        ═══════════════════════════════ -->
+        <converters:RiskLevelToColorConverter x:Key="RiskLevelToColorConverter"/>
+        <converters:RiskLevelToForegroundConverter x:Key="RiskLevelToForegroundConverter"/>
+        <converters:FlagSeverityToColorConverter x:Key="FlagSeverityToColorConverter"/>
 
         <!-- ═══════════════════════════════
              TYPOGRAPHY
@@ -92,28 +100,24 @@
             <Setter Property="CornerRadius"    Value="8"/>
         </Style>
 
-        <!-- KPI: Active Stations — blue stripe -->
         <Style x:Key="Card.Kpi.Blue" TargetType="Border" BasedOn="{StaticResource Card}">
             <Setter Property="BorderBrush"     Value="{StaticResource Accent.Primary}"/>
             <Setter Property="BorderThickness" Value="3,1,1,1"/>
             <Setter Property="Padding"         Value="18,16"/>
         </Style>
 
-        <!-- KPI: Total Flags — amber stripe -->
         <Style x:Key="Card.Kpi.Amber" TargetType="Border" BasedOn="{StaticResource Card}">
             <Setter Property="BorderBrush"     Value="{StaticResource Status.Warning}"/>
             <Setter Property="BorderThickness" Value="3,1,1,1"/>
             <Setter Property="Padding"         Value="18,16"/>
         </Style>
 
-        <!-- KPI: High Risk — red stripe -->
         <Style x:Key="Card.Kpi.Red" TargetType="Border" BasedOn="{StaticResource Card}">
             <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
             <Setter Property="BorderThickness" Value="3,1,1,1"/>
             <Setter Property="Padding"         Value="18,16"/>
         </Style>
 
-        <!-- Investigation pane — red left stripe (critical) -->
         <Style x:Key="Card.Investigation" TargetType="Border" BasedOn="{StaticResource Card}">
             <Setter Property="BorderBrush"     Value="{StaticResource Status.Danger}"/>
             <Setter Property="BorderThickness" Value="3,1,1,1"/>
@@ -155,14 +159,6 @@
             <Setter Property="Padding"         Value="8,3"/>
         </Style>
 
-        <Style x:Key="Badge.Muted" TargetType="Border">
-            <Setter Property="Background"      Value="#F1F5F9"/>
-            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius"    Value="12"/>
-            <Setter Property="Padding"         Value="8,3"/>
-        </Style>
-
         <!-- ═══════════════════════════════
              TABLE ROW
         ═══════════════════════════════ -->
@@ -170,6 +166,16 @@
             <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="Padding"         Value="14,11"/>
+        </Style>
+
+        <!-- Clickable Student Row -->
+        <Style x:Key="TableRow.Clickable" TargetType="Border" BasedOn="{StaticResource TableRow}">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource Accent.PrimaryBg}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <!-- ═══════════════════════════════
@@ -187,12 +193,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="4"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -220,18 +222,61 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.IssueWarning" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Status.Danger}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="10"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="8,4"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#B71C1C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ─── Dismiss Single Flag Button Style ─── -->
+        <Style x:Key="Btn.DismissFlag" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width"           Value="24"/>
+            <Setter Property="Height"          Value="24"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="ToolTip"         Value="Dismiss this flag"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#FEE2E2"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -244,36 +289,38 @@
     <!-- ═══════════════════════════════════════════
          PAGE BODY
     ═══════════════════════════════════════════ -->
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32,24,32,40">
 
             <!-- ─────────────────────────────────────────
                  SECTION 1 — LIVE SESSION METRICS KPIs
             ───────────────────────────────────────── -->
-            <StackPanel Orientation="Horizontal"
-                        VerticalAlignment="Center"
-                        Margin="0,0,0,10">
-                <TextBlock Text="LIVE SESSION METRICS"
-                           Style="{StaticResource T.SectionLabel}"
-                           VerticalAlignment="Center"/>
-                <Border Background="{StaticResource Status.LiveBg}"
-                        BorderBrush="{StaticResource Status.Live}"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="10,3"
-                        Margin="12,0,0,0">
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="LIVE SESSION METRICS" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center"/>
+                    <Border Background="{StaticResource Status.LiveBg}" BorderBrush="{StaticResource Status.Live}" BorderThickness="1" CornerRadius="4" Padding="10,3" Margin="12,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource Status.Live}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Monitoring Live" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Status.Live}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Style="{StaticResource Btn.Outlined}"
+                        Click="BackToHome_Click"
+                        VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="6" Height="6"
-                                 Fill="{StaticResource Status.Live}"
-                                 Margin="0,0,5,0"
-                                 VerticalAlignment="Center"/>
-                        <TextBlock Text="CS101 — MIDTERMS  ·  Now"
-                                   FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Status.Live}"/>
+                        <TextBlock Text="&#xE72B;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                   Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Back to Home" VerticalAlignment="Center"/>
                     </StackPanel>
-                </Border>
-            </StackPanel>
+                </Button>
+            </Grid>
 
             <Grid Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
@@ -288,21 +335,11 @@
                 <Border Grid.Column="0" Style="{StaticResource Card.Kpi.Blue}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="&#xE7F4;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="14"
-                                       Foreground="{StaticResource Accent.Primary}"
-                                       Margin="0,0,6,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Active Stations"
-                                       Style="{StaticResource T.KpiLabel}"/>
+                            <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource Accent.Primary}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Active Stations" Style="{StaticResource T.KpiLabel}"/>
                         </StackPanel>
-                        <TextBlock Text="44"
-                                   Style="{StaticResource T.KpiNumber}"/>
-                        <TextBlock Text="Students currently testing"
-                                   FontSize="11"
-                                   Foreground="{StaticResource Text.Muted}"
-                                   Margin="0,6,0,0"/>
+                        <TextBlock x:Name="ActiveStationsKpi" Text="0" Style="{StaticResource T.KpiNumber}"/>
+                        <TextBlock Text="Students currently testing" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -310,21 +347,11 @@
                 <Border Grid.Column="2" Style="{StaticResource Card.Kpi.Amber}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="&#xE7BA;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="14"
-                                       Foreground="{StaticResource Status.Warning}"
-                                       Margin="0,0,6,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Total Flags"
-                                       Style="{StaticResource T.KpiLabel}"/>
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource Status.Warning}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Total Flags" Style="{StaticResource T.KpiLabel}"/>
                         </StackPanel>
-                        <TextBlock Text="12"
-                                   Style="{StaticResource T.KpiNumber}"/>
-                        <TextBlock Text="Across all active stations"
-                                   FontSize="11"
-                                   Foreground="{StaticResource Text.Muted}"
-                                   Margin="0,6,0,0"/>
+                        <TextBlock x:Name="TotalFlagsKpi" Text="0" Style="{StaticResource T.KpiNumber}"/>
+                        <TextBlock Text="Across all active stations" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -332,22 +359,11 @@
                 <Border Grid.Column="4" Style="{StaticResource Card.Kpi.Red}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="&#xE730;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="14"
-                                       Foreground="{StaticResource Status.Danger}"
-                                       Margin="0,0,6,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="High Risk Flags"
-                                       Style="{StaticResource T.KpiLabel}"/>
+                            <TextBlock Text="&#xE730;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource Status.Danger}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="High Risk Flags" Style="{StaticResource T.KpiLabel}"/>
                         </StackPanel>
-                        <TextBlock Text="3"
-                                   Style="{StaticResource T.KpiNumber}"
-                                   Foreground="{StaticResource Status.Danger}"/>
-                        <TextBlock Text="Require immediate review"
-                                   FontSize="11"
-                                   Foreground="{StaticResource Status.Danger}"
-                                   Margin="0,6,0,0"/>
+                        <TextBlock x:Name="HighRiskKpi" Text="0" Style="{StaticResource T.KpiNumber}" Foreground="{StaticResource Status.Danger}"/>
+                        <TextBlock Text="Require immediate review" FontSize="11" Foreground="{StaticResource Status.Danger}" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -366,158 +382,108 @@
                 <!-- LEFT: Live Assessment Tracker -->
                 <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0">
                     <StackPanel>
-
-                        <!-- Card header -->
-                        <Border BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="0,0,0,1"
-                                Padding="16,12">
+                        <Border BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="16,12">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Live Assessment Tracker"
-                                           Style="{StaticResource T.CardTitle}"
-                                           VerticalAlignment="Center"/>
-                                <Border Background="{StaticResource Accent.PrimaryBg}"
-                                        BorderBrush="{StaticResource Accent.Primary}"
-                                        BorderThickness="1" CornerRadius="10"
-                                        Padding="8,2" Margin="10,0,0,0"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="44 Active"
-                                               FontSize="10" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Accent.Primary}"/>
+                                <TextBlock Text="Live Assessment Tracker" Style="{StaticResource T.CardTitle}" VerticalAlignment="Center"/>
+                                <Border x:Name="ActiveBadge" Background="{StaticResource Accent.PrimaryBg}" BorderBrush="{StaticResource Accent.Primary}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="0 Active" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource Accent.Primary}"/>
                                 </Border>
                             </StackPanel>
                         </Border>
 
-                        <!-- Table header -->
-                        <Border Background="{StaticResource Bg.TableHeader}"
-                                BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="0,0,0,1"
-                                Padding="14,9">
+                        <Border Background="{StaticResource Bg.TableHeader}" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="14,9">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="100"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="STUDENT"
-                                           Style="{StaticResource T.TableHeader}"/>
-                                <TextBlock Grid.Column="1" Text="STATION"
-                                           Style="{StaticResource T.TableHeader}"/>
-                                <TextBlock Grid.Column="2" Text="STATUS"
-                                           Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="0" Text="STUDENT" Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="1" Text="STATION" Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="2" Text="STATUS" Style="{StaticResource T.TableHeader}"/>
                             </Grid>
                         </Border>
 
-                        <!-- Row 1: J. Doe — Testing -->
-                        <Border Style="{StaticResource TableRow}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="120"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Border Width="26" Height="26" CornerRadius="13"
-                                            Background="#E2E8F0" Margin="0,0,8,0">
-                                        <TextBlock Text="JD"
-                                                   FontSize="9" FontWeight="Bold"
-                                                   Foreground="{StaticResource Text.Secondary}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"/>
-                                    </Border>
-                                    <TextBlock Text="J. Doe"
-                                               Style="{StaticResource T.TableCell}"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" Text="PC-04"
-                                           Style="{StaticResource T.TableCell.Muted}"/>
-                                <Border Grid.Column="2" Style="{StaticResource Badge.Blue}"
-                                        HorizontalAlignment="Left" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Ellipse Width="5" Height="5"
-                                                 Fill="{StaticResource Accent.Primary}"
-                                                 Margin="0,0,4,0"
-                                                 VerticalAlignment="Center"/>
-                                        <TextBlock Text="Testing"
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource Accent.Primary}"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <ItemsControl x:Name="TrackerItemsControl" ItemsSource="{Binding ActiveStudents}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource TableRow.Clickable}" MouseLeftButtonUp="StudentItem_Clicked" Tag="{Binding AttemptId}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="100"/>
+                                            </Grid.ColumnDefinitions>
 
-                        <!-- Row 2: A. Smith — Flagged -->
-                        <Border Style="{StaticResource TableRow}"
-                                Background="#FFF8F8">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="120"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Border Width="26" Height="26" CornerRadius="13"
-                                            Background="{StaticResource Status.DangerBg}"
-                                            Margin="0,0,8,0">
-                                        <TextBlock Text="AS"
-                                                   FontSize="9" FontWeight="Bold"
-                                                   Foreground="{StaticResource Status.Danger}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"/>
-                                    </Border>
-                                    <TextBlock Text="A. Smith"
-                                               Style="{StaticResource T.TableCell}"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" Text="PC-07"
-                                           Style="{StaticResource T.TableCell.Muted}"/>
-                                <Border Grid.Column="2" Style="{StaticResource Badge.Danger}"
-                                        HorizontalAlignment="Left" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="⚠  Flagged"
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource Status.Danger}"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </Border>
+                                            <!-- Selection Indicator -->
+                                            <Border Grid.ColumnSpan="3" Background="Transparent" BorderBrush="{StaticResource Accent.Primary}" BorderThickness="0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource Accent.PrimaryBg}"/>
+                                                                <Setter Property="BorderThickness" Value="2,0,0,0"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
 
-                        <!-- Row 3: B. Wayne — Testing -->
-                        <Border Padding="14,11">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="120"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                    <Border Width="26" Height="26" CornerRadius="13"
-                                            Background="#E2E8F0" Margin="0,0,8,0">
-                                        <TextBlock Text="BW"
-                                                   FontSize="9" FontWeight="Bold"
-                                                   Foreground="{StaticResource Text.Secondary}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                <Border Width="26" Height="26" CornerRadius="13" Background="{Binding RiskLevel, Converter={StaticResource RiskLevelToColorConverter}}" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding StudentInitials}" FontSize="9" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding StudentName}" Style="{StaticResource T.TableCell}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="1" Text="{Binding Station}" Style="{StaticResource T.TableCell.Muted}"/>
+
+                                            <Border Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" CornerRadius="10" Padding="8,3">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding RiskLevel}" Value="high">
+                                                                <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding RiskLevel}" Value="medium">
+                                                                <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="5" Height="5" Fill="{Binding RiskLevel, Converter={StaticResource RiskLevelToColorConverter}}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock FontSize="11" FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="Testing"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding RiskLevel}" Value="high">
+                                                                        <Setter Property="Text" Value="⚠ Flagged"/>
+                                                                        <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RiskLevel}" Value="medium">
+                                                                        <Setter Property="Text" Value="⚠ Warning"/>
+                                                                        <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding FlagCount}" FontSize="10" FontWeight="Bold" Foreground="{Binding RiskLevel, Converter={StaticResource RiskLevelToColorConverter}}" Margin="4,0,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
                                     </Border>
-                                    <TextBlock Text="B. Wayne"
-                                               Style="{StaticResource T.TableCell}"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" Text="PC-12"
-                                           Style="{StaticResource T.TableCell.Muted}"/>
-                                <Border Grid.Column="2" Style="{StaticResource Badge.Blue}"
-                                        HorizontalAlignment="Left" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Ellipse Width="5" Height="5"
-                                                 Fill="{StaticResource Accent.Primary}"
-                                                 Margin="0,0,4,0"
-                                                 VerticalAlignment="Center"/>
-                                        <TextBlock Text="Testing"
-                                                   FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource Accent.Primary}"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                     </StackPanel>
                 </Border>
@@ -525,155 +491,163 @@
                 <!-- RIGHT: Real-Time Behavioral Feed -->
                 <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0">
                     <StackPanel>
-
-                        <!-- Card header -->
-                        <Border BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="0,0,0,1"
-                                Padding="16,12">
+                        <Border BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="16,12">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Real-Time Behavioral Feed"
-                                           Style="{StaticResource T.CardTitle}"
-                                           VerticalAlignment="Center"/>
-                                <Border Background="{StaticResource Status.WarningBg}"
-                                        BorderBrush="{StaticResource Status.Warning}"
-                                        BorderThickness="1" CornerRadius="10"
-                                        Padding="8,2" Margin="10,0,0,0"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="12 Flags"
-                                               FontSize="10" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Status.Warning}"/>
+                                <TextBlock Text="Real-Time Behavioral Feed" Style="{StaticResource T.CardTitle}" VerticalAlignment="Center"/>
+                                <Border x:Name="FlagBadge" Background="{StaticResource Status.WarningBg}" BorderBrush="{StaticResource Status.Warning}" BorderThickness="1" CornerRadius="10" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="0 Flags" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource Status.Warning}"/>
                                 </Border>
                             </StackPanel>
                         </Border>
 
-                        <!-- Table header -->
-                        <Border Background="{StaticResource Bg.TableHeader}"
-                                BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="0,0,0,1"
-                                Padding="14,9">
+                        <Border Background="{StaticResource Bg.TableHeader}" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="14,9">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="56"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="44"/>
+                                    <ColumnDefinition Width="30"/>
+                                    <!-- ADD THIS COLUMN for dismiss button -->
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="TIME"
-                                           Style="{StaticResource T.TableHeader}"/>
-                                <TextBlock Grid.Column="1" Text="STUDENT"
-                                           Style="{StaticResource T.TableHeader}"/>
-                                <TextBlock Grid.Column="2" Text="ALERT TYPE"
-                                           Style="{StaticResource T.TableHeader}"/>
-                                <TextBlock Grid.Column="3" Text="RISK"
-                                           Style="{StaticResource T.TableHeader}"
-                                           HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="0" Text="TIME" Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="1" Text="STUDENT" Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="2" Text="ALERT TYPE" Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="3" Text="RISK" Style="{StaticResource T.TableHeader}" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="" Style="{StaticResource T.TableHeader}"/>
+                                <!-- Empty header for dismiss button -->
                             </Grid>
                         </Border>
 
-                        <!-- Feed Row 1: High -->
-                        <Border Style="{StaticResource TableRow}" Background="#FFF8F8">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="56"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="44"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="10:14"
-                                           Style="{StaticResource T.Timestamp}"/>
-                                <TextBlock Grid.Column="1" Text="A. Smith"
-                                           Style="{StaticResource T.TableCell}"/>
-                                <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE72E;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="11"
-                                               Foreground="{StaticResource Status.Danger}"
-                                               Margin="0,0,4,0"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="Window Switch"
-                                               Style="{StaticResource T.TableCell.Muted}"
-                                               FontSize="12"/>
-                                </StackPanel>
-                                <Border Grid.Column="3" Style="{StaticResource Badge.Danger}"
-                                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="H"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Danger}"/>
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <ItemsControl x:Name="FeedItemsControl" ItemsSource="{Binding RecentFlags}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource TableRow}" Background="{Binding Action, Converter={StaticResource FlagSeverityToColorConverter}}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="56"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="30"/>
+                                                <!-- ADD THIS COLUMN -->
+                                            </Grid.ColumnDefinitions>
 
-                        <!-- Feed Row 2: Medium -->
-                        <Border Style="{StaticResource TableRow}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="56"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="44"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="10:12"
-                                           Style="{StaticResource T.Timestamp}"/>
-                                <TextBlock Grid.Column="1" Text="J. Doe"
-                                           Style="{StaticResource T.TableCell}"/>
-                                <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE7B3;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="11"
-                                               Foreground="{StaticResource Status.Warning}"
-                                               Margin="0,0,4,0"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="Gaze Deviation"
-                                               Style="{StaticResource T.TableCell.Muted}"
-                                               FontSize="12"/>
-                                </StackPanel>
-                                <Border Grid.Column="3" Style="{StaticResource Badge.Warning}"
-                                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="M"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Warning}"/>
-                                </Border>
-                            </Grid>
-                        </Border>
+                                            <TextBlock Grid.Column="0" Text="{Binding CreatedAt, StringFormat={}{0:HH:mm}}" Style="{StaticResource T.Timestamp}"/>
 
-                        <!-- Feed Row 3: Low -->
-                        <Border Padding="14,11">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="56"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="44"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="10:05"
-                                           Style="{StaticResource T.Timestamp}"/>
-                                <TextBlock Grid.Column="1" Text="B. Wayne"
-                                           Style="{StaticResource T.TableCell}"/>
-                                <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="&#xE8C8;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="11"
-                                               Foreground="{StaticResource Status.Success}"
-                                               Margin="0,0,4,0"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="Paste Attempt"
-                                               Style="{StaticResource T.TableCell.Muted}"
-                                               FontSize="12"/>
-                                </StackPanel>
-                                <Border Grid.Column="3" Style="{StaticResource Badge.Success}"
-                                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="L"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Success}"/>
-                                </Border>
-                            </Grid>
-                        </Border>
+                                            <TextBlock Grid.Column="1" Text="Student" Style="{StaticResource T.TableCell}"/>
+
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="&#xE7B3;"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Action}" Value="NoFaceDetected">
+                                                                    <Setter Property="Text" Value="&#xE7B3;"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="AltTabAttempt">
+                                                                    <Setter Property="Text" Value="&#xE72E;"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="WindowFocusLost">
+                                                                    <Setter Property="Text" Value="&#xE72E;"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="ClipboardAttempt">
+                                                                    <Setter Property="Text" Value="&#xE8C8;"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="MultipleFacesDetected">
+                                                                    <Setter Property="Text" Value="&#xE7C1;"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Action}" Style="{StaticResource T.TableCell.Muted}" FontSize="12"/>
+                                            </StackPanel>
+
+                                            <Border Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="10" Padding="8,3">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Action}" Value="NoFaceDetected">
+                                                                <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Action}" Value="AltTabAttempt">
+                                                                <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Action}" Value="WindowFocusLost">
+                                                                <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Action}" Value="MultipleFacesDetected">
+                                                                <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Action}" Value="ClipboardAttempt">
+                                                                <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontSize="10" FontWeight="Bold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="L"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Action}" Value="ClipboardAttempt">
+                                                                    <Setter Property="Text" Value="L"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="NoFaceDetected">
+                                                                    <Setter Property="Text" Value="H"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="AltTabAttempt">
+                                                                    <Setter Property="Text" Value="H"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="WindowFocusLost">
+                                                                    <Setter Property="Text" Value="H"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Action}" Value="MultipleFacesDetected">
+                                                                    <Setter Property="Text" Value="H"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+
+                                            <!-- ─── DISMISS SINGLE FLAG BUTTON ─── -->
+                                            <Button Grid.Column="4" 
+                                                    Style="{StaticResource Btn.DismissFlag}"
+                                                    Tag="{Binding LogId}"
+                                                    Click="DismissSingleFlag_Click"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center">
+                                                <TextBlock Text="✕" FontSize="10" Foreground="{StaticResource Text.Muted}"/>
+                                            </Button>
+
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                     </StackPanel>
                 </Border>
@@ -683,9 +657,7 @@
             <!-- ─────────────────────────────────────────
                  SECTION 3 — FOCUSED INVESTIGATION PANE
             ───────────────────────────────────────── -->
-            <TextBlock Text="FOCUSED INVESTIGATION &amp; ACTION PANE"
-                       Style="{StaticResource T.SectionLabel}"
-                       Margin="0,0,0,10"/>
+            <TextBlock Text="FOCUSED INVESTIGATION &amp; ACTION PANE" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,10"/>
 
             <Border Style="{StaticResource Card.Investigation}">
                 <Grid>
@@ -695,160 +667,167 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Snapshot image placeholder -->
-                    <Border Grid.Column="0"
-                            Background="{StaticResource Bg.Base}"
-                            BorderBrush="{StaticResource Border.Subtle}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Height="180"
-                            VerticalAlignment="Top">
-                        <Grid>
-                            <!-- Wireframe X -->
-                            <Line X1="0" Y1="0" X2="100" Y2="100"
-                                  Stroke="{StaticResource Border.Medium}"
-                                  StrokeThickness="1.5"
-                                  Stretch="Fill"
-                                  Margin="30"/>
-                            <Line X1="100" Y1="0" X2="0" Y2="100"
-                                  Stroke="{StaticResource Border.Medium}"
-                                  StrokeThickness="1.5"
-                                  Stretch="Fill"
-                                  Margin="30"/>
-                            <Rectangle Stroke="{StaticResource Border.Medium}"
-                                       StrokeThickness="1.5"
-                                       Fill="Transparent"
-                                       Margin="30"/>
-                            <Border Background="#FEF2F2"
-                                    BorderBrush="{StaticResource Status.Danger}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="8,3"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Bottom"
-                                    Margin="8">
-                                <TextBlock Text="Snapshot · 10:14 AM"
-                                           FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Status.Danger}"/>
+                    <!-- Student Info Panel -->
+                    <Border Grid.Column="0" Background="{StaticResource Bg.Base}" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="1" CornerRadius="6" Height="180" VerticalAlignment="Top" Padding="12">
+                        <StackPanel>
+                            <TextBlock Text="STUDENT SNAPSHOT" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,8"/>
+                            <Border Width="60" Height="60" CornerRadius="30" Background="{StaticResource Status.DangerBg}" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                <TextBlock x:Name="SelectedStudentInitials" Text="?" FontSize="20" FontWeight="Bold" Foreground="{StaticResource Status.Danger}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                        </Grid>
-                    </Border>
-
-                    <!-- Detail + actions -->
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
-
-                        <!-- Student + risk badge row -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                            <Border Width="40" Height="40" CornerRadius="20"
-                                    Background="{StaticResource Status.DangerBg}"
-                                    Margin="0,0,12,0">
-                                <TextBlock Text="AS"
-                                           FontSize="13" FontWeight="Bold"
-                                           Foreground="{StaticResource Status.Danger}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="A. Smith"
-                                           FontSize="16" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Primary}"/>
-                                <TextBlock Text="PC-07  ·  BSIT"
-                                           FontSize="12"
-                                           Foreground="{StaticResource Text.Secondary}"/>
-                            </StackPanel>
-                            <Border Style="{StaticResource Badge.Danger}"
-                                    Margin="16,0,0,0"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text="Cumulative Risk: HIGH"
-                                           FontSize="11" FontWeight="Bold"
-                                           Foreground="{StaticResource Status.Danger}"/>
+                            <TextBlock x:Name="SelectedStudentName" Text="Select a student" FontSize="14" FontWeight="Bold" Foreground="{StaticResource Text.Primary}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="SelectedStudentInfo" Text="" FontSize="11" Foreground="{StaticResource Text.Secondary}" HorizontalAlignment="Center"/>
+                            <Border x:Name="SelectedRiskBadge" Style="{StaticResource Badge.Success}" Margin="0,6,0,0" HorizontalAlignment="Center" Visibility="Collapsed">
+                                <TextBlock x:Name="SelectedRiskText" Text="" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
+                    </Border>
 
-                        <!-- Event details grid -->
-                        <Border Background="{StaticResource Bg.Base}"
-                                BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="16,12"
-                                Margin="0,0,0,20">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="12"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                    <!-- Event History Panel -->
+                    <StackPanel Grid.Column="2" VerticalAlignment="Stretch">
+                        <TextBlock Text="EVENT HISTORY" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,8"/>
 
-                                <!-- Row 0 -->
-                                <StackPanel Grid.Row="0" Grid.Column="0">
-                                    <TextBlock Text="TIMESTAMP"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Muted}"/>
-                                    <TextBlock Text="10:14 AM"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Text.Primary}"
-                                               Margin="0,2,0,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Row="0" Grid.Column="1">
-                                    <TextBlock Text="TRIGGER EVENT"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Muted}"/>
-                                    <TextBlock Text="Alt+Tab Attempt Blocked"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Status.Danger}"
-                                               Margin="0,2,0,0"/>
-                                </StackPanel>
+                        <!-- Event History List -->
+                        <Border Background="{StaticResource Bg.Base}" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="1" CornerRadius="6" Padding="0" Height="200">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="EventHistoryItemsControl" ItemsSource="{Binding SelectedStudentEvents}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1" Padding="12,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="50"/>
+                                                    </Grid.ColumnDefinitions>
 
-                                <!-- Row 2 -->
-                                <StackPanel Grid.Row="2" Grid.Column="0">
-                                    <TextBlock Text="STATION"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Muted}"/>
-                                    <TextBlock Text="PC-07"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Text.Primary}"
-                                               Margin="0,2,0,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="1">
-                                    <TextBlock Text="TOTAL FLAGS THIS SESSION"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Muted}"/>
-                                    <TextBlock Text="5 flags"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Status.Danger}"
-                                               Margin="0,2,0,0"/>
-                                </StackPanel>
+                                                    <TextBlock Grid.Column="0" Text="{Binding CreatedAt, StringFormat={}{0:HH:mm:ss}}" Style="{StaticResource T.Timestamp}"/>
 
-                            </Grid>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                                                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Text" Value="&#xE7B3;"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="NoFaceDetected">
+                                                                            <Setter Property="Text" Value="&#xE7B3;"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="AltTabAttempt">
+                                                                            <Setter Property="Text" Value="&#xE72E;"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="WindowFocusLost">
+                                                                            <Setter Property="Text" Value="&#xE72E;"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="MultipleFacesDetected">
+                                                                            <Setter Property="Text" Value="&#xE7C1;"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="ClipboardAttempt">
+                                                                            <Setter Property="Text" Value="&#xE8C8;"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding Action}" FontSize="12" Foreground="{StaticResource Text.Primary}"/>
+                                                    </StackPanel>
+
+                                                    <Border Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" CornerRadius="8" Padding="6,2">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Action}" Value="NoFaceDetected">
+                                                                        <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Action}" Value="AltTabAttempt">
+                                                                        <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Action}" Value="WindowFocusLost">
+                                                                        <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Action}" Value="MultipleFacesDetected">
+                                                                        <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Action}" Value="ClipboardAttempt">
+                                                                        <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                                        <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock FontSize="9" FontWeight="Bold">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Text" Value="LOW"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="NoFaceDetected">
+                                                                            <Setter Property="Text" Value="HIGH"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="AltTabAttempt">
+                                                                            <Setter Property="Text" Value="HIGH"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="WindowFocusLost">
+                                                                            <Setter Property="Text" Value="HIGH"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="MultipleFacesDetected">
+                                                                            <Setter Property="Text" Value="HIGH"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Action}" Value="ClipboardAttempt">
+                                                                            <Setter Property="Text" Value="MEDIUM"/>
+                                                                            <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </Border>
 
-                        <!-- Action buttons -->
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource Btn.Danger}"
-                                    Margin="0,0,12,0">
+                        <!-- Action Buttons -->
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button x:Name="IssueWarningBtn" Style="{StaticResource Btn.Danger}" Margin="0,0,12,0" Click="IssueWarningFromInvestigation_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE7BA;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="13"
-                                               Foreground="White"
-                                               Margin="0,0,6,0"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="Issue Kiosk Warning"
-                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Issue Kiosk Warning" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource Btn.Outlined}"
-                                    Content="Dismiss Flag"/>
+                            <Button x:Name="DismissFlagBtn" Style="{StaticResource Btn.Outlined}" Content="Dismiss All Flags" Click="DismissFlagFromInvestigation_Click"/>
+                            <Button x:Name="ViewFullReportBtn" Style="{StaticResource Btn.Outlined}" Content="View Full Report" Margin="8,0,0,0" Click="ViewFullReport_Click"/>
                         </StackPanel>
 
                     </StackPanel>
 
                 </Grid>
             </Border>
+
+            <!-- ─────────────────────────────────────────
+                 SECTION 4 — REFRESH BUTTON
+            ───────────────────────────────────────── -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Style="{StaticResource Btn.Outlined}" Content="🔄 Refresh" Click="RefreshButton_Click" Padding="16,8"/>
+            </StackPanel>
 
         </StackPanel>
     </ScrollViewer>
