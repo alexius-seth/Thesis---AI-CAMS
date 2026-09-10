@@ -269,7 +269,8 @@ namespace ACPAMS.Views.Faculty
                         publishModal.TimeLimitMinutes,
                         sectionsToSave,
                         rubricData,
-                        instructorId
+                        instructorId,
+                        publishModal.RandomizeQuestions
                     );
 
                     ToastNotification.Show($"Exam '{exam.Title}' published successfully!",

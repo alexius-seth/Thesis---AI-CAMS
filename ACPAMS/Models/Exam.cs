@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -52,6 +52,9 @@ namespace ACPAMS.Models
 
         [Column("instructions")]
         public string? Instructions { get; set; }
+
+        [Column("randomize_questions")]
+        public bool RandomizeQuestions { get; set; } = false;
 
         // Navigation
         [ForeignKey("InstructorId")]

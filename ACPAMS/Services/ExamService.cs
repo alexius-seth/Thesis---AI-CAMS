@@ -1,4 +1,4 @@
-﻿using ACPAMS.Data;
+using ACPAMS.Data;
 using ACPAMS.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,14 +9,27 @@ namespace ACPAMS.Services
         public ExamService() { }
         public ExamService(AppDbContext dbContext, string instructorId) { }
 
-        public async Task<List<Question>> GetQuestionsAsync(Guid examId)
+        public async Task<List<Question>> GetQuestionsAsync(Guid examId, Guid? attemptId = null)
         {
             using var context = new AppDbContext();
-            return await context.Questions
+            var randomize = await context.Exams
+                .Where(e => e.ExamId == examId)
+                .Select(e => e.RandomizeQuestions)
+                .FirstOrDefaultAsync();
+
+            var questions = await context.Questions
                 .Include(q => q.Options)
                 .Where(q => q.ExamId == examId)
                 .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
+
+            if (randomize && attemptId.HasValue)
+            {
+                var rng = new Random(attemptId.Value.GetHashCode());
+                return questions.OrderBy(_ => rng.Next()).ToList();
+            }
+
+            return questions;
         }
 
         public async Task SaveAnswerAsync(Guid attemptId, Guid questionId,
@@ -118,7 +131,8 @@ namespace ACPAMS.Services
      int timeLimitMinutes,
      List<ExamSectionData> sections,
      Dictionary<string, RubricData> rubricData,
-     string instructorId)
+     string instructorId,
+     bool randomizeQuestions = false)
         {
             using var context = new AppDbContext();
 
@@ -132,7 +146,8 @@ namespace ACPAMS.Services
                 ExamCode = generatedExamCode,
                 DurationMinutes = timeLimitMinutes,
                 Status = "active",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                RandomizeQuestions = randomizeQuestions
             };
 
             context.Exams.Add(exam);

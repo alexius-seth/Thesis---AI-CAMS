@@ -281,8 +281,9 @@
                                                    Foreground="{StaticResource Accent.Primary}"
                                                    HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border Height="5" CornerRadius="3"
-                                            Background="{StaticResource Border.Subtle}">
+                                    <Border x:Name="ProgressBarTrack" Height="5" CornerRadius="3"
+                                            Background="{StaticResource Border.Subtle}"
+                                            SizeChanged="ProgressBarTrack_SizeChanged">
                                         <Border x:Name="ProgressBar"
                                                 HorizontalAlignment="Left"
                                                 Width="0" CornerRadius="3"

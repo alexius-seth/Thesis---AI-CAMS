@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ACPAMS.Models;
 
 namespace ACPAMS.Data
@@ -94,8 +94,7 @@ namespace ACPAMS.Data
                 entity.HasKey(e => e.ExamId);
                 entity.Property(e => e.ExamId).HasDefaultValueSql("NEWID()");
                 entity.Property(e => e.TotalPoints).HasPrecision(10, 2);
-                entity.HasKey(e => e.ExamId);
-                entity.Property(e => e.ExamId).HasDefaultValueSql("NEWID()");
+                entity.Property(e => e.RandomizeQuestions).HasDefaultValue(false);
                 entity.HasIndex(e => e.ExamCode).IsUnique();
                 entity.HasOne(e => e.Instructor)
                       .WithMany(i => i.Exams)

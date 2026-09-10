@@ -11,6 +11,7 @@ namespace ACPAMS.Views.Faculty
         public string ExamName { get; private set; } = string.Empty;
         public int TimeLimitMinutes { get; private set; } = 60;
         public string GeneratedExamCode { get; private set; } = string.Empty;
+        public bool RandomizeQuestions { get; private set; } = false;
 
         public PublishConfirmModal()
         {
@@ -169,6 +170,9 @@ namespace ACPAMS.Views.Faculty
                     return;
                 }
             }
+
+            var randomizeBox = FindName("RandomizeQuestionsCheckBox") as CheckBox;
+            RandomizeQuestions = randomizeBox?.IsChecked == true;
 
             DialogResult = true;
             Close();

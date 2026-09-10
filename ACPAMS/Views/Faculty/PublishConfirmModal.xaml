@@ -375,7 +375,7 @@
                     </StackPanel>
 
                     <!-- Row 3: Exam Name -->
-                    <StackPanel Margin="0,0,0,24">
+                    <StackPanel Margin="0,0,0,16">
                         <TextBlock Text="Exam Name"
                                    FontSize="12" FontWeight="SemiBold"
                                    Foreground="{StaticResource Text.Secondary}"
@@ -394,6 +394,33 @@
                                  Focusable="True"
                                  Text="Object-Oriented Programming Finals"/>
                     </StackPanel>
+
+                    <!-- Row 4: Randomize Question Order -->
+                    <Border Background="{StaticResource Bg.Base}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="14,10"
+                            Margin="0,0,0,24">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Randomize Question Order"
+                                           FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Text.Primary}"/>
+                                <TextBlock Text="Shuffle question sequence uniquely for each student attempt"
+                                           FontSize="11" Foreground="{StaticResource Text.Muted}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1"
+                                      x:Name="RandomizeQuestionsCheckBox"
+                                      VerticalAlignment="Center"
+                                      Cursor="Hand"/>
+                        </Grid>
+                    </Border>
 
                 </StackPanel>
 

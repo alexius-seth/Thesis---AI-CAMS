@@ -43,7 +43,7 @@ namespace ACPAMS.Views.Student
             ExamTitleText.Text = $"{exam.CourseCode} — {exam.Title?.ToUpper() ?? "EXAM"}";
             ExamSubtitleText.Text = exam.ExamName ?? string.Empty;
 
-            _questions = await _examService.GetQuestionsAsync(exam.ExamId);
+            _questions = await _examService.GetQuestionsAsync(exam.ExamId, SessionManager.CurrentAttempt.AttemptId);
 
             if (_questions.Count == 0)
             {
@@ -57,6 +57,7 @@ namespace ACPAMS.Views.Student
             StartTimer();
             UpdateTimerDisplay();
             BuildNavPane();
+            UpdateProgress();
             LoadQuestion(0);
 
             // Start monitoring
@@ -467,8 +468,12 @@ namespace ACPAMS.Views.Student
             int answered = _answeredIndices.Count;
             int total = _questions.Count;
             ProgressText.Text = $"{answered} / {total}";
-            ProgressBar.Width = total > 0 ? (double)answered / total * 100 : 0;
+            ProgressBar.Width = total > 0 && ProgressBarTrack.ActualWidth > 0
+                ? (double)answered / total * ProgressBarTrack.ActualWidth
+                : 0;
         }
+
+        private void ProgressBarTrack_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateProgress();
 
         // ── QUESTION LOADING ──────────────────────────────────────────────
         private async void LoadQuestion(int index)
