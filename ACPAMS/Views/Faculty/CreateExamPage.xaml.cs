@@ -1094,7 +1094,8 @@ namespace ACPAMS.Views.Faculty
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 8) };
 
             string optionText = GetOptionText(q, letter);
-            bool isCorrect = (q.CorrectAnswer == letter);
+            bool isCorrect = string.Equals(q.CorrectAnswer?.Trim(), letter, StringComparison.OrdinalIgnoreCase)
+                || (!string.IsNullOrWhiteSpace(optionText) && string.Equals(q.CorrectAnswer?.Trim(), optionText.Trim(), StringComparison.OrdinalIgnoreCase));
 
             var toggleBtn = new Button
             {
@@ -1624,13 +1625,19 @@ namespace ACPAMS.Views.Faculty
                 foreach (var item in group)
                 {
                     var q = item.Dto;
+                    string? correctAns = q.CorrectAnswer;
+                    if (group.Key == "Multiple Choice")
+                    {
+                        correctAns = NormalizeOptionKey(correctAns, q.OptionA, q.OptionB, q.OptionC, q.OptionD);
+                    }
+
                     section.Questions.Add(new QuestionItem
                     {
                         Text = q.Text,
                         Type = group.Key,
                         Points = q.Points > 0 ? q.Points : 5,
                         Order = order++,
-                        CorrectAnswer = q.CorrectAnswer,
+                        CorrectAnswer = correctAns,
                         OptionA = q.OptionA,
                         OptionB = q.OptionB,
                         OptionC = q.OptionC,
@@ -1730,10 +1737,11 @@ namespace ACPAMS.Views.Faculty
                     else
                         EnsureSection().Type = typeValue;
                 }
-                else if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^[A-Da-d]\)"))
+                else if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^\(?([A-Da-d])[\)\.\:\-]\s*"))
                 {
-                    var letter = trimmed.Substring(0, 1).ToUpper();
-                    mcOptions[letter] = trimmed.Substring(2).Trim();
+                    var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"^\(?([A-Da-d])[\)\.\:\-]\s*(.*)$");
+                    var letter = match.Groups[1].Value.ToUpper();
+                    mcOptions[letter] = match.Groups[2].Value.Trim();
                 }
                 else if (trimmed.StartsWith("ANSWERS:", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1827,6 +1835,25 @@ namespace ACPAMS.Views.Faculty
             mcOptions.TryGetValue("B", out var b); question.OptionB = b;
             mcOptions.TryGetValue("C", out var c); question.OptionC = c;
             mcOptions.TryGetValue("D", out var d); question.OptionD = d;
+
+            question.CorrectAnswer = NormalizeOptionKey(question.CorrectAnswer, a, b, c, d);
+        }
+
+        public static string NormalizeOptionKey(string? raw, string? optA, string? optB, string? optC, string? optD)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            var trimmed = raw.Trim();
+
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"^\(?([A-Da-d])(?:[\.\:\-\)]|\s|$)");
+            if (match.Success)
+                return match.Groups[1].Value.ToUpperInvariant();
+
+            if (!string.IsNullOrEmpty(optA) && string.Equals(trimmed, optA.Trim(), StringComparison.OrdinalIgnoreCase)) return "A";
+            if (!string.IsNullOrEmpty(optB) && string.Equals(trimmed, optB.Trim(), StringComparison.OrdinalIgnoreCase)) return "B";
+            if (!string.IsNullOrEmpty(optC) && string.Equals(trimmed, optC.Trim(), StringComparison.OrdinalIgnoreCase)) return "C";
+            if (!string.IsNullOrEmpty(optD) && string.Equals(trimmed, optD.Trim(), StringComparison.OrdinalIgnoreCase)) return "D";
+
+            return trimmed;
         }
 
         private void NavigateToHome(object sender, RoutedEventArgs e)

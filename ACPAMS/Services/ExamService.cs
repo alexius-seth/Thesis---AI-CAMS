@@ -80,6 +80,9 @@ namespace ACPAMS.Services
                 await context.SaveChangesAsync();
             }
 
+            // Auto-grade objective questions immediately upon submit
+            await new AutoCheckerService().AutoGradeAttemptAsync(attemptId);
+
             // Kick off AI grading for any essay/coding answers in this attempt.
             // Runs in the background (AiJobProcessorService's poller) — this
             // just enqueues, it does NOT wait for grading to finish, so

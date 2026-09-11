@@ -39,6 +39,7 @@ namespace ACPAMS.Views.Faculty
                     .Include(a => a.Exam)
                     .Include(a => a.Answers)
                         .ThenInclude(ans => ans.Question)
+                            .ThenInclude(q => q!.Options)
                     .FirstOrDefaultAsync(a => a.AttemptId == _attemptId);
 
                 if (attempt == null)
@@ -122,7 +123,9 @@ namespace ACPAMS.Views.Faculty
                     Number = index + 1,
                     Text = a.Question?.Text ?? "Unknown Question",
                     Type = a.Question?.QuestionType ?? "Unknown",
-                    StudentAnswer = a.AnswerText ?? a.SourceCode ?? "No answer provided",
+                    StudentAnswer = a.Question?.QuestionType == "multiple_choice"
+                        ? AutoCheckerService.FormatOptionDisplay(a.AnswerText, a.Question?.Options)
+                        : (a.AnswerText ?? a.SourceCode ?? "No answer provided"),
                     ObtainedPoints = a.ObtainedPoints.HasValue ? (double)a.ObtainedPoints.Value : (double?)null,
                     MaxPoints = a.Question?.Points.HasValue == true ? (double)a.Question.Points.Value : 0,
                     Status = a.ObtainedPoints.HasValue ? "graded" : "pending"

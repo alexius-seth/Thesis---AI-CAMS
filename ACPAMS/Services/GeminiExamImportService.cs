@@ -158,7 +158,7 @@ namespace ACPAMS.Services
                 "Identification", "Enumeration", "Coding", "Essay".
 
                 Type inference guide:
-                - Multiple Choice: question has 2+ labeled options (A/B/C/D, 1/2/3/4, etc.)
+                - Multiple Choice: question has 2+ labeled options (A/B/C/D, 1/2/3/4, etc.). Set "correctAnswer" to the single uppercase option letter ("A", "B", "C", or "D").
                 - True or False: question asks for a true/false judgment
                 - Identification: short factual answer expected, no options given
                 - Enumeration: question asks to list multiple items

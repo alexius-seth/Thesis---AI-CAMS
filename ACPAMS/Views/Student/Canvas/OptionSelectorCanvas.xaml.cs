@@ -59,7 +59,8 @@ namespace ACPAMS.Views.Student.Canvas
             {
                 string letter = ((char)('A' + i)).ToString();
                 string optionText = options[i];
-                bool isSelected = _selectedAnswer == optionText;
+                bool isSelected = string.Equals(_selectedAnswer, optionText, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(_selectedAnswer, letter, StringComparison.OrdinalIgnoreCase);
 
                 var btn = new Button
                 {

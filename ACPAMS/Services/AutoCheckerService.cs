@@ -31,10 +31,11 @@ namespace ACPAMS.Services
 
             var answers = await context.StudentAnswers
                 .Include(a => a.Question)
+                    .ThenInclude(q => q!.Options)
                 .Where(a => a.AttemptId == attemptId
                          && a.Question != null
                          && ObjectiveTypes.Contains(a.Question.QuestionType)
-                         && !a.ObtainedPoints.HasValue) // don't clobber an existing/manual grade
+                         && (!a.ObtainedPoints.HasValue || (a.GradedBy == "system" && !a.IsManualGrade)))
                 .ToListAsync();
 
             if (answers.Count == 0) return;
@@ -56,19 +57,20 @@ namespace ACPAMS.Services
         }
 
         // ── Defensive sweep — grades every ungraded objective answer across
-        // every attempt for an exam. Safe to call repeatedly; only touches
-        // answers that don't already have a score. ──
+        // every attempt for an exam. Safe to call repeatedly; also re-checks
+        // un-overridden system grades to rectify past mismatches. ──
         public async Task AutoGradeExamAsync(Guid examId)
         {
             using var context = new AppDbContext();
 
             var answers = await context.StudentAnswers
                 .Include(a => a.Question)
+                    .ThenInclude(q => q!.Options)
                 .Include(a => a.Attempt)
                 .Where(a => a.Question != null
                          && a.Question.ExamId == examId
                          && ObjectiveTypes.Contains(a.Question.QuestionType)
-                         && !a.ObtainedPoints.HasValue
+                         && (!a.ObtainedPoints.HasValue || (a.GradedBy == "system" && !a.IsManualGrade))
                          && a.Attempt != null
                          && (a.Attempt.Status == "submitted" || a.Attempt.Status == "graded"))
                 .ToListAsync();
@@ -112,15 +114,103 @@ namespace ACPAMS.Services
 
         private static void GradeOneAnswer(StudentAnswer answer, Question question)
         {
-            bool isCorrect = string.Equals(
-                (answer.AnswerText ?? string.Empty).Trim(),
-                (question.CorrectAnswer ?? string.Empty).Trim(),
-                StringComparison.OrdinalIgnoreCase);
+            bool isCorrect = IsAnswerCorrect(answer.AnswerText, question);
 
             answer.ObtainedPoints = isCorrect ? (question.Points ?? 0) : 0;
             answer.GradedBy = "system";
             answer.GradedAt = DateTime.Now;
             answer.IsManualGrade = false;
+        }
+
+        public static bool IsAnswerCorrect(string? studentAnswerText, Question question)
+        {
+            var sTrim = (studentAnswerText ?? string.Empty).Trim();
+            var cTrim = (question.CorrectAnswer ?? string.Empty).Trim();
+
+            if (string.IsNullOrEmpty(sTrim) || string.IsNullOrEmpty(cTrim))
+                return false;
+
+            if (string.Equals(sTrim, cTrim, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (question.QuestionType == "multiple_choice")
+            {
+                var (sLetter, sText) = ResolveOption(sTrim, question.Options);
+                var (cLetter, cText) = ResolveOption(cTrim, question.Options);
+
+                if (!string.IsNullOrEmpty(sLetter) && !string.IsNullOrEmpty(cLetter)
+                    && string.Equals(sLetter, cLetter, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (!string.IsNullOrEmpty(sText) && !string.IsNullOrEmpty(cText)
+                    && string.Equals(sText, cText, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static (string? Letter, string? Text) ResolveOption(string? raw, IEnumerable<QuestionOption>? options)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return (null, null);
+
+            var trimmed = raw.Trim();
+            var ordered = (options ?? Enumerable.Empty<QuestionOption>())
+                .OrderBy(o => o.OrderIndex)
+                .Select((opt, idx) => new
+                {
+                    Letter = ((char)('A' + idx)).ToString(),
+                    Text = (opt.OptionText ?? string.Empty).Trim()
+                })
+                .ToList();
+
+            // 1. Exact match by option text
+            var textMatch = ordered.FirstOrDefault(o =>
+                !string.IsNullOrEmpty(o.Text) &&
+                string.Equals(o.Text, trimmed, StringComparison.OrdinalIgnoreCase));
+            if (textMatch != null)
+                return (textMatch.Letter, textMatch.Text);
+
+            // 2. Letter prefix or exact letter key (e.g. "A", "A.", "A)", "(A)", "A: text")
+            var letterMatch = System.Text.RegularExpressions.Regex.Match(trimmed, @"^\(?([A-Za-z])(?:\.|\)|\:|\s|$)");
+            if (letterMatch.Success)
+            {
+                string letter = letterMatch.Groups[1].Value.ToUpperInvariant();
+                var match = ordered.FirstOrDefault(o => string.Equals(o.Letter, letter, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                    return (match.Letter, match.Text);
+
+                if (ordered.Count == 0)
+                    return (letter, null);
+            }
+
+            // 3. Fallback: contains match (e.g. if raw had extra surrounding text)
+            var containsMatch = ordered.FirstOrDefault(o =>
+                !string.IsNullOrEmpty(o.Text) &&
+                (trimmed.IndexOf(o.Text, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 o.Text.IndexOf(trimmed, StringComparison.OrdinalIgnoreCase) >= 0));
+            if (containsMatch != null)
+                return (containsMatch.Letter, containsMatch.Text);
+
+            return (null, trimmed);
+        }
+
+        public static string FormatOptionDisplay(string? raw, IEnumerable<QuestionOption>? options)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return raw ?? string.Empty;
+            var (letter, text) = ResolveOption(raw, options);
+            if (!string.IsNullOrEmpty(letter) && !string.IsNullOrEmpty(text))
+                return $"{letter}. {text}";
+            if (!string.IsNullOrEmpty(letter))
+                return letter;
+            if (!string.IsNullOrEmpty(text))
+                return text;
+            return raw.Trim();
         }
     }
 }

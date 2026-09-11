@@ -108,6 +108,7 @@ namespace ACPAMS.Services
             using var context = new AppDbContext();
 
             var allQuestions = await context.Questions
+                .Include(q => q.Options)
                 .Where(q => q.ExamId == examId)
                 .ToListAsync();
 
@@ -129,12 +130,9 @@ namespace ACPAMS.Services
                 foreach (var q in objectiveQuestions)
                 {
                     var ans = attempt.Answers.FirstOrDefault(x => x.QuestionId == q.QuestionId);
-                    if (ans == null || ans.ObtainedPoints.HasValue) continue; // don't clobber an existing/manual grade
+                    if (ans == null || (ans.ObtainedPoints.HasValue && (ans.IsManualGrade || ans.GradedBy != "system"))) continue;
 
-                    bool isCorrect = string.Equals(
-                        (ans.AnswerText ?? "").Trim(),
-                        (q.CorrectAnswer ?? "").Trim(),
-                        StringComparison.OrdinalIgnoreCase);
+                    bool isCorrect = AutoCheckerService.IsAnswerCorrect(ans.AnswerText, q);
 
                     ans.ObtainedPoints = isCorrect ? (q.Points ?? 0) : 0;
                     ans.GradedBy = "system";
