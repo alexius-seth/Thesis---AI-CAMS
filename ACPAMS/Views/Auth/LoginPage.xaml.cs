@@ -1,4 +1,4 @@
-﻿using ACPAMS.Data;
+using ACPAMS.Data;
 using ACPAMS.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -116,9 +116,8 @@ namespace ACPAMS.Views.Auth
             }
             else
             {
-                // FacultySignUpPage still a Window — open separately
-                var facultySignUp = new FacultySignUpPage();
-                facultySignUp.Show();
+                ACPAMS.MainWindow.Resize(520, 720);
+                ACPAMS.MainWindow.Navigate(new FacultySignUpPage());
             }
         }
     }

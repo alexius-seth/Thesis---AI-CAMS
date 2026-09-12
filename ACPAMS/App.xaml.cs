@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using Microsoft.Extensions.Configuration;
 using ACPAMS.Services;
 
@@ -20,10 +20,9 @@ namespace ACPAMS
             base.OnStartup(e);
 
             Configuration = new ConfigurationBuilder()
-                // Reads from %APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json
-                // Never touches anything inside the repo folder.
-
-                .AddUserSecrets<App>()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddUserSecrets<App>(optional: true)
                 .Build();
 
             //MessageBox.Show(Configuration["Gemini:ApiKey"] ?? "(NULL - not found!)");

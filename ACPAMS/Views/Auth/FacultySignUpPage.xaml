@@ -1,16 +1,10 @@
-<Window x:Class="ACPAMS.Views.Auth.FacultySignUpPage"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ACPAMS — Faculty Sign Up"
-        Width="520" Height="640"
-        WindowStartupLocation="CenterScreen"
-        WindowStyle="SingleBorderWindow"
-        ResizeMode="NoResize"
-        Background="#EEF2F7"
-        FontFamily="Segoe UI">
+<UserControl x:Class="ACPAMS.Views.Auth.FacultySignUpPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#EEF2F7"
+             FontFamily="Segoe UI">
 
-    <Window.Resources>
-        <SolidColorBrush x:Key="Bg.Window"        Color="#EEF2F7"/>
+    <UserControl.Resources>
         <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
         <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
         <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
@@ -24,70 +18,22 @@
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
             <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
-            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
-            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
-            <Setter Property="BorderThickness"          Value="1"/>
-            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
             <Setter Property="Height"                   Value="42"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
-                                <Setter TargetName="Root" Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <Style x:Key="Input.Password" TargetType="PasswordBox">
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
             <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
-            <Setter Property="Background"               Value="{StaticResource Bg.Surface}"/>
-            <Setter Property="BorderBrush"              Value="{StaticResource Border.Medium}"/>
-            <Setter Property="BorderThickness"          Value="1"/>
-            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
             <Setter Property="Height"                   Value="42"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="PasswordBox">
-                        <Border x:Name="Root"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
-                                <Setter TargetName="Root" Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
         <Style x:Key="Btn.Primary" TargetType="Button">
@@ -104,8 +50,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bg" Background="{TemplateBinding Background}"
                                 CornerRadius="6" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -113,6 +58,9 @@
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Bg" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.6"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -130,15 +78,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <TextBlock x:Name="Txt"
-                                   Text="{TemplateBinding Content}"
+                        <TextBlock x:Name="Txt" Text="{TemplateBinding Content}"
                                    Foreground="{TemplateBinding Foreground}"
                                    FontSize="{TemplateBinding FontSize}"
                                    FontFamily="{TemplateBinding FontFamily}"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Txt" Property="TextDecorations"
-                                        Value="Underline"/>
+                                <Setter TargetName="Txt" Property="TextDecorations" Value="Underline"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -156,171 +102,189 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="{TemplateBinding Background}"
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background"
-                                        Value="{StaticResource Accent.PrimaryBg}"/>
-                                <Setter TargetName="Bg" Property="BorderBrush"
-                                        Value="{StaticResource Accent.Primary}"/>
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource Accent.PrimaryBg}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource Accent.Primary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-    </Window.Resources>
+    </UserControl.Resources>
 
-    <Grid Background="{StaticResource Bg.Window}">
-        <Border Background="{StaticResource Bg.Surface}"
-                BorderBrush="{StaticResource Border.Subtle}"
-                BorderThickness="1" CornerRadius="12"
-                Width="440"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center">
-            <Border.Effect>
-                <DropShadowEffect Color="#94A3B8" Opacity="0.18"
-                                  BlurRadius="32" ShadowDepth="6"/>
-            </Border.Effect>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#EEF2F7">
+        <Grid Background="#EEF2F7" MinHeight="660">
+            <Border Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="1" CornerRadius="12"
+                    Width="440" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Margin="0,24">
+                <Border.Effect>
+                    <DropShadowEffect Color="#94A3B8" Opacity="0.18" BlurRadius="32" ShadowDepth="6"/>
+                </Border.Effect>
 
-            <StackPanel Margin="36,32,36,32">
+                <StackPanel Margin="36,32,36,32">
 
-                <!-- Brand mark -->
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Center" Margin="0,0,0,24">
-                    <Border Width="36" Height="36" Background="#1A202C"
-                            CornerRadius="8" Margin="0,0,10,0">
-                        <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="18" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <!-- Brand mark -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                        <Border Width="36" Height="36" Background="#1A202C" CornerRadius="8" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="ACPAMS" FontSize="20" FontWeight="Bold"
+                                   Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Heading -->
+                    <TextBlock Text="Sign Up" FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource Text.Primary}" Margin="0,0,0,2"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <TextBlock Text="as " FontSize="22" Foreground="{StaticResource Text.Muted}"/>
+                        <TextBlock Text="Faculty" FontSize="22" FontWeight="Bold"
+                                   Foreground="{StaticResource Accent.Primary}"/>
+                    </StackPanel>
+
+                    <!-- Inline Error Card -->
+                    <Border x:Name="ErrorCard" Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1"
+                            CornerRadius="6" Padding="12,8" Margin="0,0,0,16" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE783;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="#DC2626" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="ErrorMessageText" FontSize="12" Foreground="#DC2626"
+                                       TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </StackPanel>
                     </Border>
-                    <TextBlock Text="ACPAMS" FontSize="20" FontWeight="Bold"
-                               Foreground="{StaticResource Text.Primary}"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
 
-                <!-- Heading -->
-                <TextBlock Text="Sign Up" FontSize="22" FontWeight="Bold"
-                           Foreground="{StaticResource Text.Primary}"
-                           Margin="0,0,0,2"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
-                    <TextBlock Text="as " FontSize="22"
-                               Foreground="{StaticResource Text.Muted}"/>
-                    <TextBlock Text="Faculty" FontSize="22" FontWeight="Bold"
-                               Foreground="{StaticResource Accent.Primary}"/>
-                </StackPanel>
+                    <!-- Name row -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="First Name" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                            <Border Background="{StaticResource Bg.Surface}"
+                                    BorderBrush="{StaticResource Border.Subtle}"
+                                    BorderThickness="1" CornerRadius="6" Height="42">
+                                <TextBox x:Name="FirstNameBox" Style="{StaticResource Input.Field}"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Last Name" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                            <Border Background="{StaticResource Bg.Surface}"
+                                    BorderBrush="{StaticResource Border.Subtle}"
+                                    BorderThickness="1" CornerRadius="6" Height="42">
+                                <TextBox x:Name="LastNameBox" Style="{StaticResource Input.Field}"/>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="M.I." FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                            <Border Background="{StaticResource Bg.Surface}"
+                                    BorderBrush="{StaticResource Border.Subtle}"
+                                    BorderThickness="1" CornerRadius="6" Height="42">
+                                <TextBox x:Name="MiddleInitialBox" Style="{StaticResource Input.Field}" MaxLength="3"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Name row -->
-                <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="80"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="First Name" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Text.Secondary}"
-                                   Margin="0,0,0,6"/>
-                        <TextBox x:Name="FirstNameBox" Style="{StaticResource Input.Field}"/>
+                    <!-- Username -->
+                    <TextBlock Text="Username" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="6" Height="42" Margin="0,0,0,16">
+                        <TextBox x:Name="UsernameBox" Style="{StaticResource Input.Field}"/>
+                    </Border>
+
+                    <!-- Registration Code -->
+                    <TextBlock Text="Registration Code" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="6" Height="42" Margin="0,0,0,4">
+                        <TextBox x:Name="RegistrationCodeBox" Style="{StaticResource Input.Field}"
+                                 FontFamily="Consolas" FontSize="13"/>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                   Foreground="{StaticResource Text.Muted}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}"
+                                   Text="Enter the registration code provided by your administrator."/>
                     </StackPanel>
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Last Name" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Text.Secondary}"
-                                   Margin="0,0,0,6"/>
-                        <TextBox x:Name="LastNameBox" Style="{StaticResource Input.Field}"/>
+
+                    <!-- Password -->
+                    <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="{StaticResource Bg.Surface}"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="1" CornerRadius="6" Height="42">
+                            <Grid>
+                                <PasswordBox x:Name="PasswordBox" Style="{StaticResource Input.Password}"/>
+                                <TextBox x:Name="PasswordVisibleBox" Style="{StaticResource Input.Field}"
+                                         Visibility="Collapsed"/>
+                            </Grid>
+                        </Border>
+                        <Button x:Name="TogglePasswordBtn" Grid.Column="2"
+                                Style="{StaticResource Btn.EyeToggle}" Click="TogglePasswordBtn_Click">
+                            <TextBlock Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14" Foreground="{StaticResource Text.Muted}"/>
+                        </Button>
+                    </Grid>
+                    <!-- Password hint -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                   Foreground="{StaticResource Text.Muted}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                        <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}" TextWrapping="Wrap"
+                                   Text="Must be a combination of minimum 8 letters, numbers, and symbols."/>
                     </StackPanel>
-                    <StackPanel Grid.Column="4">
-                        <TextBlock Text="M.I." FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Text.Secondary}"
-                                   Margin="0,0,0,6"/>
-                        <TextBox x:Name="MiddleInitialBox"
-                                 Style="{StaticResource Input.Field}"
-                                 MaxLength="3"/>
+
+                    <!-- Sign Up button -->
+                    <Button x:Name="SignUpBtn" Style="{StaticResource Btn.Primary}"
+                            HorizontalAlignment="Stretch" Margin="0,0,0,20"
+                            Click="SignUpButton_Click" Content="Sign Up"/>
+
+                    <!-- Divider -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Height="1" Background="{StaticResource Border.Subtle}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="or" FontSize="12"
+                                   Foreground="{StaticResource Text.Muted}" Margin="10,0" VerticalAlignment="Center"/>
+                        <Border Grid.Column="2" Height="1" Background="{StaticResource Border.Subtle}" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Log In link -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="Already have an account? " FontSize="13"
+                                   Foreground="{StaticResource Text.Secondary}" VerticalAlignment="Center"/>
+                        <Button Style="{StaticResource Btn.Link}" Content="Log In"
+                                FontWeight="SemiBold" Click="LogInBtn_Click"/>
                     </StackPanel>
-                </Grid>
 
-                <!-- Username -->
-                <TextBlock Text="Username" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{StaticResource Text.Secondary}"
-                           Margin="0,0,0,6"/>
-                <TextBox x:Name="UsernameBox"
-                         Style="{StaticResource Input.Field}"
-                         Margin="0,0,0,16"/>
-
-                <!-- Password -->
-                <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{StaticResource Text.Secondary}"
-                           Margin="0,0,0,6"/>
-                <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <PasswordBox x:Name="PasswordBox"
-                                 Grid.Column="0"
-                                 Style="{StaticResource Input.Password}"/>
-                    <Button Grid.Column="2"
-                            Style="{StaticResource Btn.EyeToggle}"
-                            x:Name="TogglePasswordBtn">
-                        <TextBlock Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14" Foreground="{StaticResource Text.Muted}"/>
-                    </Button>
-                </Grid>
-                <!-- Password hint -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
-                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="11" Foreground="{StaticResource Text.Muted}"
-                               Margin="0,0,5,0" VerticalAlignment="Center"/>
-                    <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}"
-                               TextWrapping="Wrap"
-                               Text="Must be a combination of minimum 8 letters, numbers, and symbols."/>
                 </StackPanel>
-
-                <!-- Sign Up button -->
-                <Button Style="{StaticResource Btn.Primary}"
-                        HorizontalAlignment="Stretch"
-                        Margin="0,0,0,20"
-                        Content="Sign Up"/>
-
-                <!-- Divider -->
-                <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Height="1"
-                            Background="{StaticResource Border.Subtle}"
-                            VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="or"
-                               FontSize="12" Foreground="{StaticResource Text.Muted}"
-                               Margin="10,0" VerticalAlignment="Center"/>
-                    <Border Grid.Column="2" Height="1"
-                            Background="{StaticResource Border.Subtle}"
-                            VerticalAlignment="Center"/>
-                </Grid>
-
-                <!-- Log in link -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="Already have an account? " FontSize="13"
-                               Foreground="{StaticResource Text.Secondary}"
-                               VerticalAlignment="Center"/>
-                    <Button Style="{StaticResource Btn.Link}"
-                            Content="Log In"
-                            FontWeight="SemiBold"/>
-                </StackPanel>
-
-            </StackPanel>
-        </Border>
-    </Grid>
-</Window>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

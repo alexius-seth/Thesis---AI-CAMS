@@ -1,4 +1,4 @@
-﻿using ACPAMS.Services;
+using ACPAMS.Services;
 using ACPAMS.ViewModels;
 using ACPAMS.Views.Faculty.Tabs;
 using System;
@@ -123,6 +123,15 @@ namespace ACPAMS.Views.Faculty
         private void ViewReport(object sender, RoutedEventArgs e)
         {
             OpenStudentReportTab(sender, e);
+        }
+
+        private void OpenRegistrationCodeSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var modal = new FacultyCodeSettingsModal
+            {
+                Owner = Window.GetWindow(this)
+            };
+            modal.ShowDialog();
         }
     }
 }
