@@ -25,7 +25,11 @@ namespace ACPAMS
                 .AddUserSecrets<App>(optional: true)
                 .Build();
 
-            //MessageBox.Show(Configuration["Gemini:ApiKey"] ?? "(NULL - not found!)");
+            AppSettingsService.Initialize();
+
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+            QuestPDF.Settings.UseSystemFonts = true;
+            QuestPDF.Settings.ThrowOnMissingFontFamilies = false;
 
             try
             {

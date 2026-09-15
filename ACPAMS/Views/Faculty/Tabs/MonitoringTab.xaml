@@ -336,7 +336,7 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{StaticResource Accent.Primary}" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Active Stations" Style="{StaticResource T.KpiLabel}"/>
+                            <TextBlock Text="Active Devices" Style="{StaticResource T.KpiLabel}"/>
                         </StackPanel>
                         <TextBlock x:Name="ActiveStationsKpi" Text="0" Style="{StaticResource T.KpiNumber}"/>
                         <TextBlock Text="Students currently testing" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
@@ -351,7 +351,7 @@
                             <TextBlock Text="Total Flags" Style="{StaticResource T.KpiLabel}"/>
                         </StackPanel>
                         <TextBlock x:Name="TotalFlagsKpi" Text="0" Style="{StaticResource T.KpiNumber}"/>
-                        <TextBlock Text="Across all active stations" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
+                        <TextBlock Text="Across all active devices" FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -395,11 +395,11 @@
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="110"/>
                                     <ColumnDefinition Width="100"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="STUDENT" Style="{StaticResource T.TableHeader}"/>
-                                <TextBlock Grid.Column="1" Text="STATION" Style="{StaticResource T.TableHeader}"/>
+                                <TextBlock Grid.Column="1" Text="DEVICE" Style="{StaticResource T.TableHeader}"/>
                                 <TextBlock Grid.Column="2" Text="STATUS" Style="{StaticResource T.TableHeader}"/>
                             </Grid>
                         </Border>
@@ -411,7 +411,7 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="110"/>
                                                 <ColumnDefinition Width="100"/>
                                             </Grid.ColumnDefinitions>
 
@@ -436,7 +436,7 @@
                                                 <TextBlock Text="{Binding StudentName}" Style="{StaticResource T.TableCell}" VerticalAlignment="Center"/>
                                             </StackPanel>
 
-                                            <TextBlock Grid.Column="1" Text="{Binding Station}" Style="{StaticResource T.TableCell.Muted}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding DeviceName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DeviceName}" Style="{StaticResource T.TableCell.Muted}"/>
 
                                             <Border Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" CornerRadius="10" Padding="8,3">
                                                 <Border.Style>

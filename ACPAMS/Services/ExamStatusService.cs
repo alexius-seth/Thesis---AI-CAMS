@@ -17,13 +17,24 @@ namespace ACPAMS.Services
             _context = context;
         }
 
-        public async Task<List<ExamStatusDto>> GetExamsWithStatusAsync(string instructorId)
+        public async Task<List<ExamStatusDto>> GetExamsWithStatusAsync(string instructorId, bool archivedOnly = false)
         {
-            var exams = await _context.Exams
+            var query = _context.Exams
                 .Include(e => e.Attempts)
                     .ThenInclude(a => a.Answers)
                 .Include(e => e.Questions)
-                .Where(e => e.InstructorId == instructorId)
+                .Where(e => e.InstructorId == instructorId);
+
+            if (archivedOnly)
+            {
+                query = query.Where(e => e.Status == "archived");
+            }
+            else
+            {
+                query = query.Where(e => e.Status != "archived");
+            }
+
+            var exams = await query
                 .OrderByDescending(e => e.CreatedAt)
                 .ToListAsync();
 
@@ -36,7 +47,9 @@ namespace ACPAMS.Services
                 var totalAttempts = exam.Attempts?.Count ?? 0;
 
                 string status;
-                if (activeAttempts > 0)
+                if (exam.Status == "archived")
+                    status = "archived";
+                else if (activeAttempts > 0)
                     status = "live";
                 else if (submittedAttempts > 0 || totalAttempts > 0)
                     status = "done";
@@ -123,6 +136,7 @@ namespace ACPAMS.Services
                     Status = status,
                     StatusDisplay = status switch
                     {
+                        "archived" => "ARCHIVED",
                         "live" => "LIVE NOW",
                         "done" => "COMPLETED",
                         "pending" => "UPCOMING",
@@ -175,6 +189,16 @@ namespace ACPAMS.Services
             if (exam != null)
             {
                 exam.Status = "archived";
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task UnarchiveExamAsync(Guid examId)
+        {
+            var exam = await _context.Exams.FindAsync(examId);
+            if (exam != null)
+            {
+                exam.Status = "active";
                 await _context.SaveChangesAsync();
             }
         }
@@ -267,13 +291,14 @@ namespace ACPAMS.Services
         public bool GradingStatusIsWarning { get; set; }
 
         // ── Display helpers for FacultyHomePage cards ──────────
-        public bool IsLive => Status == "live";
-        public bool IsPending => Status == "pending";
-        public bool IsDone => Status == "done";
-        public bool IsActiveOrUpcoming => IsLive || IsPending;
+        public bool IsArchived => Status == "archived";
+        public bool IsLive => !IsArchived && Status == "live";
+        public bool IsPending => !IsArchived && Status == "pending";
+        public bool IsDone => !IsArchived && Status == "done";
+        public bool IsActiveOrUpcoming => !IsArchived && (IsLive || IsPending);
 
         /// <summary>Pending and Done cards both get Archive/Delete actions.</summary>
-        public bool ShowArchiveDelete => IsPending || IsDone;
+        public bool ShowArchiveDelete => !IsArchived && (IsPending || IsDone);
 
         public string StudentsProgressText => $"{ActiveStudents} / {TotalStudents}";
     }

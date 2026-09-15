@@ -7,9 +7,7 @@ namespace ACPAMS.Services
     public class ReportsService
     {
         // Rough, rule-based estimate — NOT AI-derived. Flags-per-attempt is
-        // normalized against a cap (10 flags = 0% integrity) and averaged.
-        // Adjust FLAG_CAP if this feels too harsh/lenient in practice.
-        private const int FLAG_CAP = 10;
+        private static int FLAG_CAP => AppSettingsService.IntegrityFlagCap;
 
         // ── Aggregate metrics + per-attempt rows across ALL of this instructor's exams ──
         // Used by the generic "View Student Reports" quick-nav (browse everything).
@@ -129,7 +127,7 @@ namespace ACPAMS.Services
                     FinalScoreText = a.TotalScore.HasValue && maxPts > 0
                         ? $"{a.TotalScore.Value:0.##} / {maxPts:0.##}"
                         : "—",
-                    IsPassing = a.TotalScore.HasValue && maxPts > 0 && (a.TotalScore.Value / maxPts) >= 0.75m,
+                    IsPassing = a.TotalScore.HasValue && maxPts > 0 && (a.TotalScore.Value / maxPts) >= (AppSettingsService.PassingGrade / 100m),
                     AnomalyCount = flagCount,
                     RiskLevel = risk
                 });

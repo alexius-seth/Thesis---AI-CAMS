@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -47,6 +47,20 @@ namespace ACPAMS.Models
         [MaxLength(255)]
         [Column("device_info")]
         public string? DeviceInfo { get; set; }
+
+        [NotMapped]
+        public string? DeviceName
+        {
+            get => DeviceInfo;
+            set => DeviceInfo = value;
+        }
+
+        [NotMapped]
+        public string? HostName
+        {
+            get => DeviceInfo;
+            set => DeviceInfo = value;
+        }
 
         // Navigation
         [ForeignKey("StudentId")]

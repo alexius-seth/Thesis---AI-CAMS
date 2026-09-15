@@ -719,19 +719,27 @@
             <!-- ─────────────────────────────────────────
                  SECTION 3 — DETAILED PERFORMANCE TABLE
             ───────────────────────────────────────── -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="DETAILED PERFORMANCE DATA"
-                           Style="{StaticResource T.SectionLabel}"
-                           VerticalAlignment="Center"/>
-                <Border Background="{StaticResource Bg.Surface}"
-                        BorderBrush="{StaticResource Border.Subtle}"
-                        BorderThickness="1" CornerRadius="4"
-                        Padding="8,2" Margin="12,0,0,0">
-                    <TextBlock Text="Exportable"
-                               FontSize="10" FontWeight="SemiBold"
-                               Foreground="{StaticResource Text.Secondary}"/>
-                </Border>
-            </StackPanel>
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <TextBlock Text="DETAILED PERFORMANCE DATA"
+                               Style="{StaticResource T.SectionLabel}"
+                               VerticalAlignment="Center"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="4"
+                            Padding="8,2" Margin="12,0,0,0">
+                        <TextBlock Text="Exportable"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Text.Secondary}"/>
+                    </Border>
+                </StackPanel>
+                <Button Grid.Column="1" Style="{StaticResource Btn.Outlined}" Content="📄 Export Class PDF"
+                        Padding="14,6" Click="ExportClassPdf_Click"/>
+            </Grid>
 
             <Border Style="{StaticResource Card}" Padding="0">
                 <StackPanel>

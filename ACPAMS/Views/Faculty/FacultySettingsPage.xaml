@@ -1,0 +1,655 @@
+<UserControl x:Class="ACPAMS.Views.Faculty.FacultySettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="1000" d:DesignWidth="1200"
+             Background="#F4F5F7"
+             FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <!-- Palette tokens -->
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.Canvas"        Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
+        <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
+        <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Status.Danger"    Color="#DC2626"/>
+        <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEF2F2"/>
+
+        <Style x:Key="T.SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"      Value="11"/>
+            <Setter Property="FontWeight"    Value="Bold"/>
+            <Setter Property="Foreground"    Value="{StaticResource Text.Muted}"/>
+            <Setter Property="Margin"        Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="T.CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize"      Value="15"/>
+            <Setter Property="FontWeight"    Value="SemiBold"/>
+            <Setter Property="Foreground"    Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Margin"        Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="T.CardDesc" TargetType="TextBlock">
+            <Setter Property="FontSize"      Value="12"/>
+            <Setter Property="Foreground"    Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="TextWrapping"  Value="Wrap"/>
+            <Setter Property="Margin"        Value="0,0,0,16"/>
+        </Style>
+
+        <Style x:Key="T.FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"      Value="12"/>
+            <Setter Property="FontWeight"    Value="SemiBold"/>
+            <Setter Property="Foreground"    Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="Margin"        Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="T.NavItem" TargetType="TextBlock">
+            <Setter Property="FontSize"          Value="13"/>
+            <Setter Property="FontWeight"        Value="Medium"/>
+            <Setter Property="Foreground"        Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="8"/>
+            <Setter Property="Padding"         Value="24"/>
+            <Setter Property="Margin"          Value="0,0,0,20"/>
+        </Style>
+
+        <!-- Form Text Input -->
+        <Style x:Key="Input.Field" TargetType="TextBox">
+            <Setter Property="FontFamily"              Value="Segoe UI"/>
+            <Setter Property="FontSize"                Value="13"/>
+            <Setter Property="Foreground"              Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"              Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"             Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness"         Value="1"/>
+            <Setter Property="Padding"                 Value="12,0"/>
+            <Setter Property="Height"                  Value="38"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Input.Password" TargetType="PasswordBox">
+            <Setter Property="FontFamily"              Value="Segoe UI"/>
+            <Setter Property="FontSize"                Value="13"/>
+            <Setter Property="Foreground"              Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"              Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"             Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness"         Value="1"/>
+            <Setter Property="Padding"                 Value="12,0"/>
+            <Setter Property="Height"                  Value="38"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Nav Buttons -->
+        <Style x:Key="Btn.Nav" TargetType="Button">
+            <Setter Property="Background"                 Value="Transparent"/>
+            <Setter Property="Foreground"                 Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"                   Value="13"/>
+            <Setter Property="FontWeight"                 Value="Medium"/>
+            <Setter Property="FontFamily"                 Value="Segoe UI"/>
+            <Setter Property="BorderThickness"            Value="0"/>
+            <Setter Property="Padding"                    Value="16,10"/>
+            <Setter Property="Cursor"                     Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#EFF6FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Nav.Active" TargetType="Button" BasedOn="{StaticResource Btn.Nav}">
+            <Setter Property="Background" Value="{StaticResource Accent.PrimaryBg}"/>
+        </Style>
+
+        <!-- Primary button -->
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="18,9"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Secondary button -->
+        <Style x:Key="Btn.Secondary" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="Medium"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="16,8"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Icon" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width"           Value="34"/>
+            <Setter Property="Height"          Value="34"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F4F5F7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <!-- ROOT GRID -->
+    <Grid Background="{StaticResource Bg.Base}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ══════════════════
+             FACULTY SIDEBAR
+        ══════════════════ -->
+        <Border Grid.Column="0"
+                Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Subtle}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+
+                <!-- Docked Log Out button (Firmly docked to bottom edge) -->
+                <Border DockPanel.Dock="Bottom" VerticalAlignment="Bottom"
+                        Padding="14,16" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,1,0,0">
+                    <Button Style="{StaticResource Btn.Nav}" Click="Logout_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xF3B1;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#DC2626" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Log Out" FontSize="13" Foreground="#DC2626" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+
+                <!-- Brand -->
+                <Border DockPanel.Dock="Top"
+                        Padding="20,18,20,16"
+                        BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/FINAL LOGO.ico" Width="32" Height="32" Margin="0,0,10,0"
+                               RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="AI-CAMS"
+                                       FontSize="15" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"/>
+                            <TextBlock Text="Computer Studies"
+                                       FontSize="10"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- User Profile Header -->
+                <Border DockPanel.Dock="Top"
+                        Padding="16,12"
+                        BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="34" Height="34" CornerRadius="17"
+                                Background="#E2E8F0" Margin="0,0,6,0">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Button Style="{StaticResource Btn.Icon}" Margin="0,0,4,0">
+                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}"/>
+                        </Button>
+                        <Grid>
+                            <Button Style="{StaticResource Btn.Icon}">
+                                <TextBlock Text="&#xEA8F;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="{StaticResource Text.Secondary}"/>
+                            </Button>
+                            <Border Width="16" Height="16" CornerRadius="8" Background="#E53E3E"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,-4,-4,0">
+                                <TextBlock Text="1" FontSize="9" FontWeight="Bold" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Navigation links -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,10,0,0">
+                    <!-- Home -->
+                    <Button Style="{StaticResource Btn.Nav}" Click="NavigateToHome">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Home" Style="{StaticResource T.NavItem}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Dashboard -->
+                    <Button Style="{StaticResource Btn.Nav}" Click="NavigateToDashboard">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xF246;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Dashboard" Style="{StaticResource T.NavItem}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Create Exam -->
+                    <Button Style="{StaticResource Btn.Nav}" Click="NavigateToCreateExam">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Create Exam" Style="{StaticResource T.NavItem}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Registration Code -->
+                    <Button Style="{StaticResource Btn.Nav}" Click="OpenRegistrationCodeSettings_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Registration Code" Style="{StaticResource T.NavItem}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Archived Exams -->
+                    <Button Style="{StaticResource Btn.Nav}" Click="NavigateToArchivedExams">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Secondary}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Archived Exams" Style="{StaticResource T.NavItem}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+            </DockPanel>
+        </Border>
+
+        <!-- ══════════════════
+             MAIN CONTENT AREA
+        ══════════════════ -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="64"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header Bar -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1"
+                    Padding="32,0">
+                <Grid VerticalAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Text="FACULTY CONFIGURATION" Style="{StaticResource T.SectionLabel}"/>
+                        <TextBlock Text="Settings &amp; Thresholds" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Text.Primary}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Scrollable Settings Sections -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="32,24,32,48" MaxWidth="900" HorizontalAlignment="Left">
+
+                    <!-- ─────────────────────────────────────────────
+                         SECTION 1: PROFILE INFORMATION
+                    ───────────────────────────────────────────── -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="PROFILE INFORMATION" Style="{StaticResource T.SectionLabel}"/>
+                            <TextBlock Text="Faculty Account Details" Style="{StaticResource T.CardTitle}"/>
+                            <TextBlock Text="Update your faculty contact info and administrative login credentials."
+                                       Style="{StaticResource T.CardDesc}"/>
+
+                            <!-- Inline Notification Banner -->
+                            <Border x:Name="ProfileAlertBanner" CornerRadius="6" Padding="12,8" Margin="0,0,0,14" Visibility="Collapsed">
+                                <TextBlock x:Name="ProfileAlertText" FontSize="12" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="2*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="First Name" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="FirstNameBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="M.I." Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="MiddleInitialBox" MaxLength="5" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Last Name" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="LastNameBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Department" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="DepartmentBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Username" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="UsernameBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Password Update Section -->
+                            <Border BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,1,0,0"
+                                    Padding="0,16,0,0" Margin="0,8,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="Change Password (leave blank to keep current)"
+                                               FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Text.Primary}" Margin="0,0,0,12"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="16"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="16"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Current Password" Style="{StaticResource T.FieldLabel}"/>
+                                            <PasswordBox x:Name="CurrentPasswordBox" Style="{StaticResource Input.Password}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="New Password" Style="{StaticResource T.FieldLabel}"/>
+                                            <PasswordBox x:Name="NewPasswordBox" Style="{StaticResource Input.Password}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="Confirm New Password" Style="{StaticResource T.FieldLabel}"/>
+                                            <PasswordBox x:Name="ConfirmPasswordBox" Style="{StaticResource Input.Password}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Button Style="{StaticResource Btn.Primary}" Content="Save Profile &amp; Password"
+                                    HorizontalAlignment="Left" Click="SaveProfile_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ─────────────────────────────────────────────
+                         SECTION 2: GEMINI MODEL CONFIGURATION
+                    ───────────────────────────────────────────── -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="AI INTEGRATION" Style="{StaticResource T.SectionLabel}"/>
+                            <TextBlock Text="Google Gemini Model" Style="{StaticResource T.CardTitle}"/>
+                            <TextBlock Text="Select or type the active Gemini model used for automated rubric evaluation, code checking, and exam import. The system connects using the institution's shared API credentials."
+                                       Style="{StaticResource T.CardDesc}"/>
+
+                            <!-- Inline Notification Banner -->
+                            <Border x:Name="GeminiAlertBanner" CornerRadius="6" Padding="12,8" Margin="0,0,0,14" Visibility="Collapsed">
+                                <TextBlock x:Name="GeminiAlertText" FontSize="12" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- Gemini Model Selection -->
+                            <TextBlock Text="Active Gemini Model" Style="{StaticResource T.FieldLabel}"/>
+                            <ComboBox x:Name="GeminiModelBox"
+                                      IsEditable="True"
+                                      Height="38"
+                                      Margin="0,0,0,16"
+                                      FontSize="13"
+                                      VerticalContentAlignment="Center">
+                                <ComboBoxItem Content="gemini-2.5-flash"/>
+                                <ComboBoxItem Content="gemini-3.6-flash"/>
+                                <ComboBoxItem Content="gemini-2.0-flash"/>
+                                <ComboBoxItem Content="gemini-1.5-flash"/>
+                                <ComboBoxItem Content="gemini-1.5-pro"/>
+                            </ComboBox>
+
+                            <!-- Inline Action Buttons -->
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="TestGeminiBtn" Style="{StaticResource Btn.Secondary}"
+                                        Content="Test Model Connection" Margin="0,0,10,0" Click="TestGemini_Click"/>
+                                <Button Style="{StaticResource Btn.Primary}"
+                                        Content="Save Model" Click="SaveModel_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ─────────────────────────────────────────────
+                         SECTION 3: GRADING CUTOFFS & THRESHOLDS
+                    ───────────────────────────────────────────── -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="ACADEMIC POLICIES" Style="{StaticResource T.SectionLabel}"/>
+                            <TextBlock Text="Grading Cutoffs &amp; Thresholds" Style="{StaticResource T.CardTitle}"/>
+                            <TextBlock Text="Configure class performance bands, passing benchmark, and the integrity flag cap used in reports."
+                                       Style="{StaticResource T.CardDesc}"/>
+
+                            <!-- Inline Notification Banner -->
+                            <Border x:Name="GradingAlertBanner" CornerRadius="6" Padding="12,8" Margin="0,0,0,14" Visibility="Collapsed">
+                                <TextBlock x:Name="GradingAlertText" FontSize="12" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Passing Grade (%)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="PassingGradeBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Excellent (%)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="ExcellentBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Good (%)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="GoodBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="6">
+                                    <TextBlock Text="Fair (%)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="FairBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="8">
+                                    <TextBlock Text="Flag Cap (Max)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="FlagCapBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="* Validation Rule: Excellent > Good > Fair >= Passing (values between 0% and 100%)."
+                                       FontSize="11" Foreground="{StaticResource Text.Muted}" Margin="0,0,0,16"/>
+
+                            <Button Style="{StaticResource Btn.Primary}" Content="Save Grading Thresholds"
+                                    HorizontalAlignment="Left" Click="SaveGrading_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ─────────────────────────────────────────────
+                         SECTION 4: MONITORING SENSITIVITY
+                    ───────────────────────────────────────────── -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="PROCTORING &amp; AUDIT ENGINE" Style="{StaticResource T.SectionLabel}"/>
+                            <TextBlock Text="Monitoring Sensitivity" Style="{StaticResource T.CardTitle}"/>
+                            <TextBlock Text="Configure computer-vision proctoring tolerances, alert intervals, and cheating score decay rate."
+                                       Style="{StaticResource T.CardDesc}"/>
+
+                            <!-- Inline Notification Banner -->
+                            <Border x:Name="MonitoringAlertBanner" CornerRadius="6" Padding="12,8" Margin="0,0,0,14" Visibility="Collapsed">
+                                <TextBlock x:Name="MonitoringAlertText" FontSize="12" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="14"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="14"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock Text="Head Yaw Threshold (°)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="YawThresholdBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="2">
+                                    <TextBlock Text="Head Pitch Threshold (°)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="PitchThresholdBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="4">
+                                    <TextBlock Text="No-Face Frames" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="NoFaceFramesBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2" Grid.Column="0">
+                                    <TextBlock Text="Wiggle Room Frames" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="WiggleFramesBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2" Grid.Column="2">
+                                    <TextBlock Text="Alert Cooldown (sec)" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="AlertCooldownBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2" Grid.Column="4">
+                                    <TextBlock Text="Score Decay Rate" Style="{StaticResource T.FieldLabel}"/>
+                                    <TextBox x:Name="DecayRateBox" Style="{StaticResource Input.Field}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource Btn.Primary}" Content="Save Sensitivity Settings"
+                                        Margin="0,0,10,0" Click="SaveMonitoring_Click"/>
+                                <Button Style="{StaticResource Btn.Secondary}" Content="Reset to Defaults"
+                                        Click="ResetMonitoringDefaults_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+        </Grid>
+    </Grid>
+</UserControl>

@@ -129,17 +129,15 @@
             <StackPanel Margin="36,32,36,32">
 
                 <!-- Brand mark -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
-                    <Border Width="36" Height="36" Background="#1A202C" CornerRadius="8" Margin="0,0,10,0">
-                        <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="ACPAMS" FontSize="20" FontWeight="Bold"
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="-8,0,0,24">
+                    <Image Source="/FINAL LOGO.ico" Width="36" Height="36" Margin="-8,0,6,0"
+                           RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                    <TextBlock Text="AI-CAMS" FontSize="20" FontWeight="Bold"
                                Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Heading -->
-                <TextBlock Text="Welcome to ACPAMS" FontSize="20" FontWeight="Bold"
+                <TextBlock Text="Welcome to AI-CAMS" FontSize="20" FontWeight="Bold"
                            Foreground="{StaticResource Text.Primary}" Margin="0,0,0,4"/>
                 <TextBlock Text="Please log in to continue" FontSize="13"
                            Foreground="{StaticResource Text.Muted}" Margin="0,0,0,24"/>

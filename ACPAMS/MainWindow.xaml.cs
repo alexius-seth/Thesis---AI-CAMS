@@ -18,6 +18,8 @@ namespace ACPAMS
         private MonitoringTab _monitoringControl;
         private ReportsTab _reportsControl;
         private GradingTab _gradingControl;
+        private FacultySettingsPage? _settingsPage;
+        private ArchivedExamsPage? _archivedExamsPage;
         private string _selectedTaskCategory = "Examination";
 
         // ─── Navigation history ──────────────────────────────────────
@@ -89,6 +91,20 @@ namespace ACPAMS
             if (_gradingControl == null)
                 _gradingControl = new GradingTab();
             ShowPage(_gradingControl);
+        }
+
+        public void NavigateToSettings()
+        {
+            if (_settingsPage == null)
+                _settingsPage = new FacultySettingsPage();
+            ShowPage(_settingsPage);
+        }
+
+        public void NavigateToArchivedExams()
+        {
+            if (_archivedExamsPage == null)
+                _archivedExamsPage = new ArchivedExamsPage();
+            ShowPage(_archivedExamsPage);
         }
 
         public void ShowTaskCategoryModal()
@@ -170,6 +186,16 @@ namespace ACPAMS
         public static void NavigateToGradingStatic()
         {
             Instance?.NavigateToGrading();
+        }
+
+        public static void NavigateToSettingsStatic()
+        {
+            Instance?.NavigateToSettings();
+        }
+
+        public static void NavigateToArchivedExamsStatic()
+        {
+            Instance?.NavigateToArchivedExams();
         }
 
         public static void NavigateToStudentReport(Guid attemptId)

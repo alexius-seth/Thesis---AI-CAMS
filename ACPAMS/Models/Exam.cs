@@ -50,6 +50,13 @@ namespace ACPAMS.Models
         public string Status { get; set; } = "draft";
         // Values: "draft" | "active" | "archived"
 
+        [NotMapped]
+        public bool IsArchived
+        {
+            get => Status == "archived";
+            set => Status = value ? "archived" : "active";
+        }
+
         [Column("instructions")]
         public string? Instructions { get; set; }
 

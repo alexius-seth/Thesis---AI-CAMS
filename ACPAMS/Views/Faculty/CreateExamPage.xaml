@@ -479,14 +479,10 @@
                 <Border DockPanel.Dock="Top" Padding="20,18,20,16"
                         BorderBrush="{StaticResource Border.Subtle}" BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="34" Height="34" Background="#1A202C"
-                                CornerRadius="6" Margin="0,0,10,0">
-                            <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                       Foreground="White" HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
-                        </Border>
+                        <Image Source="/FINAL LOGO.ico" Width="32" Height="32" Margin="0,0,10,0"
+                               RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="ACPAMS" FontSize="15" FontWeight="Bold"
+                            <TextBlock Text="AI-CAMS" FontSize="15" FontWeight="Bold"
                                        Foreground="{StaticResource Text.Primary}"/>
                             <TextBlock Text="Computer Studies" FontSize="10"
                                        Foreground="{StaticResource Text.Muted}"/>

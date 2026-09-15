@@ -383,6 +383,9 @@
                                                                                Foreground="{StaticResource Text.Primary}"/>
                                                                     <TextBlock Text="{Binding PcLabel}"
                                                                                FontSize="11"
+                                                                               TextTrimming="CharacterEllipsis"
+                                                                               MaxWidth="160"
+                                                                               ToolTip="{Binding PcLabel}"
                                                                                Foreground="{StaticResource Text.Muted}"/>
                                                                 </StackPanel>
                                                             </StackPanel>

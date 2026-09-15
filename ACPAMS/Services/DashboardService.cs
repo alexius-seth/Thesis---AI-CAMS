@@ -38,6 +38,7 @@ namespace ACPAMS.Services
             var exam = await context.Exams
                 .Include(e => e.Attempts)
                 .Where(e => e.InstructorId == instructorId)
+                .Where(e => e.Status != "archived")
                 .Where(e => e.Attempts.Any(a => a.Status == "in_progress"))
                 .OrderByDescending(e => e.CreatedAt)
                 .FirstOrDefaultAsync();
@@ -162,9 +163,9 @@ namespace ACPAMS.Services
             {
                 double pct = maxExamPoints > 0 ? (double)(attempt.TotalScore!.Value / maxExamPoints) * 100 : 0;
 
-                if (pct >= 90) dist.Band90to100++;
-                else if (pct >= 80) dist.Band80to89++;
-                else if (pct >= 70) dist.Band70to79++;
+                if (pct >= (double)AppSettingsService.ExcellentThreshold) dist.Band90to100++;
+                else if (pct >= (double)AppSettingsService.GoodThreshold) dist.Band80to89++;
+                else if (pct >= (double)AppSettingsService.FairThreshold) dist.Band70to79++;
                 else dist.BelowSeventy++;
             }
 
@@ -174,9 +175,7 @@ namespace ACPAMS.Services
         // ── Class Pass Rate + Average Score KPIs ──────────────────────
         // Both are computed as a % of the exam's maximum possible score,
         // across every attempt that already has a final TotalScore.
-        // Passing threshold is a guess (75%, common in PH grading) —
-        // adjust PASSING_PERCENT below if your actual cutoff differs.
-        private const decimal PASSING_PERCENT = 75m;
+        private static decimal PASSING_PERCENT => AppSettingsService.PassingGrade;
 
         public async Task<ClassSummaryDto> GetClassSummaryAsync(Guid examId)
         {

@@ -51,9 +51,9 @@ namespace ACPAMS.Services
         private Guid _attemptId;
         private int _noFaceFrameCount = 0;
         private int _multiFaceFrameCount = 0;
-        private const int FRAME_THRESHOLD = 45;
-        private const double YAW_THRESHOLD = 25.0;
-        private const double PITCH_THRESHOLD = 20.0;
+        private static int FRAME_THRESHOLD => AppSettingsService.NoFaceFrameThreshold;
+        private static double YAW_THRESHOLD => AppSettingsService.HeadYawThreshold;
+        private static double PITCH_THRESHOLD => AppSettingsService.HeadPitchThreshold;
         private const double EAR_THRESHOLD = 0.20;
         private const int GAZE_DIVERTED_THRESHOLD = 45;
         private int _gazeDivertedFrameCount = 0;
@@ -61,18 +61,18 @@ namespace ACPAMS.Services
         // ── Cheating Score System ─────────────────────────────────────────
         private double _cheatingScore = 0.0;
         private const double MAX_SCORE = 100.0;
-        private const double SCORE_DECAY_RATE = 0.02;
+        private static double SCORE_DECAY_RATE => AppSettingsService.ScoreDecayRate;
         private const double BASE_SCORE_INCREMENT = 0.5;
         private const double EXPONENT_BASE = 1.08;
 
-        private const int WIGGLE_ROOM_FRAMES = 60;
+        private static int WIGGLE_ROOM_FRAMES => AppSettingsService.WiggleRoomFrames;
         private int _lookingAwayFrameCount = 0;
         private int _lookingAtScreenFrameCount = 0;
         private bool _inPenaltyZone = false;
         private int _penaltyFrameCount = 0;
 
         private readonly Dictionary<SuspiciousEventType, DateTime> _lastAlertTime = new();
-        private const int ALERT_COOLDOWN_SECONDS = 10;
+        private static int ALERT_COOLDOWN_SECONDS => AppSettingsService.AlertCooldownSeconds;
 
         // ── 3D model points for head pose estimation ──────────────────────
         private readonly double[,] _modelPoints = new double[,]
@@ -629,7 +629,7 @@ namespace ACPAMS.Services
                     StudentInitials = attempt.Student != null
                         ? $"{attempt.Student.FirstName[0]}.{attempt.Student.LastName[0]}"
                         : "??",
-                    Station = attempt.IpAddress ?? "N/A",
+                    DeviceName = !string.IsNullOrWhiteSpace(attempt.DeviceInfo) ? attempt.DeviceInfo : (attempt.IpAddress ?? "N/A"),
                     Status = attempt.Status ?? "in_progress",
                     StartedAt = attempt.StartedAt ?? DateTime.Now,
                     RiskLevel = riskLevel,
@@ -748,7 +748,9 @@ namespace ACPAMS.Services
             public Guid AttemptId { get; set; }
             public string StudentName { get; set; } = string.Empty;
             public string StudentInitials { get; set; } = string.Empty;
-            public string Station { get; set; } = string.Empty;
+            public string DeviceName { get; set; } = string.Empty;
+            public string HostName => DeviceName;
+            public string Station { get => DeviceName; set => DeviceName = value; }
             public string Status { get; set; } = "in_progress";
             public DateTime StartedAt { get; set; }
             public string RiskLevel { get; set; } = "low";

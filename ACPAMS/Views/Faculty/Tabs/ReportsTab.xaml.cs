@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using ACPAMS.Data;
 using ACPAMS.Services;
 using ACPAMS.Views.Faculty;
 
@@ -25,6 +27,10 @@ namespace ACPAMS.Views.Faculty.Tabs
         // which of the two selection paths produced it.
         private Guid? EffectiveExamId => _examId ?? _selectedGenericExamId;
         private readonly DispatcherTimer _autoRefreshTimer;
+
+        private ReportsSummaryDto? _lastSummary;
+        private List<SectionAverageDto>? _lastSectionAverages;
+        private string _currentExamTitle = "Exam Report";
 
         public ReportsTab() : this(null) { }
 
@@ -81,6 +87,14 @@ namespace ACPAMS.Views.Faculty.Tabs
                 StatisticsSections.Visibility = Visibility.Visible;
 
                 summary = await service.GetSummaryForExamAsync(_examId.Value);
+
+                if (_currentExamTitle == "Exam Report")
+                {
+                    using var db = new AppDbContext();
+                    var exam = await db.Exams.FindAsync(_examId.Value);
+                    if (exam != null)
+                        _currentExamTitle = exam.ExamName ?? exam.Title ?? "Exam Report";
+                }
             }
             else
             {
@@ -113,6 +127,8 @@ namespace ACPAMS.Views.Faculty.Tabs
                 StatisticsSections.Visibility = Visibility.Visible;
                 summary = await service.GetSummaryForExamAsync(_selectedGenericExamId.Value);
             }
+
+            _lastSummary = summary;
 
             // ── KPIs ──
             if (summary.HasClassAverage)
@@ -162,6 +178,7 @@ namespace ACPAMS.Views.Faculty.Tabs
             }
 
             var sectionAverages = await service.GetSectionAveragesForExamAsync(EffectiveExamId.Value);
+            _lastSectionAverages = sectionAverages;
             var withData = sectionAverages.Where(s => s.HasData).ToList();
 
             if (withData.Count == 0)
@@ -392,7 +409,39 @@ namespace ACPAMS.Views.Faculty.Tabs
             if (ExamSelectorCombo.SelectedItem is ExamOptionDto selected)
             {
                 _selectedGenericExamId = selected.ExamId;
+                _currentExamTitle = selected.Title;
                 await LoadReportsAsync();
+            }
+        }
+
+        private void ExportClassPdf_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lastSummary == null || (_lastSummary.TotalAttempts == 0 && _lastSummary.Rows.Count == 0))
+            {
+                MessageBox.Show("No class report data available to export.", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var instructor = SessionManager.CurrentInstructor;
+            string instructorName = instructor != null ? $"{instructor.FirstName} {instructor.LastName}" : "Faculty Instructor";
+
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PDF Document (*.pdf)|*.pdf",
+                FileName = $"{(string.IsNullOrWhiteSpace(_currentExamTitle) ? "Exam" : _currentExamTitle.Replace(" ", "_"))}_Class_Report.pdf"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    PdfExportService.ExportClassReport(_lastSummary, _lastSectionAverages, _currentExamTitle, instructorName, saveDialog.FileName);
+                    MessageBox.Show("Class performance report exported successfully!", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to export PDF: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 

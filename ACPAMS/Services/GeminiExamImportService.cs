@@ -27,8 +27,8 @@ namespace ACPAMS.Services
         // stops being a manual-sync problem. Check
         // https://ai.google.dev/gemini-api/docs/changelog for the current
         // model name if this ever 404s/403s.
-        private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
+        private static string ModelEndpoint =>
+            $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
 
         private static readonly HttpClient _http = new();
 

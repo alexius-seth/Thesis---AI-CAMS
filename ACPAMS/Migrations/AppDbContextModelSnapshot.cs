@@ -811,6 +811,11 @@ namespace ACPAMS.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("user_id");
 
+                    b.Property<string>("YearLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("year_level");
+
                     b.HasKey("StudentId");
 
                     b.HasIndex("UserId")

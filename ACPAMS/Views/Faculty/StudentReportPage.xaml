@@ -184,13 +184,20 @@
         <StackPanel Margin="32,24,32,40">
 
             <!-- HEADER WITH BACK BUTTON -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Button Style="{StaticResource Btn.Outlined}" Content="← Back to Monitoring" Click="BackToMonitoring_Click" Padding="16,8"/>
-                <TextBlock Text="STUDENT FULL REPORT" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center" Margin="20,0,0,0"/>
-                <Border Background="{StaticResource Accent.PrimaryBg}" BorderBrush="{StaticResource Accent.Primary}" BorderThickness="1" CornerRadius="4" Padding="10,3" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Report.ExamCode}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Accent.Primary}"/>
-                </Border>
-            </StackPanel>
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <Button Style="{StaticResource Btn.Outlined}" Content="← Back to Monitoring" Click="BackToMonitoring_Click" Padding="16,8"/>
+                    <TextBlock Text="STUDENT FULL REPORT" Style="{StaticResource T.SectionLabel}" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                    <Border Background="{StaticResource Accent.PrimaryBg}" BorderBrush="{StaticResource Accent.Primary}" BorderThickness="1" CornerRadius="4" Padding="10,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Report.ExamCode}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Accent.Primary}"/>
+                    </Border>
+                </StackPanel>
+                <Button Grid.Column="1" Style="{StaticResource Btn.Primary}" Content="📄 Export PDF" Click="ExportPdf_Click" Padding="16,8"/>
+            </Grid>
 
             <!-- STUDENT PROFILE HEADER -->
             <Border Style="{StaticResource Card}" Padding="24,20" Margin="0,0,0,24">
@@ -690,7 +697,7 @@
 
             <!-- EXPORT BUTTONS -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-                <Button Style="{StaticResource Btn.Outlined}" Content="📄 Export PDF" Margin="0,0,8,0" Padding="16,8"/>
+                <Button Style="{StaticResource Btn.Outlined}" Content="📄 Export PDF" Margin="0,0,8,0" Padding="16,8" Click="ExportPdf_Click"/>
                 <Button Style="{StaticResource Btn.Outlined}" Content="📋 Copy Report" Padding="16,8"/>
             </StackPanel>
 

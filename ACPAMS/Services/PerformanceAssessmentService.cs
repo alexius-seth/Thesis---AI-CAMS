@@ -28,10 +28,10 @@ namespace ACPAMS.Services
     /// </summary>
     public class PerformanceAssessmentService
     {
-        // Must match GeminiRubricGradingService.ModelEndpoint / AiJobService.GeminiModelName.
-        private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
-        private const string GeminiModelName = "gemini-3.5-flash";
+        // Dynamic model configured in Faculty Settings
+        private static string ModelEndpoint =>
+            $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
+        private static string GeminiModelName => AppSettingsService.GetGeminiModel();
 
         private static readonly HttpClient _http = new();
 

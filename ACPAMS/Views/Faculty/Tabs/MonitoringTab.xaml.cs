@@ -211,7 +211,11 @@ namespace ACPAMS.Views.Faculty.Tabs
             if (name != null) name.Text = student.StudentName;
 
             var info = FindName("SelectedStudentInfo") as TextBlock;
-            if (info != null) info.Text = $"{student.Station} · {student.FlagCount} flags";
+            if (info != null)
+            {
+                info.Text = $"{student.DeviceName} · {student.FlagCount} flags";
+                info.ToolTip = student.DeviceName;
+            }
 
             var riskBadge = FindName("SelectedRiskBadge") as Border;
             var riskText = FindName("SelectedRiskText") as TextBlock;

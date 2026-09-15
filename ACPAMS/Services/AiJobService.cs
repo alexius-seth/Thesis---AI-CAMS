@@ -18,9 +18,8 @@ namespace ACPAMS.Services
     /// </summary>
     public class AiJobService
     {
-        // Must match GeminiRubricGradingService.ModelEndpoint — see that file's
-        // comment for the model history and when this will need to change again.
-        private const string GeminiModelName = "gemini-3.5-flash";
+        // Dynamic Gemini model configured in Faculty Settings
+        private static string GeminiModelName => AppSettingsService.GetGeminiModel();
         private const int MaxAttempts = 3; // retry a failed job up to this many times before giving up
 
         // If the app (or debugger) gets closed/restarted while a job is

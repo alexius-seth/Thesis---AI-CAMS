@@ -26,8 +26,8 @@ namespace ACPAMS.Services
         // AiJobService.GeminiModelName) — and if it's a 403 specifically,
         // check Google Cloud Console billing/API-enablement first, since
         // that's an account issue, not a code issue.
-        private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
+        private static string ModelEndpoint =>
+            $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
 
         private static readonly HttpClient _http = new();
 

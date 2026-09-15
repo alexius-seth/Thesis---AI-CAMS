@@ -42,9 +42,49 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="Btn.HeaderIcon" TargetType="Button">
+            <Setter Property="Background"      Value="White"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width"           Value="36"/>
+            <Setter Property="Height"          Value="36"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{StaticResource Border.Medium}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#E2E8F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid Background="#EEF2F7">
+        <!-- Top-Right Header Actions -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,20,0">
+            <Button x:Name="ProfileBtn" Style="{StaticResource Btn.HeaderIcon}" Click="ProfileBtn_Click" ToolTip="Student Profile">
+                <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{StaticResource Text.Secondary}"/>
+            </Button>
+            <Button x:Name="LogOutBtn" Style="{StaticResource Btn.HeaderIcon}" Click="LogOutBtn_Click" ToolTip="Log Out" Margin="6,0,0,0">
+                <TextBlock Text="&#xF3B1;" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{StaticResource Text.Secondary}"/>
+            </Button>
+        </StackPanel>
+
         <Border Background="{StaticResource Bg.Surface}"
                 BorderBrush="{StaticResource Border.Subtle}"
                 BorderThickness="1" CornerRadius="12"
@@ -54,11 +94,9 @@
             </Border.Effect>
             <StackPanel Margin="36,32,36,32">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
-                    <Border Width="36" Height="36" Background="#1A202C" CornerRadius="8" Margin="0,0,10,0">
-                        <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="ACPAMS" FontSize="20" FontWeight="Bold"
+                    <Image Source="/FINAL LOGO.ico" Width="36" Height="36" Margin="0,0,10,0"
+                           RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                    <TextBlock Text="AI-CAMS" FontSize="20" FontWeight="Bold"
                                Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                 </StackPanel>
                 <TextBlock FontSize="20" FontWeight="Bold"

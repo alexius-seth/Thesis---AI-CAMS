@@ -112,6 +112,11 @@ namespace ACPAMS.Views.Faculty
             MainWindow.NavigateToCreateExamStatic();
         }
 
+        private void NavigateToArchivedExams(object sender, RoutedEventArgs e)
+        {
+            MainWindow.NavigateToArchivedExamsStatic();
+        }
+
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
             // Already here - do nothing
@@ -141,6 +146,18 @@ namespace ACPAMS.Views.Faculty
             {
                 ToastNotification.Show("No exam selected to grade", Application.Current.MainWindow, 3);
             }
+        }
+
+        private void NavigateToSettings(object sender, RoutedEventArgs e)
+        {
+            MainWindow.NavigateToSettingsStatic();
+        }
+
+        private void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            SessionManager.Clear();
+            MainWindow.Resize(520, 600);
+            MainWindow.Navigate(new Views.Auth.LoginPage());
         }
     }
 }

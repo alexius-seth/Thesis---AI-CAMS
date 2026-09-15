@@ -227,5 +227,27 @@ namespace ACPAMS.Views.Faculty
                 if (sender is Button btn) btn.IsEnabled = true;
             }
         }
+
+        private void ExportPdf_Click(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PDF Document (*.pdf)|*.pdf",
+                FileName = $"{(string.IsNullOrWhiteSpace(Report.StudentName) ? "Student" : Report.StudentName.Replace(" ", "_"))}_{(string.IsNullOrWhiteSpace(Report.ExamCode) ? "Exam" : Report.ExamCode)}_Report.pdf"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    PdfExportService.ExportStudentReport(Report, saveDialog.FileName);
+                    MessageBox.Show("Student performance report exported successfully!", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to export PDF: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }

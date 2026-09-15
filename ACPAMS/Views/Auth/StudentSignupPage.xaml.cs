@@ -1,4 +1,4 @@
-﻿using ACPAMS.Data;
+using ACPAMS.Data;
 using ACPAMS.Models;
 using ACPAMS.Services;
 using System;
@@ -17,7 +17,7 @@ namespace ACPAMS.Views.Auth
         {
             InitializeComponent();
             _authService = new AuthService();
-            ACPAMS.MainWindow.Resize(520, 680);
+            ACPAMS.MainWindow.Resize(520, 740);
         }
 
         private async void SignUpButton_Click(object sender, RoutedEventArgs e)
@@ -39,10 +39,18 @@ namespace ACPAMS.Views.Auth
             }
 
             string program = (ProgramBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? string.Empty;
+            string yearLevel = (YearLevelBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? string.Empty;
 
             if (string.IsNullOrEmpty(program))
             {
                 MessageBox.Show("Please select your program.",
+                    "Missing Fields", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(yearLevel))
+            {
+                MessageBox.Show("Please select your year level.",
                     "Missing Fields", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -88,6 +96,7 @@ namespace ACPAMS.Views.Auth
                     LastName = lastName,
                     MiddleInitial = string.IsNullOrEmpty(middleInitial) ? null : middleInitial,
                     Program = program,
+                    YearLevel = yearLevel,
                     CreatedAt = DateTime.Now
                 };
 

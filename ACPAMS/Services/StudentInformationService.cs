@@ -8,10 +8,9 @@ namespace ACPAMS.Services
     {
         // Placeholder thresholds — same category of "sensitive, needs
         // institutional/client policy input" as the Pass/Fail status
-        // decision your team already flagged. Do not treat as final.
-        private const decimal ExcellentThreshold = 90m;
-        private const decimal GoodThreshold = 80m;
-        private const decimal FairThreshold = 70m;
+        private static decimal ExcellentThreshold => AppSettingsService.ExcellentThreshold;
+        private static decimal GoodThreshold => AppSettingsService.GoodThreshold;
+        private static decimal FairThreshold => AppSettingsService.FairThreshold;
 
         public async Task<StudentProfileSummaryDto> GetStudentProfileSummaryAsync(string studentId)
         {
@@ -97,13 +96,13 @@ namespace ACPAMS.Services
             return result;
         }
 
-        private static string GetStanding(decimal averagePercent) => averagePercent switch
+        private static string GetStanding(decimal averagePercent)
         {
-            >= ExcellentThreshold => "Excellent",
-            >= GoodThreshold => "Good",
-            >= FairThreshold => "Fair",
-            _ => "Needs Improvement"
-        };
+            if (averagePercent >= ExcellentThreshold) return "Excellent";
+            if (averagePercent >= GoodThreshold) return "Good";
+            if (averagePercent >= FairThreshold) return "Fair";
+            return "Needs Improvement";
+        }
 
         private static string FormatQuestionType(string type) => type switch
         {

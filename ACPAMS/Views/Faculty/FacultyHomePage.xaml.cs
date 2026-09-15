@@ -84,6 +84,11 @@ namespace ACPAMS.Views.Faculty
             MainWindow.NavigateToDashboardStatic();
         }
 
+        private void OpenArchivedExamsPage(object sender, RoutedEventArgs e)
+        {
+            MainWindow.NavigateToArchivedExamsStatic();
+        }
+
         private void OpenCreateExamPage(object sender, RoutedEventArgs e)
         {
             try
@@ -132,6 +137,18 @@ namespace ACPAMS.Views.Faculty
                 Owner = Window.GetWindow(this)
             };
             modal.ShowDialog();
+        }
+
+        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            MainWindow.NavigateToSettingsStatic();
+        }
+
+        private void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            SessionManager.Clear();
+            MainWindow.Resize(520, 600);
+            MainWindow.Navigate(new Views.Auth.LoginPage());
         }
     }
 }
