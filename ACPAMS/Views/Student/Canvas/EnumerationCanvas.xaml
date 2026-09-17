@@ -39,18 +39,18 @@
                         BorderBrush="{StaticResource QType.Enum}"
                         BorderThickness="1" CornerRadius="4" Padding="8,3"
                         Margin="0,0,10,0">
-                    <TextBlock Text="Enumeration" FontSize="10" FontWeight="Bold"
+                    <TextBlock x:Name="TypeBadgeText" Text="Enumeration" FontSize="10" FontWeight="Bold"
                                Foreground="{StaticResource QType.Enum}"/>
                 </Border>
                 <Border Background="{StaticResource Accent.PrimaryBg}"
                         BorderBrush="{StaticResource Accent.Primary}"
                         BorderThickness="1" CornerRadius="4" Padding="8,3">
-                    <TextBlock Text="10 pts" FontSize="10" FontWeight="Bold"
+                    <TextBlock x:Name="PointsText" Text="10 pts" FontSize="10" FontWeight="Bold"
                                Foreground="{StaticResource Accent.Primary}"/>
                 </Border>
             </StackPanel>
 
-            <TextBlock Text="Question 1 of 3"
+            <TextBlock x:Name="QuestionNumberText" Text="Question 1 of 3"
                        FontSize="11" Foreground="{StaticResource Text.Muted}"
                        Margin="0,0,0,10"/>
 
@@ -60,11 +60,10 @@
             <!-- Question text -->
             <TextBlock x:Name="QuestionText" TextWrapping="Wrap" Margin="0,0,0,8"
                        FontSize="16" LineHeight="26"
-                       Foreground="{StaticResource Text.Primary}"
-                       Text="List three core principles of Object-Oriented Programming."/>
-            <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}"
+                       Foreground="{StaticResource Text.Primary}"/>
+            <TextBlock x:Name="QuestionSubtext" FontSize="11" Foreground="{StaticResource Text.Muted}"
                        Margin="0,0,0,24"
-                       Text="List them in any order. Each correct item is worth 3.3 pts."/>
+                       Text="List them in any order."/>
 
             <!-- Enumeration items -->
             <TextBlock Text="YOUR ANSWERS"
@@ -72,68 +71,13 @@
                        Foreground="{StaticResource Text.Muted}"
                        Margin="0,0,0,14"/>
 
-            <!-- Item 1 -->
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="36"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
-                        Background="{StaticResource Accent.Primary}"
-                        VerticalAlignment="Center" Margin="0,0,10,0">
-                    <TextBlock Text="1" FontSize="13" FontWeight="Bold"
-                               Foreground="White" HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Border>
-                <Border Grid.Column="1"
-                        Background="{StaticResource Bg.Surface}"
-                        BorderBrush="{StaticResource Border.Medium}"
-                        BorderThickness="1" CornerRadius="6" Height="40">
-                    <TextBox x:Name="Answer1Box" Style="{StaticResource Input.EnumItem}"/>
-                </Border>
-            </Grid>
+            <StackPanel x:Name="AnswersContainer"/>
 
-            <!-- Item 2 -->
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="36"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
-                        Background="{StaticResource Accent.Primary}"
-                        VerticalAlignment="Center" Margin="0,0,10,0">
-                    <TextBlock Text="2" FontSize="13" FontWeight="Bold"
-                               Foreground="White" HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Border>
-                <Border Grid.Column="1"
-                        Background="{StaticResource Bg.Surface}"
-                        BorderBrush="{StaticResource Border.Medium}"
-                        BorderThickness="1" CornerRadius="6" Height="40">
-                    <TextBox x:Name="Answer2Box" Style="{StaticResource Input.EnumItem}"/>
-                </Border>
-            </Grid>
-
-            <!-- Item 3 -->
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="36"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
-                        Background="{StaticResource Accent.Primary}"
-                        VerticalAlignment="Center" Margin="0,0,10,0">
-                    <TextBlock Text="3" FontSize="13" FontWeight="Bold"
-                               Foreground="White" HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Border>
-                <Border Grid.Column="1"
-                        Background="{StaticResource Bg.Surface}"
-                        BorderBrush="{StaticResource Border.Medium}"
-                        BorderThickness="1" CornerRadius="6" Height="40">
-                    <TextBox x:Name="Answer3Box" Style="{StaticResource Input.EnumItem}"/>
-                </Border>
-            </Grid>
+            <Button x:Name="AddAnswerBtn" Content="+ Add another item"
+                    HorizontalAlignment="Left" Margin="0,4,0,0"
+                    Background="Transparent" BorderThickness="0"
+                    Foreground="{StaticResource Accent.Primary}"
+                    FontWeight="SemiBold" Cursor="Hand"/>
 
         </StackPanel>
     </ScrollViewer>

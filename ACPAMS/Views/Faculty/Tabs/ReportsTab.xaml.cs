@@ -93,7 +93,7 @@ namespace ACPAMS.Views.Faculty.Tabs
                     using var db = new AppDbContext();
                     var exam = await db.Exams.FindAsync(_examId.Value);
                     if (exam != null)
-                        _currentExamTitle = exam.ExamName ?? exam.Title ?? "Exam Report";
+                        _currentExamTitle = exam.ExamName ?? "Exam Report";
                 }
             }
             else

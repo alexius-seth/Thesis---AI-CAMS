@@ -185,20 +185,50 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        // ─── Section 2: Gemini Model ────────────────────────────────────────
+        // ─── Section 2: Gemini Model & API Key ─────────────────────────────
+
+        private bool _isKeyRevealed = false;
 
         private void LoadGeminiModel()
         {
             GeminiModelBox.Text = AppSettingsService.GetGeminiModel();
+            string key = AppSettingsService.GetGeminiApiKey();
+            if (!string.IsNullOrEmpty(key))
+            {
+                GeminiApiKeyBox.Password = key;
+                GeminiApiKeyPlainBox.Text = key;
+            }
+        }
+
+        private void ToggleApiKeyVisibility_Click(object sender, RoutedEventArgs e)
+        {
+            _isKeyRevealed = !_isKeyRevealed;
+            if (_isKeyRevealed)
+            {
+                GeminiApiKeyPlainBox.Text = GeminiApiKeyBox.Password;
+                GeminiApiKeyBox.Visibility = Visibility.Collapsed;
+                GeminiApiKeyPlainBox.Visibility = Visibility.Visible;
+                ToggleApiKeyVisibilityBtn.Content = "🙈 Hide";
+            }
+            else
+            {
+                GeminiApiKeyBox.Password = GeminiApiKeyPlainBox.Text;
+                GeminiApiKeyPlainBox.Visibility = Visibility.Collapsed;
+                GeminiApiKeyBox.Visibility = Visibility.Visible;
+                ToggleApiKeyVisibilityBtn.Content = "👁 Show";
+            }
         }
 
         private async void TestGemini_Click(object sender, RoutedEventArgs e)
         {
-            string key = AppSettingsService.GetGeminiApiKey();
+            string key = _isKeyRevealed ? GeminiApiKeyPlainBox.Text.Trim() : GeminiApiKeyBox.Password.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+                key = AppSettingsService.GetGeminiApiKey();
+
             string model = GeminiModelBox.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(key))
             {
-                ShowAlert(GeminiAlertBanner, GeminiAlertText, "No Gemini API key found in system configuration. Please configure it in appsettings.json or secure storage.", false);
+                ShowAlert(GeminiAlertBanner, GeminiAlertText, "Please enter an API key to test the connection.", false);
                 return;
             }
 
@@ -213,13 +243,15 @@ namespace ACPAMS.Views.Faculty
             finally
             {
                 TestGeminiBtn.IsEnabled = true;
-                TestGeminiBtn.Content = "Test Model Connection";
+                TestGeminiBtn.Content = "Test Connection";
             }
         }
 
         private async void SaveModel_Click(object sender, RoutedEventArgs e)
         {
             string model = GeminiModelBox.Text?.Trim() ?? string.Empty;
+            string key = _isKeyRevealed ? GeminiApiKeyPlainBox.Text.Trim() : GeminiApiKeyBox.Password.Trim();
+
             if (string.IsNullOrWhiteSpace(model))
             {
                 ShowAlert(GeminiAlertBanner, GeminiAlertText, "Model name cannot be empty.", false);
@@ -230,6 +262,11 @@ namespace ACPAMS.Views.Faculty
             {
                 AppSettingsService.SaveGeminiModel(model);
 
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    AppSettingsService.SaveGeminiApiKey(key);
+                }
+
                 var currentUser = SessionManager.CurrentUser;
                 if (currentUser != null)
                 {
@@ -237,7 +274,7 @@ namespace ACPAMS.Views.Faculty
                     db.AuditLogs.Add(new AuditLog
                     {
                         UserId = currentUser.UserId,
-                        Action = "UpdateGeminiModel",
+                        Action = "UpdateGeminiConfig",
                         EntityType = "SystemConfiguration",
                         Details = $"Status: Success. Active Gemini model updated to '{model}'.",
                         CreatedAt = DateTime.Now
@@ -245,11 +282,11 @@ namespace ACPAMS.Views.Faculty
                     await db.SaveChangesAsync();
                 }
 
-                ShowAlert(GeminiAlertBanner, GeminiAlertText, $"Active Gemini model saved as '{model}'.", true);
+                ShowAlert(GeminiAlertBanner, GeminiAlertText, $"AI settings saved successfully (Model: {model}).", true);
             }
             catch (Exception ex)
             {
-                ShowAlert(GeminiAlertBanner, GeminiAlertText, $"Error saving model: {ex.Message}", false);
+                ShowAlert(GeminiAlertBanner, GeminiAlertText, $"Error saving AI settings: {ex.Message}", false);
             }
         }
 

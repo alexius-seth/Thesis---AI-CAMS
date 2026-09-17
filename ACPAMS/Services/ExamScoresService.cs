@@ -45,7 +45,7 @@ namespace ACPAMS.Services
 
             var result = new ExamScoresSummaryDto
             {
-                ExamTitle = exam?.Title ?? exam?.ExamName ?? "Untitled Exam",
+                ExamTitle = exam?.ExamName ?? "Untitled Exam",
                 SectionNames = sectionNames,
                 TotalTestTakers = attempts.Count
             };

@@ -68,6 +68,5 @@ namespace ACPAMS.Models
         [ForeignKey("ExamId")]
         public Exam? Exam { get; set; }
         public ICollection<StudentAnswer> Answers { get; set; } = new List<StudentAnswer>();
-        public ICollection<ExamAttemptLog> Logs { get; set; } = new List<ExamAttemptLog>();
     }
 }

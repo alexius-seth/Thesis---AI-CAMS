@@ -69,11 +69,12 @@ namespace ACPAMS.Services
 
                 result.AssessmentRecords.Add(new AssessmentRecordDto
                 {
-                    ExamName = attempt.Exam?.Title ?? attempt.Exam?.ExamName ?? "Untitled Exam",
+                    ExamName = attempt.Exam?.ExamName ?? "Untitled Exam",
                     DateTaken = date,
                     TypesSummary = types.Count > 0 ? string.Join(", ", types) : "—",
-                    FinalGradeText = $"{attempt.TotalScore.Value:0.##} / {maxPoints:0.##}"
-                    // Status intentionally omitted — see AssessmentRecordDto.
+                    FinalGradeText = $"{attempt.TotalScore.Value:0.##} / {maxPoints:0.##}",
+                    Percent = percent,
+                    Passed = percent >= AppSettingsService.PassingGrade
                 });
             }
 
@@ -147,9 +148,8 @@ namespace ACPAMS.Services
         public DateTime DateTaken { get; set; }
         public string TypesSummary { get; set; } = string.Empty;
         public string FinalGradeText { get; set; } = string.Empty;
-
-        // Deliberately no Status (Passed/Failed) property — per team
-        // guidance this needs client/policy input before being implemented.
-        // The UI shows a neutral placeholder instead of real logic.
+        public decimal Percent { get; set; }
+        public bool Passed { get; set; }
+        public string Status => Passed ? "Passed" : "Failed";
     }
 }

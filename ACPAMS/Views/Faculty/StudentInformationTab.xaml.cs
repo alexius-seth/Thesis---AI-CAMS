@@ -194,12 +194,14 @@ namespace ACPAMS.Views.Faculty
                 };
                 Grid.SetColumn(gradeText, 3);
 
-                // Status intentionally shows a neutral placeholder, not a
-                // real Pass/Fail computation — see StudentInformationService.
+                var (badgeFg, badgeBg) = record.Passed
+                    ? (Color.FromRgb(0x15, 0x80, 0x3D), Color.FromRgb(0xDC, 0xFC, 0xE7))
+                    : (Color.FromRgb(0xC6, 0x28, 0x28), Color.FromRgb(0xFE, 0xF2, 0xF2));
+
                 var statusBadge = new Border
                 {
-                    Background = (Brush)FindResource("Bg.TableHeader"),
-                    BorderBrush = (Brush)FindResource("Border.Medium"),
+                    Background = new SolidColorBrush(badgeBg),
+                    BorderBrush = new SolidColorBrush(badgeFg),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(10),
                     Padding = new Thickness(8, 3, 8, 3),
@@ -207,10 +209,10 @@ namespace ACPAMS.Views.Faculty
                     VerticalAlignment = VerticalAlignment.Center,
                     Child = new TextBlock
                     {
-                        Text = "Pending",
+                        Text = record.Status,
                         FontSize = 10,
                         FontWeight = FontWeights.SemiBold,
-                        Foreground = (Brush)FindResource("Text.Muted")
+                        Foreground = new SolidColorBrush(badgeFg)
                     }
                 };
                 Grid.SetColumn(statusBadge, 4);

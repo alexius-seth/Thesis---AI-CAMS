@@ -33,9 +33,9 @@ namespace ACPAMS.Services
 
         public async Task<AiRubricGradingResult> GradeAsync(RubricGradingRequest request)
         {
-            string apiKey = App.Configuration["Gemini:ApiKey"]
-                ?? throw new InvalidOperationException(
-                    "Gemini API key not set. Run: dotnet user-secrets set \"Gemini:ApiKey\" \"your-key\"");
+            string apiKey = AppSettingsService.GetGeminiApiKey();
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Gemini API key not set. Please configure it in Faculty Settings.");
 
             var promptText = BuildPrompt(request);
 

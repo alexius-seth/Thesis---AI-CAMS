@@ -506,12 +506,25 @@
                                 <ComboBoxItem Content="gemini-1.5-pro"/>
                             </ComboBox>
 
+                            <!-- Gemini API Key Input -->
+                            <TextBlock Text="Gemini API Key" Style="{StaticResource T.FieldLabel}"/>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="GeminiApiKeyBox" Style="{StaticResource Input.Password}" Grid.Column="0"/>
+                                <TextBox x:Name="GeminiApiKeyPlainBox" Style="{StaticResource Input.Field}" Grid.Column="0" Visibility="Collapsed"/>
+                                <Button x:Name="ToggleApiKeyVisibilityBtn" Grid.Column="1" Margin="8,0,0,0" Padding="12,0"
+                                        Style="{StaticResource Btn.Secondary}" Content="👁 Show" Click="ToggleApiKeyVisibility_Click"/>
+                            </Grid>
+
                             <!-- Inline Action Buttons -->
                             <StackPanel Orientation="Horizontal">
                                 <Button x:Name="TestGeminiBtn" Style="{StaticResource Btn.Secondary}"
-                                        Content="Test Model Connection" Margin="0,0,10,0" Click="TestGemini_Click"/>
+                                        Content="Test Connection" Margin="0,0,10,0" Click="TestGemini_Click"/>
                                 <Button Style="{StaticResource Btn.Primary}"
-                                        Content="Save Model" Click="SaveModel_Click"/>
+                                        Content="Save AI Settings" Click="SaveModel_Click"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>

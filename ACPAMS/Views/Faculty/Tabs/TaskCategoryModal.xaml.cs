@@ -30,8 +30,44 @@ namespace ACPAMS.Views.Faculty
             Loaded += OnLoaded;
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            SyncToOwner();
+        }
+
+        private void SyncToOwner()
+        {
+            var owner = Owner ?? Application.Current.MainWindow;
+            if (owner != null)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                if (owner.WindowState == WindowState.Maximized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+                else
+                {
+                    Left = owner.Left;
+                    Top = owner.Top;
+                    Width = owner.ActualWidth;
+                    Height = owner.ActualHeight;
+                }
+            }
+            else
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Width = SystemParameters.PrimaryScreenWidth;
+                Height = SystemParameters.PrimaryScreenHeight;
+                Left = 0;
+                Top = 0;
+            }
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            SyncToOwner();
+
             // Build the check indicator map after InitializeComponent
             // so the named elements are available
             _checkMap[BtnExamination] = FindCheckBorder(BtnExamination);

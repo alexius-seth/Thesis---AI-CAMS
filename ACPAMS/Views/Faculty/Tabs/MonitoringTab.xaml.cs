@@ -378,17 +378,6 @@ namespace ACPAMS.Views.Faculty.Tabs
                 context.AuditLogs.RemoveRange(flags);
                 await context.SaveChangesAsync();
 
-                // Also delete corresponding ExamAttemptLogs
-                var attemptLogs = await context.ExamAttemptLogs
-                    .Where(l => l.AttemptId == attemptId)
-                    .ToListAsync();
-
-                if (attemptLogs.Any())
-                {
-                    context.ExamAttemptLogs.RemoveRange(attemptLogs);
-                    await context.SaveChangesAsync();
-                }
-
                 ToastNotification.Show(
                     $"✅ Dismissed {flags.Count} flags for this student",
                     Application.Current.MainWindow,
@@ -433,17 +422,6 @@ namespace ACPAMS.Views.Faculty.Tabs
                 {
                     context.AuditLogs.Remove(log);
                     await context.SaveChangesAsync();
-
-                    // Also delete corresponding ExamAttemptLog
-                    var attemptLog = await context.ExamAttemptLogs
-                        .FirstOrDefaultAsync(l => l.Action == log.Action
-                                                   && l.Details == log.Details
-                                                   && l.ActionTime == log.CreatedAt);
-                    if (attemptLog != null)
-                    {
-                        context.ExamAttemptLogs.Remove(attemptLog);
-                        await context.SaveChangesAsync();
-                    }
 
                     ToastNotification.Show("Flag dismissed", Application.Current.MainWindow, 2);
                     await RefreshDataAsync();

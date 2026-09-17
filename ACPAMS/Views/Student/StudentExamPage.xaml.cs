@@ -40,8 +40,8 @@ namespace ACPAMS.Views.Student
                 SessionManager.CurrentAttempt == null) return;
 
             var exam = SessionManager.CurrentExam;
-            ExamTitleText.Text = $"{exam.CourseCode} — {exam.Title?.ToUpper() ?? "EXAM"}";
-            ExamSubtitleText.Text = exam.ExamName ?? string.Empty;
+            ExamTitleText.Text = $"{exam.CourseCode} — {exam.ExamName?.ToUpper() ?? "EXAM"}";
+            ExamSubtitleText.Text = !string.IsNullOrEmpty(exam.ExamCode) ? $"Code: {exam.ExamCode}" : string.Empty;
 
             _questions = await _examService.GetQuestionsAsync(exam.ExamId, SessionManager.CurrentAttempt.AttemptId);
 
@@ -492,14 +492,14 @@ namespace ACPAMS.Views.Student
             UserControl canvas = question.QuestionType switch
             {
                 "identification" or "essay" =>
-                    new Canvas.TextInputCanvas(question, existingAnswer),
+                    new Canvas.TextInputCanvas(question, existingAnswer, index + 1, _questions.Count),
                 "multiple_choice" or "true_false" =>
                     new Canvas.OptionSelectorCanvas(question, existingAnswer),
                 "enumeration" =>
-                    new Canvas.EnumerationCanvas(question, existingAnswer),
+                    new Canvas.EnumerationCanvas(question, existingAnswer, index + 1, _questions.Count),
                 "coding" =>
                     new Canvas.CodingCanvas(question, existingAnswer),
-                _ => new Canvas.TextInputCanvas(question, existingAnswer)
+                _ => new Canvas.TextInputCanvas(question, existingAnswer, index + 1, _questions.Count)
             };
 
             ExamCanvasHost.Content = canvas;

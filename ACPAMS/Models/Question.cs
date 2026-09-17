@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -49,9 +49,6 @@ namespace ACPAMS.Models
 
         [Column("starter_code")]
         public string? StarterCode { get; set; }
-
-        [Column("expected_output")]
-        public string? ExpectedOutput { get; set; }
 
         [Column("order_index")]
         public int? OrderIndex { get; set; }

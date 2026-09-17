@@ -129,7 +129,7 @@ namespace ACPAMS.Services
                 result.Add(new ExamStatusDto
                 {
                     ExamId = exam.ExamId,
-                    Title = exam.Title ?? exam.ExamName ?? "Untitled Exam",
+                    Title = exam.ExamName ?? "Untitled Exam",
                     ExamCode = exam.ExamCode ?? "N/A",
                     CourseCode = exam.CourseCode ?? "N/A",
                     Type = GetExamType(exam),
@@ -168,20 +168,6 @@ namespace ACPAMS.Services
                 .CountAsync();
         }
 
-        public async Task<int> GetTotalFlagsCountAsync(Guid examId)
-        {
-            var attemptIds = await _context.StudentExamAttempts
-                .Where(a => a.ExamId == examId)
-                .Select(a => a.AttemptId.ToString())
-                .ToListAsync();
-
-            return await _context.AuditLogs
-                .Where(l => l.EntityType == "StudentExamAttempt"
-                            && attemptIds.Contains(l.EntityId)
-                            && !l.Action.Contains("HeadTurned")
-                            && !l.Action.Contains("HeadTilted"))
-                .CountAsync();
-        }
 
         public async Task ArchiveExamAsync(Guid examId)
         {

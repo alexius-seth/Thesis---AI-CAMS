@@ -9,20 +9,6 @@ namespace ACPAMS.Services
         // Rough, rule-based estimate — NOT AI-derived. Flags-per-attempt is
         private static int FLAG_CAP => AppSettingsService.IntegrityFlagCap;
 
-        // ── Aggregate metrics + per-attempt rows across ALL of this instructor's exams ──
-        // Used by the generic "View Student Reports" quick-nav (browse everything).
-        public async Task<ReportsSummaryDto> GetSummaryAsync(string instructorId)
-        {
-            using var context = new AppDbContext();
-
-            var examIds = await context.Exams
-                .Where(e => e.InstructorId == instructorId)
-                .Select(e => e.ExamId)
-                .ToListAsync();
-
-            return await BuildSummaryAsync(context, examIds);
-        }
-
         // ── Same aggregate, scoped to ONE exam only ──────────────────────
         // Used by "View Report" on a specific completed exam, so students from
         // other subjects/exams don't leak into the table.
@@ -210,7 +196,7 @@ namespace ACPAMS.Services
                 .Select(e => new ExamOptionDto
                 {
                     ExamId = e.ExamId,
-                    Title = e.Title ?? e.ExamName ?? "Untitled Exam"
+                    Title = e.ExamName ?? "Untitled Exam"
                 })
                 .ToListAsync();
         }

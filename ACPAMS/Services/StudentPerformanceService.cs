@@ -170,7 +170,7 @@ namespace ACPAMS.Services
 
                 result.Add(new EvaluationLedgerRowDto
                 {
-                    ExamName = exam.Title ?? exam.ExamName ?? "Untitled Exam",
+                    ExamName = exam.ExamName ?? "Untitled Exam",
                     ScoreText = scoreText,
                     StrengthsCount = strengthsCount,
                     WeaknessesCount = weaknessesCount,

@@ -12,7 +12,7 @@ namespace ACPAMS.Views.Student.Canvas
 {
     public partial class CodingCanvas : UserControl
     {
-        private string _language = "Java";
+        private string _language = "C";
         private readonly CodeRunnerService _runner = new();
 
         // Custom VS Code Dark+ themed .xshd files, loaded once and cached.
@@ -24,15 +24,15 @@ namespace ACPAMS.Views.Student.Canvas
         // Default starter stub + custom highlighting key + file name per language.
         private static readonly Dictionary<string, (string FileName, string Stub, string SyntaxKey)> LanguageDefaults = new()
         {
-            ["Java"] = ("Main.java",
-                "public class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n\n    }\n}",
-                "Java"),
-            ["Python"] = ("main.py",
-                "def main():\n    # Write your solution here\n    pass\n\nif __name__ == \"__main__\":\n    main()",
-                "Python"),
             ["C"] = ("main.c",
                 "#include <stdio.h>\n\nint main() {\n    // Write your solution here\n\n    return 0;\n}",
                 "C"),
+            ["Python"] = ("main.py",
+                "def main():\n    # Write your solution here\n    pass\n\nif __name__ == \"__main__\":\n    main()",
+                "Python"),
+            ["Java"] = ("Main.java",
+                "public class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n\n    }\n}",
+                "Java"),
         };
 
         public CodingCanvas()
@@ -47,16 +47,13 @@ namespace ACPAMS.Views.Student.Canvas
 
             QuestionText.Text = question.Text;
 
-            // Determine language: existing answer > question default > Java
-            if (!string.IsNullOrEmpty(existingAnswer?.LanguageUsed))
+            // Determine language: existing answer > question default > C
+            if (!string.IsNullOrEmpty(existingAnswer?.LanguageUsed) && LanguageDefaults.ContainsKey(existingAnswer.LanguageUsed))
                 _language = existingAnswer.LanguageUsed;
-            else if (!string.IsNullOrEmpty(question.ProgrammingLanguage))
+            else if (!string.IsNullOrEmpty(question.ProgrammingLanguage) && LanguageDefaults.ContainsKey(question.ProgrammingLanguage))
                 _language = question.ProgrammingLanguage;
-
-            // Guard against legacy data (e.g. old "C++"/"C#" rows saved
-            // before those options were removed) falling back to Java
-            if (!LanguageDefaults.ContainsKey(_language))
-                _language = "Java";
+            else
+                _language = "C";
 
             SelectLanguageInComboBox(_language);
             ApplyLanguageSettings(_language);
@@ -130,7 +127,7 @@ namespace ACPAMS.Views.Student.Canvas
         {
             if (LanguageSelector.SelectedItem is not ComboBoxItem item) return;
 
-            string newLanguage = item.Tag?.ToString() ?? "Java";
+            string newLanguage = item.Tag?.ToString() ?? "C";
             if (newLanguage == _language) return;
 
             // Warn before wiping code, since switching language resets the stub

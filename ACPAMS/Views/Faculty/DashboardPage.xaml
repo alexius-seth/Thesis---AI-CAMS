@@ -376,50 +376,17 @@
                         <Button Style="{StaticResource Btn.Tab.Active}"
                                 Content="Overview"/>
 
-                        <!-- Monitoring with badge -->
                         <Button Style="{StaticResource Btn.Tab}"
-                                Click="NavigateToMonitoring">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Monitoring"
-                                           VerticalAlignment="Center"/>
-                                <Border Width="18" Height="18" CornerRadius="9"
-                                        Background="#FEF3C7"
-                                        BorderBrush="#B45309"
-                                        BorderThickness="1"
-                                        Margin="6,0,0,0"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="7"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="#B45309"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- Grading with badge -->
-                        <Button Style="{StaticResource Btn.Tab}"
-                                Click="NavigateToGrading">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Grading"
-                                           VerticalAlignment="Center"/>
-                                <Border Width="18" Height="18" CornerRadius="9"
-                                        Background="#EFF6FF"
-                                        BorderBrush="#1976D2"
-                                        BorderThickness="1"
-                                        Margin="6,0,0,0"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="2"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="#1976D2"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                        </Button>
+                                Content="Monitoring"
+                                Click="NavigateToMonitoring"/>
 
                         <Button Style="{StaticResource Btn.Tab}"
-                                Content="Reports"/>
+                                Content="Grading"
+                                Click="NavigateToGrading"/>
+
+                        <Button Style="{StaticResource Btn.Tab}"
+                                Content="Reports"
+                                Click="NavigateToReports"/>
 
                     </StackPanel>
 

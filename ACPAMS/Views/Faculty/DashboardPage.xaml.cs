@@ -148,6 +148,18 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
+        private void NavigateToReports(object sender, RoutedEventArgs e)
+        {
+            if (_currentExamId.HasValue)
+            {
+                MainWindow.Navigate(new ReportsTab(_currentExamId.Value));
+            }
+            else
+            {
+                MainWindow.Navigate(new ReportsTab(null));
+            }
+        }
+
         private void NavigateToSettings(object sender, RoutedEventArgs e)
         {
             MainWindow.NavigateToSettingsStatic();

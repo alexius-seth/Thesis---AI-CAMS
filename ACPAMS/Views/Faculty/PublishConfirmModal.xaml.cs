@@ -75,6 +75,22 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
+        public PublishConfirmModal(string? examName, string? courseCode, int? timeLimitMinutes, bool? randomizeQuestions = null) : this()
+        {
+            if (!string.IsNullOrEmpty(examName) && FindName("ExamNameBox") is TextBox enBox)
+                enBox.Text = examName;
+
+            if (!string.IsNullOrEmpty(courseCode) && FindName("CourseCodeBox") is TextBox ccBox)
+                ccBox.Text = courseCode;
+
+            if (timeLimitMinutes.HasValue && timeLimitMinutes.Value > 0 && FindName("TimeLimitBox") is TextBox tlBox)
+                tlBox.Text = timeLimitMinutes.Value.ToString();
+
+            if (randomizeQuestions.HasValue && FindName("RandomizeQuestionsCheckBox") is CheckBox cb)
+                cb.IsChecked = randomizeQuestions.Value;
+        }
+
+
         private void CourseCode_TextChanged(object sender, TextChangedEventArgs e)
         {
             var courseCodeBox = sender as TextBox;

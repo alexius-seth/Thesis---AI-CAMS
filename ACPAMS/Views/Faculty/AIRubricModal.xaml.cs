@@ -360,11 +360,12 @@ namespace ACPAMS.Views.Faculty
                     Width = 28,
                     Height = 28,
                     Tag = row,
+                    ToolTip = "Delete criterion",
                     Content = new TextBlock
                     {
-                        Text = "✕",
+                        Text = "\uE711",
                         FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                        FontSize = 12,
+                        FontSize = 11,
                         Foreground = (Brush)FindResource("Text.Muted")
                     },
                     Cursor = Cursors.Hand

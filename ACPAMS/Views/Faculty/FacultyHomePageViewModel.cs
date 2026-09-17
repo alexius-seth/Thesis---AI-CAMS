@@ -277,7 +277,7 @@ namespace ACPAMS.ViewModels
             if (exam == null) return;
             try
             {
-                ACPAMS.MainWindow.NavigateToCreateExamStatic();
+                ACPAMS.MainWindow.Navigate(new CreateExamPage(exam.ExamId));
             }
             catch (Exception ex)
             {

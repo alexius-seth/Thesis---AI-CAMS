@@ -37,9 +37,9 @@ namespace ACPAMS.Services
             if (string.IsNullOrWhiteSpace(rawFileText))
                 throw new InvalidOperationException("The imported file is empty.");
 
-            string apiKey = App.Configuration["Gemini:ApiKey"]
-                ?? throw new InvalidOperationException(
-                    "Gemini API key not set. Run: dotnet user-secrets set \"Gemini:ApiKey\" \"your-key\"");
+            string apiKey = AppSettingsService.GetGeminiApiKey();
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Gemini API key not set. Please configure it in Faculty Settings.");
 
             var promptText = BuildPrompt(rawFileText);
 

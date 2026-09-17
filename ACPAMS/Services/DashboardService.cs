@@ -22,7 +22,7 @@ namespace ACPAMS.Services
             return new LiveExamDto
             {
                 ExamId = exam.ExamId,
-                Title = exam.Title ?? exam.ExamName ?? "Untitled Exam",
+                Title = exam.ExamName ?? "Untitled Exam",
                 CourseCode = exam.CourseCode ?? "N/A",
                 StudentsTaking = attempts.Count(a => a.Status == "in_progress"),
                 StudentsFinished = attempts.Count(a => a.Status == "submitted" || a.Status == "graded"),
@@ -50,7 +50,7 @@ namespace ACPAMS.Services
             return new LiveExamDto
             {
                 ExamId = exam.ExamId,
-                Title = exam.Title ?? exam.ExamName ?? "Untitled Exam",
+                Title = exam.ExamName ?? "Untitled Exam",
                 CourseCode = exam.CourseCode ?? "N/A",
                 StudentsTaking = attempts.Count(a => a.Status == "in_progress"),
                 StudentsFinished = attempts.Count(a => a.Status == "submitted" || a.Status == "graded"),

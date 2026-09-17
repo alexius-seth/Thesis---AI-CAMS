@@ -63,18 +63,18 @@
                         BorderBrush="{StaticResource QType.Ident}"
                         BorderThickness="1" CornerRadius="4" Padding="8,3"
                         Margin="0,0,10,0">
-                    <TextBlock Text="Identification" FontSize="10" FontWeight="Bold"
+                    <TextBlock x:Name="TypeBadgeText" Text="Identification" FontSize="10" FontWeight="Bold"
                                Foreground="{StaticResource QType.Ident}"/>
                 </Border>
                 <Border Background="{StaticResource Accent.PrimaryBg}"
                         BorderBrush="{StaticResource Accent.Primary}"
                         BorderThickness="1" CornerRadius="4" Padding="8,3">
-                    <TextBlock Text="5 pts" FontSize="10" FontWeight="Bold"
+                    <TextBlock x:Name="PointsText" Text="5 pts" FontSize="10" FontWeight="Bold"
                                Foreground="{StaticResource Accent.Primary}"/>
                 </Border>
             </StackPanel>
 
-            <TextBlock Text="Question 1 of 5"
+            <TextBlock x:Name="QuestionNumberText" Text="Question 1 of 5"
                        FontSize="11" Foreground="{StaticResource Text.Muted}"
                        Margin="0,0,0,10"/>
 
@@ -86,13 +86,7 @@
             <TextBlock TextWrapping="Wrap" Margin="0,0,0,24"
                        x:Name="QuestionText"
                        FontSize="16" LineHeight="26"
-                       Foreground="{StaticResource Text.Primary}">
-                Explain the primary difference between a
-                <Run FontWeight="Bold">Stack</Run>
-                and a
-                <Run FontWeight="Bold">Queue</Run>
-                in data structures. Include a real-world example for each.
-            </TextBlock>
+                       Foreground="{StaticResource Text.Primary}"/>
 
             <!-- Answer input -->
             <TextBlock Text="YOUR ANSWER"
@@ -106,7 +100,7 @@
             <!-- Word count hint -->
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right" Margin="0,6,0,0">
-                <TextBlock Text="0 words" FontSize="11"
+                <TextBlock x:Name="WordCountText" Text="0 words" FontSize="11"
                            Foreground="{StaticResource Text.Muted}"/>
             </StackPanel>
 

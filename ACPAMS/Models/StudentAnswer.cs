@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,9 +30,6 @@ namespace ACPAMS.Models
         [MaxLength(30)]
         [Column("language_used")]
         public string? LanguageUsed { get; set; }
-
-        [Column("execution_output")]
-        public string? ExecutionOutput { get; set; }
 
         [MaxLength(20)]
         [Column("execution_status")]

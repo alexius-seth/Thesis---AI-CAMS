@@ -203,14 +203,43 @@
             <Setter Property="VerticalContentAlignment" Value="Top"/>
             <Setter Property="AcceptsReturn"            Value="True"/>
             <Setter Property="TextWrapping"             Value="Wrap"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                          VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"/>
                         </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Thumb.PromptResizeGrip" TargetType="Thumb">
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="Cursor" Value="SizeNS"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="Transparent" Height="10" Cursor="SizeNS" VerticalAlignment="Center">
+                            <Border x:Name="GripBar" Width="36" Height="3" CornerRadius="1.5"
+                                    Background="{StaticResource Border.Medium}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="GripBar" Property="Background" Value="{StaticResource Accent.Primary}"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="GripBar" Property="Background" Value="{StaticResource Accent.Primary}"/>
+                                <Setter TargetName="GripBar" Property="Width" Value="48"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -802,6 +831,89 @@
                 </Button>
             </Border>
 
+        </Grid>
+
+        <!-- Modal Confirmation Overlay for Section Deletion -->
+        <Grid x:Name="DeleteSectionModalOverlay"
+              Grid.Column="0" Grid.ColumnSpan="4"
+              Background="#80000000"
+              Visibility="Collapsed"
+              Panel.ZIndex="100"
+              MouseDown="DeleteSectionOverlay_MouseDown">
+            <Border Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Medium}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="24"
+                    Width="430"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.25"/>
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Header with warning icon -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <Border Width="36" Height="36" CornerRadius="18"
+                                Background="#FEE2E2" Margin="0,0,12,0">
+                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="16" Foreground="#DC2626"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Delete Section" FontSize="16" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"/>
+                            <TextBlock Text="This action cannot be undone." FontSize="11"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Message Body -->
+                    <TextBlock x:Name="DeleteSectionPromptText"
+                               Text="Delete this section and its questions?"
+                               FontSize="13" Foreground="{StaticResource Text.Primary}"
+                               TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,22"/>
+
+                    <!-- Action Buttons -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0" Content="Cancel"
+                                Style="{StaticResource Btn.Ghost}"
+                                Height="36"
+                                Click="CancelDeleteSection_Click"/>
+
+                        <Button Grid.Column="2" x:Name="ConfirmDeleteSectionBtn"
+                                Content="Delete Section"
+                                Background="#DC2626"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                FontSize="12"
+                                Height="36"
+                                Cursor="Hand"
+                                BorderThickness="0"
+                                Click="ConfirmDeleteSection_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bg" Property="Background" Value="#B91C1C"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </Grid>
 
     </Grid>

@@ -155,9 +155,9 @@
                               Width="110" Height="30"
                               FontSize="12" FontWeight="SemiBold"
                               SelectionChanged="LanguageSelector_SelectionChanged">
-                        <ComboBoxItem Content="Java"   Tag="Java"/>
-                        <ComboBoxItem Content="Python" Tag="Python"/>
                         <ComboBoxItem Content="C"      Tag="C"/>
+                        <ComboBoxItem Content="Python" Tag="Python"/>
+                        <ComboBoxItem Content="Java"   Tag="Java"/>
                     </ComboBox>
                 </StackPanel>
 

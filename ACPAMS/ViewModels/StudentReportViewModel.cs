@@ -26,7 +26,6 @@ namespace ACPAMS.ViewModels
 
         public List<FlagEventDto> FlagHistory { get; set; } = new();
         public List<QuestionAnswerDto> QuestionAnswers { get; set; } = new();
-        public List<CheatingScoreSnapshotDto> CheatingScoreHistory { get; set; } = new();
 
         // ── Performance assessment (Strengths/Weaknesses/Summary) ────────
         // Gates the "Generate Assessment" button — should only run once

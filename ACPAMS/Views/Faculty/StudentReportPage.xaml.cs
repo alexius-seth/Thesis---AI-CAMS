@@ -65,7 +65,7 @@ namespace ACPAMS.Views.Faculty
                 Report.StudentId = attempt.Student?.StudentId ?? "N/A";
                 Report.Program = attempt.Student?.Program ?? "N/A";
                 Report.Section = "N/A";
-                Report.ExamName = attempt.Exam?.ExamName ?? attempt.Exam?.Title ?? "Unknown Exam";
+                Report.ExamName = attempt.Exam?.ExamName ?? "Unknown Exam";
                 Report.ExamCode = attempt.Exam?.ExamCode ?? "N/A";
                 Report.StartedAt = attempt.StartedAt ?? DateTime.Now;
                 Report.SubmittedAt = attempt.SubmittedAt;
@@ -247,6 +247,33 @@ namespace ACPAMS.Views.Faculty
                 {
                     MessageBox.Show($"Failed to export PDF: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void CopyReport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("ACPAMS STUDENT EXAM REPORT");
+                sb.AppendLine("----------------------------------------");
+                sb.AppendLine($"Student: {Report.StudentName} ({Report.StudentId})");
+                sb.AppendLine($"Exam: {Report.ExamName} ({Report.ExamCode})");
+                sb.AppendLine($"Score: {Report.TotalScore:F1} / {Report.MaxPossibleScore:F1} ({Report.TotalScorePercent:P1})");
+                sb.AppendLine($"Risk Level: {Report.RiskLevel} (Integrity Score: {Report.CheatingScore:F0})");
+                sb.AppendLine($"Total Flags: {Report.TotalFlags}");
+                sb.AppendLine($"Status: {Report.Status}");
+                sb.AppendLine($"Started: {Report.StartedAt:g}");
+                if (Report.SubmittedAt.HasValue)
+                    sb.AppendLine($"Submitted: {Report.SubmittedAt.Value:g}");
+                sb.AppendLine("----------------------------------------");
+
+                Clipboard.SetText(sb.ToString());
+                ToastNotification.Show("Report copied to clipboard!", Application.Current.MainWindow);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

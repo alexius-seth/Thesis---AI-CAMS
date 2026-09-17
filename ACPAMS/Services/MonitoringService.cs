@@ -684,18 +684,6 @@ namespace ACPAMS.Services
             context.AuditLogs.Add(log);
             await context.SaveChangesAsync();
 
-            // Also log to exam attempt logs
-            var attemptLog = new ExamAttemptLog
-            {
-                LogId = Guid.NewGuid(),
-                AttemptId = attemptId,
-                Action = $"Warning_{warningType}",
-                Details = details,
-                ActionTime = DateTime.Now
-            };
-            context.ExamAttemptLogs.Add(attemptLog);
-            await context.SaveChangesAsync();
-
             return log;
         }
 
