@@ -1,5 +1,5 @@
 # AI-CAMS: AI-assisted Centralized Assessment Monitoring System
-> **Automated Code Proctoring, Real-Time Telemetry, and Intelligent Assessment Management for Computer Science Laboratories**
+> **Automated Code Proctoring, Real-Time Telemetry, and Intelligent Assessment Management for Computer Studies Laboratories**
 
 [![.NET](https://img.shields.io/badge/.NET-8.0_LTS-512BD4?style=flat&logo=dotnet)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/C%23-12.0-239120?style=flat&logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
