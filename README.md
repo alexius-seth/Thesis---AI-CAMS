@@ -6,7 +6,7 @@
 [![WPF](https://img.shields.io/badge/UI-WPF-0078D7?style=flat&logo=windows)](https://docs.microsoft.com/en-us/visualstudio/designers/getting-started-with-wpf)
 [![EF Core](https://img.shields.io/badge/ORM-EF_Core_8.0-512BD4?style=flat)](https://docs.microsoft.com/en-us/ef/core/)
 [![SQL Server](https://img.shields.io/badge/Database-SQL_Server-CC292B?style=flat&logo=microsoftsqlserver)](https://www.microsoft.com/sql-server)
-[![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini_2.5-4285F4?style=flat&logo=google)](https://ai.google.dev/)
+[![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini_3.5_Flash-4285F4?style=flat&logo=google)](https://ai.google.dev/)
 [![OpenCV](https://img.shields.io/badge/CV-OpenCvSharp4-5C3EE8?style=flat&logo=opencv)](https://github.com/shimat/opencvsharp)
 
 ---
@@ -32,7 +32,7 @@
 
 ## 🌟 Overview
 
-**AI-CAMS (Automated Code Proctoring and Assessment Management System)** is an enterprise-grade, client-server desktop application engineered for academic institutions and computer science laboratory environments. It combines **dynamic assessment authoring**, **multi-language live code compilation**, **real-time on-device computer vision proctoring**, and **Google Gemini 2.5 generative AI** to automate rubric evaluations and detect academic dishonesty over a local area network (LAN).
+**AI-CAMS (Automated Code Proctoring and Assessment Management System)** is an enterprise-grade, client-server desktop application engineered for academic institutions and computer science laboratory environments. It combines **dynamic assessment authoring**, **multi-language live code compilation**, **real-time on-device computer vision proctoring**, and **Google Gemini 3.5 Flash generative AI** to automate rubric evaluations and detect academic dishonesty over a local area network (LAN).
 
 Designed with a **zero-install architecture**, student client machines execute programming assessments in C, Java, and Python without requiring individual compilers or runtime environments pre-installed on workstation operating systems.
 
@@ -47,7 +47,7 @@ Designed with a **zero-install architecture**, student client machines execute p
   * Pre-populated edit workflows that load existing sections, questions, and test cases directly into the canvas.
   * Test-case builder for programming challenges (input args, expected output, timeout thresholds).
 * **AI Rubric Matrix & Syllabus Import**:
-  * Generative rubric generator powered by Google Gemini 2.5, constructing 4-tier evaluation matrices (*Excellent*, *Good*, *Fair*, *Poor*).
+  * Generative rubric generator powered by Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`), constructing 4-tier evaluation matrices (*Excellent*, *Good*, *Fair*, *Poor*).
   * Automated question extraction from instructor-uploaded syllabus or exam documents (PDF/DOCX).
 * **Global Search & Instant Command Bar**:
   * 250ms debounced auto-suggest header searching both assessments and registered students.
@@ -94,7 +94,7 @@ graph TD
     subgraph Host / Instructor Workstation
         A[Faculty Desktop App - WPF] --> B[AppDbContext - EF Core 8]
         A --> C[Global Search & Notification Engine]
-        A --> D[Gemini 2.5 AI Integration Service]
+        A --> D[Gemini 3.5 Flash AI Integration Service]
         B --> E[(SQL Server Database / LocalDB)]
     end
 
@@ -116,7 +116,7 @@ graph TD
 * **Presentation Layer**: MVVM pattern with data-bound WPF XAML controls, vector icons (`Segoe MDL2 Assets`), and reactive UI updates.
 * **Service Layer**: Dedicated singleton and scoped services (`CodeRunnerService`, `ReportsService`, `ExamStatusService`, `GlobalSearchService`, `NotificationService`, `AvatarService`).
 * **Data Access Layer**: EF Core 8 with Code-First migrations, SQL Server change tracking, and resilient connection execution strategies.
-* **AI Engine**: HTTP client integrated with Google Gemini 2.5 (`gemini-2.5-flash-lite`, `gemini-2.5-flash`, `gemini-2.5-pro`) featuring exponential backoff, rate-limit retries, and strict JSON schema responses.
+* **AI Engine**: HTTP client integrated with Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`, configurable in `ACPAMS/appsettings.json`) featuring exponential backoff, rate-limit retries, and strict JSON schema responses.
 
 ---
 
@@ -126,7 +126,7 @@ graph TD
 | :--- | :--- |
 | **Framework & Runtime** | .NET 8.0 LTS (C# 12.0), Windows Presentation Foundation (WPF) |
 | **Database & ORM** | Microsoft SQL Server (LocalDB / Express / Enterprise), Entity Framework Core 8.0 |
-| **Generative AI** | Google Gemini 2.5 API, Google.GenAI REST Integration |
+| **Generative AI** | Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`), Google.GenAI REST Integration |
 | **Computer Vision** | OpenCvSharp4, OpenCvSharp4.runtime.win, DlibDotNet (Haar Cascades, Facial Landmarks) |
 | **Code Editor** | AvalonEdit 6.3 (Custom syntax definitions for C, Java, Python) |
 | **Portable Compilers** | Portable Python 3.11.9 (Embeddable), WinLibs MinGW-w64 GCC 13.2, OpenJDK 17/21 |
