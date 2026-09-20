@@ -54,7 +54,7 @@ namespace ACPAMS.Views.Student
             _redirectTimer.Stop();
             SessionManager.Clear();
             MainWindow.ClearNavigationHistory();
-            MainWindow.Resize(520, 600);
+            MainWindow.SetStandardMaximizedStatic();
             MainWindow.Navigate(new LoginPage());
         }
 

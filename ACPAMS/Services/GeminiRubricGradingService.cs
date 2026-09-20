@@ -17,15 +17,9 @@ namespace ACPAMS.Services
     /// </summary>
     public class GeminiRubricGradingService
     {
-        // Model history: gemini-1.5-flash was retired by Google (404).
-        // gemini-3.1-flash-lite hit a 403 PERMISSION_DENIED (account/billing
-        // issue on the Google Cloud project, unrelated to this code). Team
-        // decision: using gemini-3.5-flash. If this ever 404s/403s again,
-        // check https://ai.google.dev/gemini-api/docs/changelog for the
-        // current model name and swap it in here (and in
-        // AiJobService.GeminiModelName) — and if it's a 403 specifically,
-        // check Google Cloud Console billing/API-enablement first, since
-        // that's an account issue, not a code issue.
+        // Active models: gemini-2.5-flash-lite (default), gemini-2.5-flash, etc.
+        // Managed dynamically via AppSettingsService.GetGeminiModel().
+        // Check https://ai.google.dev/gemini-api/docs/models/gemini for supported models.
         private static string ModelEndpoint =>
             $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
 
@@ -76,18 +70,41 @@ namespace ACPAMS.Services
                 }
             };
 
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{ModelEndpoint}?key={apiKey}")
+            HttpResponseMessage? response = null;
+            string rawResponseBody = string.Empty;
+            int maxRetries = 3;
+            int delayMs = 1500;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                Content = JsonContent.Create(requestBody)
-            };
+                try
+                {
+                    using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{ModelEndpoint}?key={apiKey}")
+                    {
+                        Content = JsonContent.Create(requestBody)
+                    };
 
-            var response = await _http.SendAsync(httpRequest);
-            string rawResponseBody = await response.Content.ReadAsStringAsync();
+                    response = await _http.SendAsync(httpRequest);
+                    rawResponseBody = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
+                    if ((int)response.StatusCode == 503 || (int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
+                    {
+                        throw new HttpRequestException(
+                            $"Transient Gemini error ({(int)response.StatusCode} {response.StatusCode}): {rawResponseBody}",
+                            null, response.StatusCode);
+                    }
+                    break;
+                }
+                catch (Exception ex) when ((ex is HttpRequestException || ex is TimeoutException || ex is TaskCanceledException) && attempt < maxRetries)
+                {
+                    await Task.Delay(delayMs * attempt);
+                }
+            }
+
+            if (response == null || !response.IsSuccessStatusCode)
             {
                 throw new InvalidOperationException(
-                    $"Gemini API call failed ({(int)response.StatusCode} {response.StatusCode}): {rawResponseBody}");
+                    $"Gemini API call failed ({(int)(response?.StatusCode ?? 0)} {response?.StatusCode}): {rawResponseBody}");
             }
 
             var geminiEnvelope = JsonSerializer.Deserialize<GeminiApiResponse>(rawResponseBody)

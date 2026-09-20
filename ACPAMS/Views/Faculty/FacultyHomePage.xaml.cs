@@ -3,9 +3,11 @@ using ACPAMS.ViewModels;
 using ACPAMS.Views.Faculty.Tabs;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ACPAMS.Views.Faculty
@@ -19,11 +21,7 @@ namespace ACPAMS.Views.Faculty
         {
             InitializeComponent();
 
-            // SessionManager.CurrentInstructor is set at login (see LoginPage.xaml.cs).
-            // NOTE: if SessionManager doesn't resolve, add the correct
-            // "using ACPAMS.XYZ;" for wherever it actually lives.
             var instructorId = SessionManager.CurrentInstructor?.InstructorId;
-
             _viewModel = new FacultyHomePageViewModel(instructorId);
             DataContext = _viewModel;
 
@@ -40,7 +38,6 @@ namespace ACPAMS.Views.Faculty
                 Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
 
             _autoRefreshTimer.Start();
-
             await _viewModel.LoadExamsAsync();
         }
 
@@ -146,9 +143,7 @@ namespace ACPAMS.Views.Faculty
 
         private void Logout_Click(object sender, RoutedEventArgs e)
         {
-            SessionManager.Clear();
-            MainWindow.Resize(520, 600);
-            MainWindow.Navigate(new Views.Auth.LoginPage());
+            SessionManager.Logout();
         }
     }
 }

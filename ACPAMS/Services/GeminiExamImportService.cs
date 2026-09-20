@@ -15,18 +15,8 @@ namespace ACPAMS.Services
     /// </summary>
     public class GeminiExamImportService
     {
-        // Model history: gemini-1.5-flash was retired by Google (404).
-        // gemini-3.1-flash-lite hit a 403 PERMISSION_DENIED (account/billing
-        // issue on the Google Cloud project, unrelated to this code). Team
-        // decision: using gemini-3.5-flash.
-        //
-        // IMPORTANT: this model name now lives in THREE places, not two —
-        // GeminiRubricGradingService.ModelEndpoint, AiJobService.GeminiModelName,
-        // and here. If it ever needs to change again, update all three, or
-        // (better) pull this out into a single shared config value so this
-        // stops being a manual-sync problem. Check
-        // https://ai.google.dev/gemini-api/docs/changelog for the current
-        // model name if this ever 404s/403s.
+        // Active models: gemini-2.5-flash-lite (default), gemini-2.5-flash, etc.
+        // Managed dynamically via AppSettingsService.GetGeminiModel().
         private static string ModelEndpoint =>
             $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
 

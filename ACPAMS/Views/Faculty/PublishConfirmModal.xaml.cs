@@ -13,21 +13,21 @@ namespace ACPAMS.Views.Faculty
         public string GeneratedExamCode { get; private set; } = string.Empty;
         public bool RandomizeQuestions { get; private set; } = false;
 
+        private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMNCRP_DISABLED = 1;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public PublishConfirmModal()
         {
             InitializeComponent();
-
-            var closeButton = FindName("CloseBtn") as Button;
-            if (closeButton != null)
-                closeButton.Click += (s, e) => CloseModal(false);
-
-            var copyButton = FindName("CopyBtn") as Button;
-            if (copyButton != null)
-                copyButton.Click += CopyButton_Click;
-
-            var publishButton = FindName("PublishBtn") as Button;
-            if (publishButton != null)
-                publishButton.Click += PublishButton_Click;
+            SourceInitialized += (s, e) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                int policy = DWMNCRP_DISABLED;
+                DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
+            };
 
             var courseCodeBox = FindName("CourseCodeBox") as TextBox;
             if (courseCodeBox != null)
@@ -75,6 +75,16 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
+        public void OnCloseModalClicked(object sender, RoutedEventArgs e)
+        {
+            CloseModal(false);
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            CloseModal(false);
+        }
+
         public PublishConfirmModal(string? examName, string? courseCode, int? timeLimitMinutes, bool? randomizeQuestions = null) : this()
         {
             if (!string.IsNullOrEmpty(examName) && FindName("ExamNameBox") is TextBox enBox)
@@ -118,6 +128,11 @@ namespace ACPAMS.Views.Faculty
             generatedCodeBox.Text = GeneratedExamCode;
         }
 
+        public void OnCopyExamCodeClicked(object sender, RoutedEventArgs e)
+        {
+            CopyButton_Click(sender, e);
+        }
+
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(GeneratedExamCode))
@@ -138,6 +153,11 @@ namespace ACPAMS.Views.Faculty
                 ToastNotification.Show("Failed to copy: " + ex.Message,
                     Application.Current.MainWindow, 3, true);
             }
+        }
+
+        public void OnFinishAndPublishClicked(object sender, RoutedEventArgs e)
+        {
+            PublishButton_Click(sender, e);
         }
 
         private void PublishButton_Click(object sender, RoutedEventArgs e)

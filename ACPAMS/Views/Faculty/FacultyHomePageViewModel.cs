@@ -70,7 +70,16 @@ namespace ACPAMS.ViewModels
             {
                 _selectedExam = value;
                 OnPropertyChanged();
+                if (value != null)
+                {
+                    OnAssessmentSelected(value.ExamId);
+                }
             }
+        }
+
+        public void OnAssessmentSelected(Guid examId)
+        {
+            MainWindow.NavigateToReportsStatic(examId);
         }
 
         public bool IsLoading
@@ -248,7 +257,8 @@ namespace ACPAMS.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting exam: {ex.Message}", "Error",
+                var msg = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
+                MessageBox.Show($"Error deleting exam: {msg}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -262,9 +272,7 @@ namespace ACPAMS.ViewModels
 
         // ── Navigation actions (Live / Pending / Done card buttons) ────────
         // Monitor/ViewLogs now open MonitoringTab filtered to this exam's ID.
-        // TODO: MainWindow.NavigateToCreateExamStatic() is still parameterless,
-        // so "Edit Exam" opens the Create/Edit tab but doesn't yet pre-load
-        // this specific exam. Add an examId-aware overload there when ready.
+        // EditExam opens CreateExamPage directly, pre-loading this specific exam.
 
         private void OnMonitorExam(ExamStatusDto exam)
         {
@@ -277,7 +285,7 @@ namespace ACPAMS.ViewModels
             if (exam == null) return;
             try
             {
-                ACPAMS.MainWindow.Navigate(new CreateExamPage(exam.ExamId));
+                ACPAMS.MainWindow.NavigateToCreateExamStatic(exam.ExamId);
             }
             catch (Exception ex)
             {
@@ -317,7 +325,7 @@ namespace ACPAMS.ViewModels
         private void OnViewReport(ExamStatusDto exam)
         {
             if (exam == null) return;
-            ACPAMS.MainWindow.Navigate(new ReportsTab(exam.ExamId));
+            ACPAMS.MainWindow.NavigateToReportsStatic(exam.ExamId);
         }
 
         // Item 5: dynamic action for the "Recently Completed" table.

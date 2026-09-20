@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -35,10 +35,13 @@ namespace ACPAMS.Models
 
         [MaxLength(100)]
         [Column("department")]
-        public string? Department { get; set; }
+        public string? Department { get; set; } = "Department of Computer Studies";
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("avatar_image")]
+        public byte[]? AvatarImage { get; set; }
 
         // Navigation
         [ForeignKey("UserId")]

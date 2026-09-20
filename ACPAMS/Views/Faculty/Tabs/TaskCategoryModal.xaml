@@ -170,12 +170,6 @@
                 Width="440"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
-            <Border.Effect>
-                <DropShadowEffect Color="Black"
-                                  Opacity="0.15"
-                                  BlurRadius="24"
-                                  ShadowDepth="4"/>
-            </Border.Effect>
 
             <StackPanel>
 

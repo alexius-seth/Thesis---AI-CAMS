@@ -188,10 +188,13 @@ namespace ACPAMS.Services
         // ── For the exam-selector dropdown on ReportsTab's generic view ──
         public async Task<List<ExamOptionDto>> GetInstructorExamsAsync(string instructorId)
         {
+            if (string.IsNullOrEmpty(instructorId))
+                return new List<ExamOptionDto>();
+
             using var context = new AppDbContext();
 
             return await context.Exams
-                .Where(e => e.InstructorId == instructorId)
+                .Where(e => e.InstructorId == instructorId && e.Status != "archived")
                 .OrderByDescending(e => e.CreatedAt)
                 .Select(e => new ExamOptionDto
                 {

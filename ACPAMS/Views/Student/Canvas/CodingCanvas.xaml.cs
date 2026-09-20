@@ -14,6 +14,7 @@ namespace ACPAMS.Views.Student.Canvas
     {
         private string _language = "C";
         private readonly CodeRunnerService _runner = new();
+        private string? _lastExecutionOutput;
 
         // Custom VS Code Dark+ themed .xshd files, loaded once and cached.
         // These replace AvalonEdit's built-in highlighters, which use a
@@ -69,6 +70,13 @@ namespace ACPAMS.Views.Student.Canvas
             else if (LanguageDefaults.TryGetValue(_language, out var def))
             {
                 CodeEditor.Text = def.Stub;
+            }
+
+            if (!string.IsNullOrEmpty(existingAnswer?.ExecutionOutput))
+            {
+                _lastExecutionOutput = existingAnswer.ExecutionOutput;
+                OutputResultText.Text = existingAnswer.ExecutionOutput;
+                OutputResultText.Foreground = System.Windows.Media.Brushes.WhiteSmoke;
             }
         }
 
@@ -197,12 +205,17 @@ namespace ACPAMS.Views.Student.Canvas
                     ? (string.IsNullOrWhiteSpace(result.Output)
                         ? "(program ran with no output)"
                         : result.Output)
-                    : result.Error;
+                    : (!string.IsNullOrWhiteSpace(result.Error) ? result.Error : result.Output);
+
+                _lastExecutionOutput = !string.IsNullOrWhiteSpace(result.Output) && !string.IsNullOrWhiteSpace(result.Error)
+                    ? $"{result.Output}\n{result.Error}"
+                    : (!string.IsNullOrWhiteSpace(result.Output) ? result.Output : result.Error);
             }
             catch (Exception ex)
             {
                 OutputResultText.Foreground = System.Windows.Media.Brushes.IndianRed;
                 OutputResultText.Text = $"Unexpected error: {ex.Message}";
+                _lastExecutionOutput = $"Unexpected error: {ex.Message}";
             }
             finally
             {
@@ -220,5 +233,6 @@ namespace ACPAMS.Views.Student.Canvas
         // ── Called by StudentExamPage to extract code before navigating ─
         public string GetSourceCode() => CodeEditor?.Text ?? string.Empty;
         public string GetLanguage() => _language;
+        public string? GetExecutionOutput() => _lastExecutionOutput;
     }
 }

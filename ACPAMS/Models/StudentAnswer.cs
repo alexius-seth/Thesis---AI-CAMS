@@ -36,6 +36,9 @@ namespace ACPAMS.Models
         public string ExecutionStatus { get; set; } = "not_run";
         // Values: "not_run" | "passed" | "failed" | "runtime_error"
 
+        [Column("execution_output")]
+        public string? ExecutionOutput { get; set; }
+
         [Column("obtained_points")]
         public decimal? ObtainedPoints { get; set; }
 

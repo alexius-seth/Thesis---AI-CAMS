@@ -24,6 +24,12 @@ namespace ACPAMS.Views.Faculty
         // Maps each category button to its check indicator border
         private readonly Dictionary<Button, Border> _checkMap = new();
 
+        private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMNCRP_DISABLED = 1;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public TaskCategoryModal()
         {
             InitializeComponent();
@@ -33,6 +39,9 @@ namespace ACPAMS.Views.Faculty
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            int policy = DWMNCRP_DISABLED;
+            DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
             SyncToOwner();
         }
 

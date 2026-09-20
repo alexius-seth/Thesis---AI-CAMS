@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:ACPAMS"
         Title="AI-CAMS"
         Icon="FINAL LOGO.ico"
-        Width="520" Height="620"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"

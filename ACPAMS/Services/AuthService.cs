@@ -184,7 +184,7 @@ namespace ACPAMS.Services
                 FirstName = firstName.Trim(),
                 LastName = lastName.Trim(),
                 MiddleInitial = string.IsNullOrWhiteSpace(middleInitial) ? null : middleInitial.Trim(),
-                Department = "General",
+                Department = "Department of Computer Studies",
                 CreatedAt = DateTime.Now
             };
 

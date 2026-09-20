@@ -25,7 +25,7 @@ namespace ACPAMS.Views.Faculty.Tabs
 
         // Whichever exam is actually in effect right now, regardless of
         // which of the two selection paths produced it.
-        private Guid? EffectiveExamId => _examId ?? _selectedGenericExamId;
+        private Guid? EffectiveExamId => _selectedGenericExamId ?? _examId;
         private readonly DispatcherTimer _autoRefreshTimer;
 
         private ReportsSummaryDto? _lastSummary;
@@ -38,6 +38,7 @@ namespace ACPAMS.Views.Faculty.Tabs
         {
             InitializeComponent();
             _examId = examId;
+            _selectedGenericExamId = examId;
 
             _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
             _autoRefreshTimer.Tick += async (s, e) => await LoadReportsAsync();
@@ -53,7 +54,11 @@ namespace ACPAMS.Views.Faculty.Tabs
 
             _autoRefreshTimer.Start();
 
-            await LoadReportsAsync();
+            await LoadExamsForCurrentInstructorAsync();
+            if (EffectiveExamId.HasValue)
+            {
+                await LoadExamReportDataAsync(EffectiveExamId.Value);
+            }
         }
 
         private void ReportsTab_Unloaded(object sender, RoutedEventArgs e)
@@ -73,60 +78,110 @@ namespace ACPAMS.Views.Faculty.Tabs
             }
         }
 
-        private async System.Threading.Tasks.Task LoadReportsAsync()
+        public async System.Threading.Tasks.Task LoadExamReportDataAsync(Guid examId)
         {
-            var service = new ReportsService();
-            ReportsSummaryDto summary;
+            _selectedGenericExamId = examId;
 
-            if (_examId.HasValue)
+            if (ExamSelectorCombo.ItemsSource is IEnumerable<ExamOptionDto> exams)
             {
-                // Opened via a specific exam's "View Report" button — the
-                // instructor already made their choice by clicking it.
-                // Statistics show immediately, no selector needed.
-                ExamSelectorContainer.Visibility = Visibility.Collapsed;
-                StatisticsSections.Visibility = Visibility.Visible;
-
-                summary = await service.GetSummaryForExamAsync(_examId.Value);
-
-                if (_currentExamTitle == "Exam Report")
+                var match = exams.FirstOrDefault(x => x.ExamId == examId);
+                if (match != null && !Equals(ExamSelectorCombo.SelectedItem, match))
                 {
-                    using var db = new AppDbContext();
-                    var exam = await db.Exams.FindAsync(_examId.Value);
-                    if (exam != null)
-                        _currentExamTitle = exam.ExamName ?? "Exam Report";
+                    ExamSelectorCombo.SelectedItem = match;
+                    return;
+                }
+            }
+
+            await LoadReportsAsync();
+        }
+
+        private async System.Threading.Tasks.Task LoadExamsForCurrentInstructorAsync()
+        {
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            if (string.IsNullOrEmpty(currentInstructorId))
+            {
+                ExamSelectorCombo.ItemsSource = null;
+                _selectedGenericExamId = null;
+                StatisticsSections.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var service = new ReportsService();
+            var exams = await service.GetInstructorExamsAsync(currentInstructorId);
+
+            var targetId = EffectiveExamId;
+            if (targetId.HasValue && !exams.Any(x => x.ExamId == targetId.Value))
+            {
+                using var db = new AppDbContext();
+                var specificExam = await db.Exams.FindAsync(targetId.Value);
+                if (specificExam != null)
+                {
+                    exams.Insert(0, new ExamOptionDto
+                    {
+                        ExamId = specificExam.ExamId,
+                        Title = specificExam.ExamName ?? "Untitled Exam"
+                    });
+                }
+            }
+
+            ExamSelectorCombo.ItemsSource = exams;
+            ExamSelectorContainer.Visibility = Visibility.Visible;
+
+            if (exams.Count == 0)
+            {
+                _selectedGenericExamId = null;
+                ExamSelectorCombo.SelectedItem = null;
+                StatisticsSections.Visibility = Visibility.Collapsed;
+                ExamSelectorHint.Text = "No exams found for your account. Create an exam to view reports.";
+                return;
+            }
+
+            ExamSelectorHint.Text = "Statistics won't display until you choose a specific exam above.";
+
+            if (targetId.HasValue && exams.Any(x => x.ExamId == targetId.Value))
+            {
+                var match = exams.First(x => x.ExamId == targetId.Value);
+                if (!Equals(ExamSelectorCombo.SelectedItem, match))
+                {
+                    ExamSelectorCombo.SelectedItem = match;
                 }
             }
             else
             {
-                // Generic "View Student Reports" quick-nav — require an
-                // explicit exam choice before showing anything, instead of
-                // silently defaulting to whichever exam happens to be most
-                // recent. The dropdown itself only needs populating once.
-                var instructor = SessionManager.CurrentInstructor;
-                if (instructor == null)
-                {
-                    EmptyStateBanner.Visibility = Visibility.Visible;
-                    return;
-                }
+                ExamSelectorCombo.SelectedItem = null;
+                _selectedGenericExamId = null;
+                StatisticsSections.Visibility = Visibility.Collapsed;
+            }
+        }
 
-                if (ExamSelectorCombo.ItemsSource == null)
-                {
-                    var exams = await service.GetInstructorExamsAsync(instructor.InstructorId);
-                    ExamSelectorCombo.ItemsSource = exams;
-                }
+        private async System.Threading.Tasks.Task LoadReportsAsync()
+        {
+            var service = new ReportsService();
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            var targetExamId = EffectiveExamId;
 
-                ExamSelectorContainer.Visibility = Visibility.Visible;
+            if (!targetExamId.HasValue)
+            {
+                StatisticsSections.Visibility = Visibility.Collapsed;
+                return;
+            }
 
-                if (!_selectedGenericExamId.HasValue)
+            ExamSelectorContainer.Visibility = Visibility.Visible;
+
+            using (var db = new AppDbContext())
+            {
+                var exam = await db.Exams.FindAsync(targetExamId.Value);
+                if (exam == null || (!string.IsNullOrEmpty(currentInstructorId) && exam.InstructorId != currentInstructorId))
                 {
-                    // Nothing chosen yet — show the selector, hide everything else.
                     StatisticsSections.Visibility = Visibility.Collapsed;
                     return;
                 }
 
-                StatisticsSections.Visibility = Visibility.Visible;
-                summary = await service.GetSummaryForExamAsync(_selectedGenericExamId.Value);
+                _currentExamTitle = exam.ExamName ?? "Exam Report";
             }
+
+            StatisticsSections.Visibility = Visibility.Visible;
+            var summary = await service.GetSummaryForExamAsync(targetExamId.Value);
 
             _lastSummary = summary;
 
@@ -305,7 +360,7 @@ namespace ACPAMS.Views.Faculty.Tabs
                 namePanel.MouseLeftButtonUp += (s, e) =>
                 {
                     if (!string.IsNullOrEmpty(clickedStudentId))
-                        MainWindow.Navigate(new StudentInformationTab(clickedStudentId));
+                        MainWindow.Navigate(new StudentInformationTab(clickedStudentId, NavigationOrigin.Reports, _selectedGenericExamId));
                 };
                 namePanel.Children.Add(nameLink);
                 Grid.SetColumn(namePanel, 0);
@@ -378,11 +433,9 @@ namespace ACPAMS.Views.Faculty.Tabs
             }
         }
 
-        // Called by MainWindow.ShowPage on every navigation to this page —
-        // matters especially for the cached, unscoped ReportsTab instance
-        // (the generic "View Student Reports" quick-nav).
         public async System.Threading.Tasks.Task RefreshAsync()
         {
+            await LoadExamsForCurrentInstructorAsync();
             await LoadReportsAsync();
         }
 
@@ -411,6 +464,11 @@ namespace ACPAMS.Views.Faculty.Tabs
                 _selectedGenericExamId = selected.ExamId;
                 _currentExamTitle = selected.Title;
                 await LoadReportsAsync();
+            }
+            else
+            {
+                _selectedGenericExamId = null;
+                StatisticsSections.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -447,9 +505,14 @@ namespace ACPAMS.Views.Faculty.Tabs
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            // Returns to whichever page opened Reports, via MainWindow's navigation
-            // history — same pattern as Monitoring/Grading's Back buttons.
-            MainWindow.NavigateBackStatic();
+            // Explicitly return to the main hub rather than popping whatever page was visited before
+            MainWindow.NavigateToFacultyHomeStatic();
+        }
+
+        private void OnStudentSearchClicked(object sender, RoutedEventArgs e)
+        {
+            // Focus or scroll to the student rows panel
+            ReportRowsPanel.BringIntoView();
         }
     }
 

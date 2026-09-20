@@ -35,7 +35,8 @@ namespace ACPAMS.Services
         public async Task SaveAnswerAsync(Guid attemptId, Guid questionId,
                                           string? answerText = null,
                                           string? sourceCode = null,
-                                          string? languageUsed = null)
+                                          string? languageUsed = null,
+                                          string? executionOutput = null)
         {
             using var context = new AppDbContext();
 
@@ -48,6 +49,8 @@ namespace ACPAMS.Services
                 existing.AnswerText = answerText;
                 existing.SourceCode = sourceCode;
                 existing.LanguageUsed = languageUsed;
+                if (executionOutput != null)
+                    existing.ExecutionOutput = executionOutput;
             }
             else
             {
@@ -59,6 +62,7 @@ namespace ACPAMS.Services
                     AnswerText = answerText,
                     SourceCode = sourceCode,
                     LanguageUsed = languageUsed,
+                    ExecutionOutput = executionOutput,
                     ExecutionStatus = "not_run"
                 });
             }

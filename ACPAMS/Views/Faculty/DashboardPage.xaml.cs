@@ -72,7 +72,7 @@ namespace ACPAMS.Views.Faculty
                 _currentExamId = live.ExamId;
 
                 StatusChip.Visibility = Visibility.Visible;
-                StatusChipLabel.Text = $"  ·  {live.CourseCode} {live.Title}";
+                StatusChipLabel.Text = $"  ·  {live.CourseCode} {live.ExamName}";
 
                 if (TabContent.Content is OverviewTab overview)
                 {
@@ -167,9 +167,7 @@ namespace ACPAMS.Views.Faculty
 
         private void Logout_Click(object sender, RoutedEventArgs e)
         {
-            SessionManager.Clear();
-            MainWindow.Resize(520, 600);
-            MainWindow.Navigate(new Views.Auth.LoginPage());
+            SessionManager.Logout();
         }
     }
 }

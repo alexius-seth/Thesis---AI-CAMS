@@ -42,6 +42,7 @@ namespace ACPAMS.Data
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<QuestionOption> QuestionOptions { get; set; }
+        public DbSet<AppNotification> Notifications { get; set; }
 
         // ── Connection ──────────────────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder options)

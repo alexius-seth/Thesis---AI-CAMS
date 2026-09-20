@@ -11,12 +11,16 @@ namespace ACPAMS.Views.Faculty
     public partial class StudentInformationTab : UserControl
     {
         private readonly string _studentId;
+        private readonly NavigationOrigin _origin;
+        private readonly Guid? _previousExamId;
         private StudentProfileSummaryDto? _summary;
 
-        public StudentInformationTab(string studentId)
+        public StudentInformationTab(string studentId, NavigationOrigin origin = NavigationOrigin.Search, Guid? previousExamId = null)
         {
             InitializeComponent();
             _studentId = studentId;
+            _origin = origin;
+            _previousExamId = previousExamId;
             Loaded += async (s, e) => await LoadAsync();
             SizeChanged += (s, e) => DrawTrend(); // redraw if the window resizes
         }
@@ -230,7 +234,24 @@ namespace ACPAMS.Views.Faculty
 
         private void GoToPerformanceReport_Click(object sender, RoutedEventArgs e)
         {
-            MainWindow.Navigate(new StudentPerformanceReportTab(_studentId));
+            MainWindow.Navigate(new StudentPerformanceReportTab(_studentId, _origin, _previousExamId));
+        }
+
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            switch (_origin)
+            {
+                case NavigationOrigin.Reports:
+                    MainWindow.NavigateToReportsStatic(_previousExamId);
+                    break;
+                case NavigationOrigin.Dashboard:
+                    MainWindow.NavigateToDashboardStatic();
+                    break;
+                case NavigationOrigin.Search:
+                default:
+                    MainWindow.NavigateToFacultyHomeStatic();
+                    break;
+            }
         }
     }
 }

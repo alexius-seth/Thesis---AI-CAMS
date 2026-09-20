@@ -517,9 +517,13 @@ namespace ACPAMS.Services
             }
             _lastAlertTime[type] = DateTime.Now;
 
-            _dispatcher.BeginInvoke(async () =>
+            _dispatcher.BeginInvoke(() =>
             {
                 SuspiciousActivityDetected?.Invoke(type, description);
+            });
+
+            _ = Task.Run(async () =>
+            {
                 await LogToDatabase(type, description);
             });
         }

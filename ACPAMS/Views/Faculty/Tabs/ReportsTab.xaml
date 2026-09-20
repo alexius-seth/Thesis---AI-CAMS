@@ -302,6 +302,7 @@
                  STUDENT SELECTOR
             ───────────────────────────────────────── -->
             <Button Style="{StaticResource Btn.StudentSearch}"
+                    Click="OnStudentSearchClicked"
                     Margin="0,0,0,24">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -349,7 +350,8 @@
                               SelectionChanged="ExamSelectorCombo_SelectionChanged"
                               FontSize="13" Padding="10,8"
                               HorizontalAlignment="Stretch"/>
-                    <TextBlock Text="Statistics won't display until you choose a specific exam above."
+                    <TextBlock x:Name="ExamSelectorHint"
+                               Text="Statistics won't display until you choose a specific exam above."
                                FontSize="11" Foreground="{StaticResource Text.Muted}"
                                Margin="0,8,0,0"/>
                 </StackPanel>

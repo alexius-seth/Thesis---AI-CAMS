@@ -140,6 +140,58 @@ namespace ACPAMS.Services
             return true;
         }
 
+        // ── Direct retry triggered from manual "Retry AI Grading" UI button ──
+        public async Task RetryAnswerGradingAsync(Guid answerId)
+        {
+            using var context = new AppDbContext();
+            Guid modelId = await EnsureGeminiModelAsync(context);
+
+            var job = await context.Set<AiJob>()
+                .FirstOrDefaultAsync(j => j.AnswerId == answerId);
+
+            if (job == null)
+            {
+                job = new AiJob
+                {
+                    JobId = Guid.NewGuid(),
+                    AnswerId = answerId,
+                    ModelId = modelId,
+                    Status = "processing",
+                    Priority = 1,
+                    AttemptCount = 1,
+                    StartedAt = DateTime.Now,
+                    CreatedAt = DateTime.Now
+                };
+                context.Add(job);
+            }
+            else
+            {
+                job.ModelId = modelId;
+                job.Status = "processing";
+                job.StartedAt = DateTime.Now;
+                job.LastError = null;
+            }
+            await context.SaveChangesAsync();
+
+            try
+            {
+                await GradeOneAnswerAsync(context, job);
+                job.Status = "completed";
+                job.CompletedAt = DateTime.Now;
+                job.LastError = null;
+            }
+            catch (Exception ex)
+            {
+                job.AttemptCount++;
+                job.LastError = ex.Message;
+                job.Status = "failed";
+                await context.SaveChangesAsync();
+                throw;
+            }
+
+            await context.SaveChangesAsync();
+        }
+
         // ── The actual grading + write-back for one answer ───────────────
         private async Task GradeOneAnswerAsync(AppDbContext context, AiJob job)
         {
@@ -254,7 +306,7 @@ namespace ACPAMS.Services
                 ModelId = Guid.NewGuid(),
                 ModelName = GeminiModelName,
                 Provider = "Google",
-                ModelVersion = "3.5-flash",
+                ModelVersion = GeminiModelName,
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };

@@ -12,12 +12,12 @@ namespace ACPAMS
         public static MainWindow? Instance { get; private set; }
 
         // Page instances
-        private FacultyHomePage _homePage;
-        private DashboardPage _dashboardPage;
-        private CreateExamPage _createExamPage;
-        private MonitoringTab _monitoringControl;
-        private ReportsTab _reportsControl;
-        private GradingTab _gradingControl;
+        private FacultyHomePage? _homePage;
+        private DashboardPage? _dashboardPage;
+        private CreateExamPage? _createExamPage;
+        private MonitoringTab? _monitoringControl;
+        private ReportsTab? _reportsControl;
+        private GradingTab? _gradingControl;
         private FacultySettingsPage? _settingsPage;
         private ArchivedExamsPage? _archivedExamsPage;
         private string _selectedTaskCategory = "Examination";
@@ -33,6 +33,8 @@ namespace ACPAMS
             InitializeComponent();
             Instance = this;
 
+            SetStandardMaximized();
+
             // Start at Login
             ShowPage(new Views.Auth.LoginPage());
         }
@@ -44,6 +46,7 @@ namespace ACPAMS
             if (_homePage == null)
                 _homePage = new FacultyHomePage();
             ShowPage(_homePage);
+            ClearHistory();
         }
 
         public void NavigateToDashboard()
@@ -53,9 +56,17 @@ namespace ACPAMS
             ShowPage(_dashboardPage);
         }
 
-        public void NavigateToCreateExam()
+        public void NavigateToCreateExam(Guid? examId = null)
         {
-            // Show the TaskCategoryModal first
+            if (examId.HasValue)
+            {
+                // Bypass TaskCategoryModal when editing existing exam
+                _createExamPage = new CreateExamPage(examId.Value);
+                ShowPage(_createExamPage);
+                return;
+            }
+
+            // Show the TaskCategoryModal first for new exam
             var modal = new TaskCategoryModal();
             modal.Owner = this;
 
@@ -72,17 +83,19 @@ namespace ACPAMS
             ShowPage(_createExamPage);
         }
 
-        public void NavigateToMonitoring()
+        public void NavigateToMonitoring(Guid? examId = null)
         {
-            if (_monitoringControl == null)
+            if (examId.HasValue)
+                _monitoringControl = new MonitoringTab(examId.Value);
+            else if (_monitoringControl == null)
                 _monitoringControl = new MonitoringTab();
+
             ShowPage(_monitoringControl);
         }
 
-        public void NavigateToReports()
+        public void NavigateToReports(Guid? examId = null)
         {
-            if (_reportsControl == null)
-                _reportsControl = new ReportsTab();
+            _reportsControl = examId.HasValue ? new ReportsTab(examId.Value) : new ReportsTab();
             ShowPage(_reportsControl);
         }
 
@@ -151,6 +164,27 @@ namespace ACPAMS
             _navigationHistory.Clear();
         }
 
+        public void ClearSessionState()
+        {
+            _navigationHistory.Clear();
+            _homePage = null;
+            _dashboardPage = null;
+            _createExamPage = null;
+            _monitoringControl = null;
+            _reportsControl = null;
+            _gradingControl = null;
+            _settingsPage = null;
+            _archivedExamsPage = null;
+            MainContent.Content = null;
+        }
+
+        public static void Logout()
+        {
+            Instance?.ClearSessionState();
+            SetStandardMaximizedStatic();
+            Navigate(new Views.Auth.LoginPage());
+        }
+
         // ─── Static Navigation Methods ──────────────────────────────
 
         public static void Navigate(object content)
@@ -163,24 +197,29 @@ namespace ACPAMS
             Instance?.NavigateToHome();
         }
 
+        public static void NavigateToFacultyHomeStatic()
+        {
+            Instance?.NavigateToHome();
+        }
+
         public static void NavigateToDashboardStatic()
         {
             Instance?.NavigateToDashboard();
         }
 
-        public static void NavigateToCreateExamStatic()
+        public static void NavigateToCreateExamStatic(Guid? examId = null)
         {
-            Instance?.NavigateToCreateExam();
+            Instance?.NavigateToCreateExam(examId);
         }
 
-        public static void NavigateToMonitoringStatic()
+        public static void NavigateToMonitoringStatic(Guid? examId = null)
         {
-            Instance?.NavigateToMonitoring();
+            Instance?.NavigateToMonitoring(examId);
         }
 
-        public static void NavigateToReportsStatic()
+        public static void NavigateToReportsStatic(Guid? examId = null)
         {
-            Instance?.NavigateToReports();
+            Instance?.NavigateToReports(examId);
         }
 
         public static void NavigateToGradingStatic()
@@ -196,6 +235,11 @@ namespace ACPAMS
         public static void NavigateToArchivedExamsStatic()
         {
             Instance?.NavigateToArchivedExams();
+        }
+
+        public static void NavigateToStudentProfileStatic(string studentId, NavigationOrigin origin = NavigationOrigin.Search, Guid? previousExamId = null)
+        {
+            Navigate(new StudentInformationTab(studentId, origin, previousExamId));
         }
 
         public static void NavigateToStudentReport(Guid attemptId)
@@ -214,9 +258,53 @@ namespace ACPAMS
             Instance?.ClearHistory();
         }
 
+        // ─── Dynamic Window Mode Management ──────────────────────────
+
+        public void SetStandardMaximized()
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                WindowState = WindowState.Normal;
+            }
+            Topmost = false;
+            WindowStyle = WindowStyle.SingleBorderWindow;
+            ResizeMode = ResizeMode.CanResize;
+            WindowState = WindowState.Maximized;
+        }
+
+        public static void SetStandardMaximizedStatic()
+        {
+            Instance?.SetStandardMaximized();
+        }
+
+        public void EnterKioskFullscreen()
+        {
+            WindowState = WindowState.Normal;
+            WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+            Topmost = true;
+            WindowState = WindowState.Maximized;
+        }
+
+        public static void EnterKioskFullscreenStatic()
+        {
+            Instance?.EnterKioskFullscreen();
+        }
+
+        public void ExitKioskFullscreen()
+        {
+            SetStandardMaximized();
+        }
+
+        public static void ExitKioskFullscreenStatic()
+        {
+            Instance?.ExitKioskFullscreen();
+        }
+
         public static void Resize(double width, double height)
         {
             if (Instance == null) return;
+            if (Instance.WindowState == WindowState.Maximized) return;
             Instance.Width = width;
             Instance.Height = height;
             Instance.Left = (SystemParameters.PrimaryScreenWidth - width) / 2;

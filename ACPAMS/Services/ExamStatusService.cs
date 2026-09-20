@@ -191,18 +191,135 @@ namespace ACPAMS.Services
 
         public async Task DeleteExamAsync(Guid examId)
         {
-            var exam = await _context.Exams
-                .Include(e => e.Questions)
-                .ThenInclude(q => q.Options)
-                .Include(e => e.Attempts)
-                .ThenInclude(a => a.Answers)
-                .FirstOrDefaultAsync(e => e.ExamId == examId);
-
-            if (exam != null)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                // Remove all related data
-                _context.Exams.Remove(exam);
-                await _context.SaveChangesAsync();
+                var questionIds = await _context.Questions
+                    .Where(q => q.ExamId == examId)
+                    .Select(q => q.QuestionId)
+                    .ToListAsync();
+
+                var attemptIds = await _context.StudentExamAttempts
+                    .Where(a => a.ExamId == examId)
+                    .Select(a => a.AttemptId)
+                    .ToListAsync();
+
+                var answerIds = await _context.StudentAnswers
+                    .Where(a => (a.QuestionId.HasValue && questionIds.Contains(a.QuestionId.Value))
+                             || (a.AttemptId.HasValue && attemptIds.Contains(a.AttemptId.Value)))
+                    .Select(a => a.AnswerId)
+                    .ToListAsync();
+
+                var rubricIds = await _context.Rubrics
+                    .Where(r => r.QuestionId.HasValue && questionIds.Contains(r.QuestionId.Value))
+                    .Select(r => r.RubricId)
+                    .ToListAsync();
+
+                var evalIds = await _context.AiEvaluations
+                    .Where(e => (e.AnswerId.HasValue && answerIds.Contains(e.AnswerId.Value))
+                             || (e.RubricUsedId.HasValue && rubricIds.Contains(e.RubricUsedId.Value)))
+                    .Select(e => e.EvaluationId)
+                    .ToListAsync();
+
+                var criteriaIds = await _context.RubricCriteria
+                    .Where(c => c.RubricId.HasValue && rubricIds.Contains(c.RubricId.Value))
+                    .Select(c => c.CriteriaId)
+                    .ToListAsync();
+
+                // 1. Delete AI Rubric Evaluations and AI Evaluations
+                if (evalIds.Count > 0)
+                {
+                    await _context.AiRubricEvaluations
+                        .Where(r => r.EvaluationId.HasValue && evalIds.Contains(r.EvaluationId.Value))
+                        .ExecuteDeleteAsync();
+
+                    await _context.AiEvaluations
+                        .Where(e => evalIds.Contains(e.EvaluationId))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 2. Delete AI Jobs and Student Answers
+                if (answerIds.Count > 0)
+                {
+                    await _context.AiJobs
+                        .Where(j => j.AnswerId.HasValue && answerIds.Contains(j.AnswerId.Value))
+                        .ExecuteDeleteAsync();
+
+                    await _context.StudentAnswers
+                        .Where(a => answerIds.Contains(a.AnswerId))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 3. Delete AI Assessments
+                await _context.AiAssessments
+                    .Where(a => a.ExamId == examId)
+                    .ExecuteDeleteAsync();
+
+                // 4. Delete Audit Logs for Exam and Attempts
+                var entityIdStrings = attemptIds.Select(id => id.ToString()).Concat(new[] { examId.ToString() }).ToList();
+                await _context.AuditLogs
+                    .Where(l => l.EntityId != null && entityIdStrings.Contains(l.EntityId))
+                    .ExecuteDeleteAsync();
+
+                // 5. Delete Attachments
+                if (questionIds.Count > 0 || answerIds.Count > 0)
+                {
+                    await _context.Attachments
+                        .Where(at => (at.EntityId.HasValue && questionIds.Contains(at.EntityId.Value))
+                                  || (at.EntityId.HasValue && answerIds.Contains(at.EntityId.Value)))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 6. Delete Student Attempts
+                if (attemptIds.Count > 0)
+                {
+                    await _context.StudentExamAttempts
+                        .Where(a => attemptIds.Contains(a.AttemptId))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 7. Delete Rubric Levels, Criteria, and Rubrics
+                if (criteriaIds.Count > 0)
+                {
+                    await _context.RubricLevels
+                        .Where(l => l.CriteriaId.HasValue && criteriaIds.Contains(l.CriteriaId.Value))
+                        .ExecuteDeleteAsync();
+
+                    await _context.RubricCriteria
+                        .Where(c => criteriaIds.Contains(c.CriteriaId))
+                        .ExecuteDeleteAsync();
+                }
+
+                if (rubricIds.Count > 0)
+                {
+                    await _context.Rubrics
+                        .Where(r => rubricIds.Contains(r.RubricId))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 8. Delete Question Options and Questions
+                if (questionIds.Count > 0)
+                {
+                    await _context.QuestionOptions
+                        .Where(o => questionIds.Contains(o.QuestionId))
+                        .ExecuteDeleteAsync();
+
+                    await _context.Questions
+                        .Where(q => questionIds.Contains(q.QuestionId))
+                        .ExecuteDeleteAsync();
+                }
+
+                // 9. Delete the Exam
+                await _context.Exams
+                    .Where(e => e.ExamId == examId)
+                    .ExecuteDeleteAsync();
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 

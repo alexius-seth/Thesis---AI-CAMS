@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Publish Exam"
-        Width="520"
+        Width="480"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
@@ -155,74 +155,65 @@
     </Window.Resources>
 
     <!-- ═══════════════════════════════════════
-         SCRIM + MODAL
+         MODAL CARD
     ═══════════════════════════════════════ -->
-    <Grid>
+    <Border Background="{StaticResource Bg.Surface}"
+            BorderBrush="{StaticResource Border.Subtle}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Width="480"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
 
-        <!-- Scrim overlay -->
-        <Border Background="{StaticResource Overlay.Bg}" Opacity="0.5"/>
+        <StackPanel>
 
-        <!-- Modal card -->
-        <Border Background="{StaticResource Bg.Surface}"
-                BorderBrush="{StaticResource Border.Subtle}"
-                BorderThickness="1"
-                CornerRadius="10"
-                Width="480"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center">
+            <!-- ══════════════════
+                 MODAL HEADER
+            ══════════════════ -->
+            <Border BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="12,12,0,0"
+                    Padding="28,20,20,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-            <Border.Effect>
-                <DropShadowEffect Color="#1A202C" Opacity="0.20"
-                                  BlurRadius="40" ShadowDepth="10"/>
-            </Border.Effect>
-
-            <StackPanel>
-
-                <!-- ══════════════════
-                     MODAL HEADER
-                ══════════════════ -->
-                <Border BorderBrush="{StaticResource Border.Subtle}"
-                        BorderThickness="0,0,0,1"
-                        Padding="28,20,20,20">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
-                            <!-- Publish icon badge -->
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Border Width="32" Height="32" CornerRadius="8"
-                                        Background="{StaticResource Accent.PrimaryBg}"
-                                        Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE72D;"
-                                               FontFamily="Segoe MDL2 Assets" FontSize="15"
-                                               Foreground="{StaticResource Accent.Primary}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Just a few more steps!"
-                                               FontSize="17" FontWeight="Bold"
-                                               Foreground="{StaticResource Text.Primary}"/>
-                                </StackPanel>
+                    <StackPanel Grid.Column="0">
+                        <!-- Publish icon badge -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Border Width="32" Height="32" CornerRadius="8"
+                                    Background="{StaticResource Accent.PrimaryBg}"
+                                    Margin="0,0,10,0">
+                                <TextBlock Text="&#xE72D;"
+                                           FontFamily="Segoe MDL2 Assets" FontSize="15"
+                                           Foreground="{StaticResource Accent.Primary}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Just a few more steps!"
+                                           FontSize="17" FontWeight="Bold"
+                                           Foreground="{StaticResource Text.Primary}"/>
                             </StackPanel>
-                            <TextBlock Text="Please fill in the remaining information to publish this exam."
-                                       FontSize="12"
-                                       Foreground="{StaticResource Text.Muted}"
-                                       TextWrapping="Wrap"/>
                         </StackPanel>
+                        <TextBlock Text="Please fill in the remaining information to publish this exam."
+                                   FontSize="12"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
 
-                        <!-- Close -->
-                        <Button Grid.Column="1"
-                                x:Name="CloseBtn"
-                                Style="{StaticResource Btn.Close}"
-                                VerticalAlignment="Top">
-                            <TextBlock Text="&#xE711;"
-                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                       Foreground="{StaticResource Text.Muted}"/>
-                        </Button>
+                    <!-- Close -->
+                    <Button Grid.Column="1"
+                            x:Name="CloseBtn"
+                            Click="OnCloseModalClicked"
+                            Style="{StaticResource Btn.Close}"
+                            VerticalAlignment="Top">
+                        <TextBlock Text="&#xE711;"
+                                   FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   Foreground="{StaticResource Text.Muted}"/>
+                    </Button>
                     </Grid>
                 </Border>
 
@@ -353,6 +344,7 @@
                             <!-- Copy button -->
                             <Button Grid.Column="2"
                                     x:Name="CopyBtn"
+                                    Click="OnCopyExamCodeClicked"
                                     Style="{StaticResource Btn.Copy}"
                                     ToolTip="Copy exam code to clipboard">
                                 <TextBlock Text="&#xE8C8;"
@@ -363,16 +355,22 @@
                     </StackPanel>
 
                     <!-- Generation note -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
-                        <TextBlock Text="&#xE946;"
+                    <Grid Margin="0,4,0,18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="&#xE946;"
                                    FontFamily="Segoe MDL2 Assets" FontSize="11"
                                    Foreground="{StaticResource Text.Muted}"
-                                   Margin="0,0,5,0" VerticalAlignment="Center"/>
-                        <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}"
-                                   TextWrapping="Wrap">
-                            <Run Text="Once the Course Code has been entered, the exam code will be generated. Please be patient."/>
-                        </TextBlock>
-                    </StackPanel>
+                                   Margin="0,1,6,0" VerticalAlignment="Top"/>
+                        <TextBlock Grid.Column="1"
+                                   FontSize="11"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   TextWrapping="Wrap"
+                                   Text="Once the Course Code has been entered, the exam code will be generated. Please be patient."/>
+                    </Grid>
 
                     <!-- Row 3: Exam Name -->
                     <StackPanel Margin="0,0,0,16">
@@ -429,8 +427,10 @@
                 ══════════════════ -->
                 <Border BorderBrush="{StaticResource Border.Subtle}"
                         BorderThickness="0,1,0,0"
+                        CornerRadius="0,0,12,12"
                         Padding="28,16">
                     <Button x:Name="PublishBtn"
+                            Click="OnFinishAndPublishClicked"
                             Style="{StaticResource Btn.Primary}"
                             HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal">
@@ -446,5 +446,4 @@
 
             </StackPanel>
         </Border>
-    </Grid>
 </Window>

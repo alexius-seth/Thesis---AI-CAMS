@@ -103,11 +103,6 @@ namespace ACPAMS.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("feedback");
 
-                    b.Property<decimal?>("FinalAdjustedScore")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)")
-                        .HasColumnName("final_adjusted_score");
-
                     b.Property<string>("Justification")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("justification");
@@ -115,20 +110,6 @@ namespace ACPAMS.Migrations
                     b.Property<Guid?>("ModelId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("model_id");
-
-                    b.Property<string>("PromptVersion")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("prompt_version");
-
-                    b.Property<string>("ReviewNotes")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("review_notes");
-
-                    b.Property<string>("ReviewedBy")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("reviewed_by");
 
                     b.Property<Guid?>("RubricUsedId")
                         .HasColumnType("uniqueidentifier")
@@ -293,6 +274,64 @@ namespace ACPAMS.Migrations
                     b.ToTable("ai_rubric_evaluations");
                 });
 
+            modelBuilder.Entity("ACPAMS.Models.AppNotification", b =>
+                {
+                    b.Property<Guid>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("notification_id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("message");
+
+                    b.Property<Guid>("RecipientUserId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("severity");
+
+                    b.Property<string>("TargetEntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("target_entity_id");
+
+                    b.Property<string>("TargetRoute")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("target_route");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("NotificationId");
+
+                    b.ToTable("notifications");
+                });
+
             modelBuilder.Entity("ACPAMS.Models.Attachment", b =>
                 {
                     b.Property<Guid>("AttachmentId")
@@ -435,11 +474,6 @@ namespace ACPAMS.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
 
-                    b.Property<string>("Title")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("title");
-
                     b.Property<decimal?>("TotalPoints")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)")
@@ -456,49 +490,16 @@ namespace ACPAMS.Migrations
                     b.ToTable("exams");
                 });
 
-            modelBuilder.Entity("ACPAMS.Models.ExamAttemptLog", b =>
-                {
-                    b.Property<Guid>("LogId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("log_id")
-                        .HasDefaultValueSql("NEWID()");
-
-                    b.Property<string>("Action")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("action");
-
-                    b.Property<DateTime>("ActionTime")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("action_time");
-
-                    b.Property<Guid?>("AttemptId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("attempt_id");
-
-                    b.Property<string>("Details")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("details");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)")
-                        .HasColumnName("ip_address");
-
-                    b.HasKey("LogId");
-
-                    b.HasIndex("AttemptId");
-
-                    b.ToTable("exam_attempt_logs");
-                });
-
             modelBuilder.Entity("ACPAMS.Models.Instructor", b =>
                 {
                     b.Property<string>("InstructorId")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("instructor_id");
+
+                    b.Property<byte[]>("AvatarImage")
+                        .HasColumnType("varbinary(max)")
+                        .HasColumnName("avatar_image");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
@@ -557,10 +558,6 @@ namespace ACPAMS.Migrations
                     b.Property<Guid>("ExamId")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("exam_id");
-
-                    b.Property<string>("ExpectedOutput")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("expected_output");
 
                     b.Property<string>("GradingMethod")
                         .IsRequired()
@@ -780,6 +777,10 @@ namespace ACPAMS.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("student_id");
+
+                    b.Property<byte[]>("AvatarImage")
+                        .HasColumnType("varbinary(max)")
+                        .HasColumnName("avatar_image");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
@@ -1111,16 +1112,6 @@ namespace ACPAMS.Migrations
                     b.Navigation("Instructor");
                 });
 
-            modelBuilder.Entity("ACPAMS.Models.ExamAttemptLog", b =>
-                {
-                    b.HasOne("ACPAMS.Models.StudentExamAttempt", "Attempt")
-                        .WithMany("Logs")
-                        .HasForeignKey("AttemptId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Attempt");
-                });
-
             modelBuilder.Entity("ACPAMS.Models.Instructor", b =>
                 {
                     b.HasOne("ACPAMS.Models.User", "User")
@@ -1287,8 +1278,6 @@ namespace ACPAMS.Migrations
             modelBuilder.Entity("ACPAMS.Models.StudentExamAttempt", b =>
                 {
                     b.Navigation("Answers");
-
-                    b.Navigation("Logs");
                 });
 
             modelBuilder.Entity("ACPAMS.Models.User", b =>

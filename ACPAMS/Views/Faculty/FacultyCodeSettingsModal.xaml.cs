@@ -6,9 +6,21 @@ namespace ACPAMS.Views.Faculty
 {
     public partial class FacultyCodeSettingsModal : Window
     {
+        private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMNCRP_DISABLED = 1;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public FacultyCodeSettingsModal()
         {
             InitializeComponent();
+            SourceInitialized += (s, e) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                int policy = DWMNCRP_DISABLED;
+                DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
+            };
         }
 
         private void SaveBtn_Click(object sender, RoutedEventArgs e)

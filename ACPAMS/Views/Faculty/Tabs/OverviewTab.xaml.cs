@@ -22,8 +22,9 @@ namespace ACPAMS.Views.Faculty.Tabs
             var rows = await service.GetStudentRowsAsync(liveExam.ExamId);
             var dist = await service.AutoGradeAndGetDistributionAsync(liveExam.ExamId);
             var summary = await service.GetClassSummaryAsync(liveExam.ExamId);
+            var weaknesses = await service.GetTopWeaknessesAsync(liveExam.ExamId);
 
-            ExamLabel.Text = $"{liveExam.CourseCode} — {liveExam.Title}".ToUpper();
+            ExamLabel.Text = $"{liveExam.CourseCode} — {liveExam.ExamName}".ToUpper();
             StudentsTakingValue.Text = rows.Count(r => r.Status == "in_progress").ToString();
             StudentsFinishedValue.Text = rows.Count(r => r.Status == "submitted" || r.Status == "graded").ToString();
             StudentsFinishedSub.Text = $"of {rows.Count} enrolled";
@@ -47,6 +48,7 @@ namespace ACPAMS.Views.Faculty.Tabs
 
             BuildStudentRows(rows);
             BuildScoreDistribution(dist);
+            BuildWeaknesses(weaknesses);
         }
 
         private void BuildStudentRows(List<StudentRowDto> rows)
@@ -68,11 +70,11 @@ namespace ACPAMS.Views.Faculty.Tabs
             foreach (var r in rows)
             {
                 var grid = new Grid();
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
                 var avatar = new Border
@@ -109,7 +111,9 @@ namespace ACPAMS.Views.Faculty.Tabs
                     Text = r.Program,
                     FontSize = 13,
                     Foreground = System.Windows.Media.Brushes.Gray,
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    ToolTip = r.Program
                 };
                 Grid.SetColumn(program, 1);
 
@@ -121,6 +125,7 @@ namespace ACPAMS.Views.Faculty.Tabs
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(12),
                     Padding = new Thickness(8, 3, 8, 3),
+                    Margin = new Thickness(10, 0, 0, 0),
                     HorizontalAlignment = HorizontalAlignment.Left,
                     VerticalAlignment = VerticalAlignment.Center,
                     Child = new TextBlock
@@ -232,6 +237,114 @@ namespace ACPAMS.Views.Faculty.Tabs
         {
             bar.Width = max > 0 ? maxWidth * count / max : 0;
             label.Text = count.ToString();
+        }
+
+        private void BuildWeaknesses(List<WeaknessItemDto> weaknesses)
+        {
+            WeaknessListPanel.Children.Clear();
+
+            if (weaknesses.Count == 0)
+            {
+                WeaknessEmptyState.Visibility = Visibility.Visible;
+                return;
+            }
+
+            WeaknessEmptyState.Visibility = Visibility.Collapsed;
+
+            for (int i = 0; i < weaknesses.Count; i++)
+            {
+                var w = weaknesses[i];
+                var (fg, bg) = i switch
+                {
+                    0 => (Brush("#C62828"), Brush("#FEF2F2")),
+                    1 => (Brush("#B45309"), Brush("#FEF3C7")),
+                    _ => (Brush("#64748B"), Brush("#F1F5F9"))
+                };
+
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var rankBadge = new Border
+                {
+                    Width = 22,
+                    Height = 22,
+                    CornerRadius = new CornerRadius(11),
+                    Background = bg,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Child = new TextBlock
+                    {
+                        Text = w.Rank.ToString(),
+                        FontSize = 11,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = fg,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                };
+                Grid.SetColumn(rankBadge, 0);
+
+                var textStack = new StackPanel
+                {
+                    Margin = new Thickness(10, 0, 8, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                textStack.Children.Add(new TextBlock
+                {
+                    Text = w.Topic,
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = (System.Windows.Media.Brush)FindResource("Text.Primary"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    ToolTip = w.Topic
+                });
+                textStack.Children.Add(new TextBlock
+                {
+                    Text = w.Category,
+                    FontSize = 11,
+                    Foreground = (System.Windows.Media.Brush)FindResource("Text.Muted"),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                });
+                Grid.SetColumn(textStack, 1);
+
+                var statPill = new Border
+                {
+                    Background = bg,
+                    BorderBrush = fg,
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(6, 3, 6, 3),
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Child = new TextBlock
+                    {
+                        Text = w.StatText,
+                        FontSize = 10,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = fg
+                    }
+                };
+                Grid.SetColumn(statPill, 2);
+
+                grid.Children.Add(rankBadge);
+                grid.Children.Add(textStack);
+                grid.Children.Add(statPill);
+
+                var itemContainer = new Border
+                {
+                    Padding = new Thickness(0, 0, 0, 12),
+                    Margin = new Thickness(0, 0, 0, i < weaknesses.Count - 1 ? 12 : 0)
+                };
+                if (i < weaknesses.Count - 1)
+                {
+                    itemContainer.BorderBrush = (System.Windows.Media.Brush)FindResource("Border.Subtle");
+                    itemContainer.BorderThickness = new Thickness(0, 0, 0, 1);
+                }
+                itemContainer.Child = grid;
+
+                WeaknessListPanel.Children.Add(itemContainer);
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ACPAMS.Views.Faculty
 {
-    public partial class StudentReportPage : UserControl
+    public partial class StudentReportPage : UserControl, IRefreshableView
     {
         public StudentReportViewModel Report { get; set; } = new();
         private Guid _attemptId;
@@ -24,10 +24,15 @@ namespace ACPAMS.Views.Faculty
             _attemptId = attemptId;
             DataContext = this;
             InitializeComponent();
-            LoadReport();
+            Loaded += async (s, e) => await LoadReportAsync();
         }
 
-        private async void LoadReport()
+        public async System.Threading.Tasks.Task RefreshAsync()
+        {
+            await LoadReportAsync();
+        }
+
+        private async System.Threading.Tasks.Task LoadReportAsync()
         {
             try
             {
@@ -45,6 +50,14 @@ namespace ACPAMS.Views.Faculty
                 if (attempt == null)
                 {
                     MessageBox.Show("Attempt not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var currentInstructorId = SessionManager.CurrentInstructorId;
+                if (string.IsNullOrEmpty(currentInstructorId) || attempt.Exam?.InstructorId != currentInstructorId)
+                {
+                    MessageBox.Show("You do not have permission to view this report.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MainWindow.NavigateBackStatic();
                     return;
                 }
 
@@ -187,7 +200,7 @@ namespace ACPAMS.Views.Faculty
         private void StudentName_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (_studentId != null)
-                MainWindow.Navigate(new StudentInformationTab(_studentId));
+                MainWindow.Navigate(new StudentInformationTab(_studentId, NavigationOrigin.Reports, _examId));
         }
 
         private async void GenerateAssessment_Click(object sender, RoutedEventArgs e)

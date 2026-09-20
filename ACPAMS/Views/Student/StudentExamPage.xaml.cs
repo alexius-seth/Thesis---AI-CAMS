@@ -70,6 +70,7 @@ namespace ACPAMS.Views.Student
         private void OnPageUnloaded(object sender, RoutedEventArgs e)
         {
             StopMonitoring();
+            ACPAMS.MainWindow.ExitKioskFullscreenStatic();
         }
 
         // ── MONITORING SETUP ─────────────────────────────────────────────
@@ -420,7 +421,7 @@ namespace ACPAMS.Views.Student
 
                     btn.Click += async (s, e) =>
                     {
-                        _ = SaveCurrentAnswer();
+                        await SaveCurrentAnswer();
                         LoadQuestion(index);
                     };
 
@@ -519,6 +520,7 @@ namespace ACPAMS.Views.Student
             string? answerText = null;
             string? sourceCode = null;
             string? languageUsed = null;
+            string? executionOutput = null;
 
             if (canvas is Canvas.TextInputCanvas tc)
                 answerText = tc.GetAnswer();
@@ -530,6 +532,7 @@ namespace ACPAMS.Views.Student
             {
                 sourceCode = cc.GetSourceCode();
                 languageUsed = cc.GetLanguage();
+                executionOutput = cc.GetExecutionOutput();
             }
 
             bool hasAnswer = !string.IsNullOrWhiteSpace(answerText)
@@ -540,7 +543,7 @@ namespace ACPAMS.Views.Student
             await _examService.SaveAnswerAsync(
                 SessionManager.CurrentAttempt.AttemptId,
                 question.QuestionId,
-                answerText, sourceCode, languageUsed);
+                answerText, sourceCode, languageUsed, executionOutput);
 
             UpdateProgress();
             UpdateNavPane();
@@ -588,8 +591,8 @@ namespace ACPAMS.Views.Student
             SessionManager.CurrentAttempt = null;
             SessionManager.CurrentExam = null;
 
+            ACPAMS.MainWindow.ExitKioskFullscreenStatic();
             ACPAMS.MainWindow.ClearNavigationHistory();
-            ACPAMS.MainWindow.Resize(520, 520);
             ACPAMS.MainWindow.Navigate(new ExamSubmissionConfirmationPage());
         }
     }

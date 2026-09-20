@@ -469,7 +469,7 @@ namespace ACPAMS.Views.Faculty.Tabs
         private void BackToHome_Click(object sender, RoutedEventArgs e)
         {
             _refreshTimer?.Stop();
-            MainWindow.NavigateBackStatic();
+            MainWindow.NavigateToFacultyHomeStatic();
         }
     }
 }

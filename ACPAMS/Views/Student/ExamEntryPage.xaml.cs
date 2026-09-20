@@ -83,7 +83,7 @@ namespace ACPAMS.Views.Student
                 SessionManager.CurrentAttempt = attempt;
                 SessionManager.CurrentExam = exam;
 
-                ACPAMS.MainWindow.Resize(1280, 800);
+                ACPAMS.MainWindow.EnterKioskFullscreenStatic();
                 ACPAMS.MainWindow.Navigate(new StudentExamPage());
             }
             catch (Exception ex)
@@ -120,9 +120,7 @@ namespace ACPAMS.Views.Student
 
         private void LogOutBtn_Click(object sender, RoutedEventArgs e)
         {
-            SessionManager.Clear();
-            ACPAMS.MainWindow.Resize(520, 600);
-            ACPAMS.MainWindow.Navigate(new Views.Auth.LoginPage());
+            SessionManager.Logout();
         }
     }
 }

@@ -30,3 +30,7 @@ RubricAttachments/
 
 # ── Secrets & environment files (defense in depth) ──────────────
 graphify-out
+
+# ── Portable compiler and runtime binaries ────────────────────────
+[Tt]ools/
+ACPAMS/Tools/

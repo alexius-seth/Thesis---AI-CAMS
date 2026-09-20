@@ -57,14 +57,95 @@ namespace ACPAMS.Views.Faculty
                     FirstNameBox.Text = instructor.FirstName ?? string.Empty;
                     LastNameBox.Text = instructor.LastName ?? string.Empty;
                     MiddleInitialBox.Text = instructor.MiddleInitial ?? string.Empty;
-                    DepartmentBox.Text = instructor.Department ?? string.Empty;
                 }
 
                 UsernameBox.Text = SessionManager.CurrentUser?.Username ?? string.Empty;
+                UpdateAvatarDisplay();
             }
             catch (Exception ex)
             {
                 ShowAlert(ProfileAlertBanner, ProfileAlertText, $"Error loading profile: {ex.Message}", false);
+            }
+        }
+
+        private void UpdateAvatarDisplay()
+        {
+            if (SessionManager.CachedAvatar != null)
+            {
+                SettingsAvatarBrush.ImageSource = SessionManager.CachedAvatar;
+                SettingsAvatarImageBorder.Visibility = Visibility.Visible;
+                SettingsInitialsText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SettingsAvatarImageBorder.Visibility = Visibility.Collapsed;
+                SettingsInitialsText.Text = SessionManager.Initials;
+                SettingsInitialsText.Visibility = Visibility.Visible;
+            }
+        }
+
+        private async void UploadAvatar_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg",
+                Title = "Select Profile Photo"
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    byte[] imageBytes = AvatarService.ProcessAndCropToSquare(dlg.FileName);
+
+                    using var db = new AppDbContext();
+                    var instructorId = SessionManager.CurrentInstructor?.InstructorId;
+                    if (string.IsNullOrEmpty(instructorId)) return;
+
+                    var instructor = await db.Instructors.FirstOrDefaultAsync(i => i.InstructorId == instructorId);
+                    if (instructor != null)
+                    {
+                        instructor.AvatarImage = imageBytes;
+                        await db.SaveChangesAsync();
+
+                        SessionManager.CurrentInstructor.AvatarImage = imageBytes;
+                        SessionManager.RefreshAvatarCache();
+                        UpdateAvatarDisplay();
+
+                        ShowAlert(ProfileAlertBanner, ProfileAlertText, "Profile photo updated successfully!", true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ShowAlert(ProfileAlertBanner, ProfileAlertText, $"Failed to upload photo: {ex.Message}", false);
+                }
+            }
+        }
+
+        private async void RemoveAvatar_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                using var db = new AppDbContext();
+                var instructorId = SessionManager.CurrentInstructor?.InstructorId;
+                if (string.IsNullOrEmpty(instructorId)) return;
+
+                var instructor = await db.Instructors.FirstOrDefaultAsync(i => i.InstructorId == instructorId);
+                if (instructor != null)
+                {
+                    instructor.AvatarImage = null;
+                    await db.SaveChangesAsync();
+
+                    SessionManager.CurrentInstructor.AvatarImage = null;
+                    SessionManager.RefreshAvatarCache();
+                    UpdateAvatarDisplay();
+
+                    ShowAlert(ProfileAlertBanner, ProfileAlertText, "Profile photo removed.", true);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowAlert(ProfileAlertBanner, ProfileAlertText, $"Failed to remove photo: {ex.Message}", false);
             }
         }
 
@@ -73,7 +154,6 @@ namespace ACPAMS.Views.Faculty
             string firstName = FirstNameBox.Text.Trim();
             string lastName = LastNameBox.Text.Trim();
             string middleInitial = MiddleInitialBox.Text.Trim();
-            string department = DepartmentBox.Text.Trim();
             string username = UsernameBox.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
@@ -161,7 +241,7 @@ namespace ACPAMS.Views.Faculty
                     user.Instructor.FirstName = firstName;
                     user.Instructor.LastName = lastName;
                     user.Instructor.MiddleInitial = string.IsNullOrWhiteSpace(middleInitial) ? null : middleInitial;
-                    user.Instructor.Department = string.IsNullOrWhiteSpace(department) ? null : department;
+                    user.Instructor.Department = "Department of Computer Studies";
                 }
 
                 await db.SaveChangesAsync();
@@ -187,43 +267,38 @@ namespace ACPAMS.Views.Faculty
 
         // ─── Section 2: Gemini Model & API Key ─────────────────────────────
 
-        private bool _isKeyRevealed = false;
+        private const string MASKED_KEY_PLACEHOLDER = "••••••••••••••••••••••••••••••••";
 
         private void LoadGeminiModel()
         {
             GeminiModelBox.Text = AppSettingsService.GetGeminiModel();
             string key = AppSettingsService.GetGeminiApiKey();
-            if (!string.IsNullOrEmpty(key))
+            GeminiApiKeyBox.Password = !string.IsNullOrEmpty(key) ? MASKED_KEY_PLACEHOLDER : string.Empty;
+        }
+
+        private void GeminiApiKeyBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (GeminiApiKeyBox.Password == MASKED_KEY_PLACEHOLDER)
             {
-                GeminiApiKeyBox.Password = key;
-                GeminiApiKeyPlainBox.Text = key;
+                GeminiApiKeyBox.SelectAll();
             }
         }
 
-        private void ToggleApiKeyVisibility_Click(object sender, RoutedEventArgs e)
+        private void GeminiApiKeyBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            _isKeyRevealed = !_isKeyRevealed;
-            if (_isKeyRevealed)
+            if (string.IsNullOrEmpty(GeminiApiKeyBox.Password) && !string.IsNullOrEmpty(AppSettingsService.GetGeminiApiKey()))
             {
-                GeminiApiKeyPlainBox.Text = GeminiApiKeyBox.Password;
-                GeminiApiKeyBox.Visibility = Visibility.Collapsed;
-                GeminiApiKeyPlainBox.Visibility = Visibility.Visible;
-                ToggleApiKeyVisibilityBtn.Content = "🙈 Hide";
-            }
-            else
-            {
-                GeminiApiKeyBox.Password = GeminiApiKeyPlainBox.Text;
-                GeminiApiKeyPlainBox.Visibility = Visibility.Collapsed;
-                GeminiApiKeyBox.Visibility = Visibility.Visible;
-                ToggleApiKeyVisibilityBtn.Content = "👁 Show";
+                GeminiApiKeyBox.Password = MASKED_KEY_PLACEHOLDER;
             }
         }
 
         private async void TestGemini_Click(object sender, RoutedEventArgs e)
         {
-            string key = _isKeyRevealed ? GeminiApiKeyPlainBox.Text.Trim() : GeminiApiKeyBox.Password.Trim();
-            if (string.IsNullOrWhiteSpace(key))
+            string key = GeminiApiKeyBox.Password.Trim();
+            if (string.IsNullOrWhiteSpace(key) || key == MASKED_KEY_PLACEHOLDER)
+            {
                 key = AppSettingsService.GetGeminiApiKey();
+            }
 
             string model = GeminiModelBox.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(key))
@@ -250,7 +325,7 @@ namespace ACPAMS.Views.Faculty
         private async void SaveModel_Click(object sender, RoutedEventArgs e)
         {
             string model = GeminiModelBox.Text?.Trim() ?? string.Empty;
-            string key = _isKeyRevealed ? GeminiApiKeyPlainBox.Text.Trim() : GeminiApiKeyBox.Password.Trim();
+            string key = GeminiApiKeyBox.Password.Trim();
 
             if (string.IsNullOrWhiteSpace(model))
             {
@@ -261,10 +336,13 @@ namespace ACPAMS.Views.Faculty
             try
             {
                 AppSettingsService.SaveGeminiModel(model);
+                GeminiModelBox.Text = AppSettingsService.GetGeminiModel();
 
-                if (!string.IsNullOrWhiteSpace(key))
+                // Preserve existing key if placeholder is untouched; update if a new key was pasted/typed
+                if (!string.IsNullOrWhiteSpace(key) && key != MASKED_KEY_PLACEHOLDER)
                 {
                     AppSettingsService.SaveGeminiApiKey(key);
+                    GeminiApiKeyBox.Password = MASKED_KEY_PLACEHOLDER;
                 }
 
                 var currentUser = SessionManager.CurrentUser;
@@ -276,13 +354,13 @@ namespace ACPAMS.Views.Faculty
                         UserId = currentUser.UserId,
                         Action = "UpdateGeminiConfig",
                         EntityType = "SystemConfiguration",
-                        Details = $"Status: Success. Active Gemini model updated to '{model}'.",
+                        Details = $"Status: Success. Active Gemini model updated to '{AppSettingsService.GetGeminiModel()}'.",
                         CreatedAt = DateTime.Now
                     });
                     await db.SaveChangesAsync();
                 }
 
-                ShowAlert(GeminiAlertBanner, GeminiAlertText, $"AI settings saved successfully (Model: {model}).", true);
+                ShowAlert(GeminiAlertBanner, GeminiAlertText, $"AI settings saved successfully (Model: {AppSettingsService.GetGeminiModel()}).", true);
             }
             catch (Exception ex)
             {
@@ -411,9 +489,7 @@ namespace ACPAMS.Views.Faculty
 
         private void Logout_Click(object sender, RoutedEventArgs e)
         {
-            SessionManager.Clear();
-            MainWindow.Resize(520, 600);
-            MainWindow.Navigate(new Views.Auth.LoginPage());
+            SessionManager.Logout();
         }
     }
 }

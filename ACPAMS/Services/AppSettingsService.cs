@@ -31,7 +31,7 @@ namespace ACPAMS.Services
         public static double ScoreDecayRate { get; set; } = 0.02;
 
         // ─── Gemini AI Model (Defaults) ─────────────────────────────────────
-        public static string GeminiModel { get; set; } = "gemini-2.5-flash";
+        public static string GeminiModel { get; set; } = "gemini-2.5-flash-lite";
 
         static AppSettingsService()
         {
@@ -87,7 +87,7 @@ namespace ACPAMS.Services
                         if (json["Gemini"] is JsonObject gemini)
                         {
                             if (gemini["Model"] != null)
-                                GeminiModel = gemini["Model"]!.ToString();
+                                GeminiModel = NormalizeModelName(gemini["Model"]!.ToString());
                         }
                     }
                 }
@@ -98,7 +98,22 @@ namespace ACPAMS.Services
             }
         }
 
-        // ─── Gemini Key DPAPI ───────────────────────────────────────────────
+        // ─── Gemini Key DPAPI & Model Normalization ─────────────────────────
+
+        public static string NormalizeModelName(string? model)
+        {
+            if (string.IsNullOrWhiteSpace(model))
+                return "gemini-2.5-flash-lite";
+
+            string cleanModelName = model.Trim();
+            while (cleanModelName.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanModelName = cleanModelName.Substring("models/".Length).TrimStart('/');
+            }
+            return string.IsNullOrWhiteSpace(cleanModelName) ? "gemini-2.5-flash-lite" : cleanModelName;
+        }
+
+        public static string SanitizeModelName(string? model) => NormalizeModelName(model);
 
         public static string GetGeminiApiKey()
         {
@@ -137,17 +152,14 @@ namespace ACPAMS.Services
         public static string GetGeminiModel()
         {
             if (!string.IsNullOrWhiteSpace(GeminiModel))
-                return GeminiModel;
+                return NormalizeModelName(GeminiModel);
 
-            return App.Configuration?["Gemini:Model"] ?? "gemini-2.5-flash";
+            return NormalizeModelName(App.Configuration?["Gemini:Model"]);
         }
 
         public static void SaveGeminiModel(string model)
         {
-            if (string.IsNullOrWhiteSpace(model))
-                model = "gemini-2.5-flash";
-
-            GeminiModel = model.Trim();
+            GeminiModel = NormalizeModelName(model);
 
             if (App.Configuration != null)
             {
@@ -181,7 +193,7 @@ namespace ACPAMS.Services
             if (string.IsNullOrWhiteSpace(apiKey))
                 return (false, "Please provide an API key to test.");
 
-            string activeModel = !string.IsNullOrWhiteSpace(model) ? model.Trim() : GetGeminiModel();
+            string activeModel = NormalizeModelName(!string.IsNullOrWhiteSpace(model) ? model : GetGeminiModel());
 
             try
             {

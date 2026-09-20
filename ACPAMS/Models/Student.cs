@@ -45,6 +45,9 @@ namespace ACPAMS.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        [Column("avatar_image")]
+        public byte[]? AvatarImage { get; set; }
+
         // Navigation
         [ForeignKey("UserId")]
         public User? User { get; set; }

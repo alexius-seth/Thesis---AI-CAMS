@@ -20,13 +20,6 @@ namespace ACPAMS.Models
         [Column("instructor_id")]
         public string InstructorId { get; set; } = string.Empty;
 
-        [NotMapped]
-        public string? Title
-        {
-            get => ExamName;
-            set => ExamName = value;
-        }
-
         [MaxLength(20)]
         [Column("course_code")]
         public string? CourseCode { get; set; }
