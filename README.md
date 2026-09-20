@@ -279,6 +279,6 @@ When building for deployment, these portable binaries are copied alongside the e
 ---
 
 ## 📄 License & Authors
-Developed as an academic thesis project by **alexius-seth** for automated assessment, intelligent rubric grading, and lab proctoring.
+Developed as an academic thesis project by ARNJ Tech for automated assessment, intelligent rubric grading, and lab proctoring.
 All rights reserved.
 
