@@ -55,7 +55,7 @@ namespace ACPAMS.Services
                                            attempt.Student.LastName.Length > 0
                             ? $"{attempt.Student.FirstName[0]}{attempt.Student.LastName[0]}".ToUpper()
                             : "??",
-                        PcLabel = attempt.IpAddress ?? attempt.StudentId ?? "N/A",
+                        PcLabel = !string.IsNullOrWhiteSpace(attempt.DeviceInfo) ? attempt.DeviceInfo : (attempt.IpAddress ?? attempt.StudentId ?? "N/A"),
                         SectionName = group.Key,
                         IsFullyGraded = fullyGraded
                     });

@@ -45,7 +45,7 @@ namespace ACPAMS.Services
 
             var result = new ExamScoresSummaryDto
             {
-                ExamTitle = exam?.Title ?? exam?.ExamName ?? "Untitled Exam",
+                ExamTitle = exam?.ExamName ?? "Untitled Exam",
                 SectionNames = sectionNames,
                 TotalTestTakers = attempts.Count
             };
@@ -141,6 +141,7 @@ namespace ACPAMS.Services
             if (attempt?.Exam == null) return new List<StudentAnswerDetailDto>();
 
             var questions = await context.Questions
+                .Include(q => q.Options)
                 .Where(q => q.ExamId == attempt.Exam.ExamId)
                 .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
@@ -155,17 +156,39 @@ namespace ACPAMS.Services
                 var ans = attempt.Answers.FirstOrDefault(a => a.QuestionId == q.QuestionId);
                 bool isObjective = objectiveTypes.Contains(q.QuestionType);
 
+                string studentAnswerText;
+                if (q.QuestionType == "coding")
+                {
+                    studentAnswerText = ans?.SourceCode ?? "(no submission)";
+                }
+                else if (string.IsNullOrWhiteSpace(ans?.AnswerText))
+                {
+                    studentAnswerText = "(no submission)";
+                }
+                else if (q.QuestionType == "multiple_choice")
+                {
+                    studentAnswerText = AutoCheckerService.FormatOptionDisplay(ans.AnswerText, q.Options);
+                }
+                else
+                {
+                    studentAnswerText = ans.AnswerText;
+                }
+
+                string? correctAnswerText = null;
+                if (isObjective)
+                {
+                    correctAnswerText = q.QuestionType == "multiple_choice"
+                        ? AutoCheckerService.FormatOptionDisplay(q.CorrectAnswer, q.Options)
+                        : q.CorrectAnswer;
+                }
+
                 result.Add(new StudentAnswerDetailDto
                 {
                     QuestionNumber = number++,
                     QuestionText = q.Text,
                     QuestionType = q.QuestionType,
-                    StudentAnswerText = q.QuestionType == "coding"
-                        ? (ans?.SourceCode ?? "(no submission)")
-                        : (ans?.AnswerText ?? "(no submission)"),
-                    // Only objective types have a definitive answer key to show —
-                    // essay/coding are rubric-graded, no single "correct" text exists.
-                    CorrectAnswerText = isObjective ? q.CorrectAnswer : null,
+                    StudentAnswerText = studentAnswerText,
+                    CorrectAnswerText = correctAnswerText,
                     ObtainedPoints = ans?.ObtainedPoints,
                     MaxPoints = q.Points ?? 0,
                     IsObjective = isObjective,

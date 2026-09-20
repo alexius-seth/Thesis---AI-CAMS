@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ACPAMS.Models;
 
 namespace ACPAMS.Data
@@ -40,9 +40,9 @@ namespace ACPAMS.Data
         public DbSet<AiAssessment> AiAssessments { get; set; }
         public DbSet<AiJob> AiJobs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
-        public DbSet<ExamAttemptLog> ExamAttemptLogs { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<QuestionOption> QuestionOptions { get; set; }
+        public DbSet<AppNotification> Notifications { get; set; }
 
         // ── Connection ──────────────────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder options)
@@ -94,8 +94,7 @@ namespace ACPAMS.Data
                 entity.HasKey(e => e.ExamId);
                 entity.Property(e => e.ExamId).HasDefaultValueSql("NEWID()");
                 entity.Property(e => e.TotalPoints).HasPrecision(10, 2);
-                entity.HasKey(e => e.ExamId);
-                entity.Property(e => e.ExamId).HasDefaultValueSql("NEWID()");
+                entity.Property(e => e.RandomizeQuestions).HasDefaultValue(false);
                 entity.HasIndex(e => e.ExamCode).IsUnique();
                 entity.HasOne(e => e.Instructor)
                       .WithMany(i => i.Exams)
@@ -212,7 +211,6 @@ namespace ACPAMS.Data
                 entity.Property(e => e.EvaluationId).HasDefaultValueSql("NEWID()");
                 entity.Property(e => e.Score).HasPrecision(10, 2);
                 entity.Property(e => e.ConfidenceScore).HasPrecision(10, 2);
-                entity.Property(e => e.FinalAdjustedScore).HasPrecision(10, 2);
                 entity.HasKey(e => e.EvaluationId);
                 entity.Property(e => e.EvaluationId).HasDefaultValueSql("NEWID()");
                 entity.HasOne(e => e.Answer)
@@ -295,17 +293,6 @@ namespace ACPAMS.Data
                       .WithMany()
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            // ── ExamAttemptLog ──────────────────────────────
-            modelBuilder.Entity<ExamAttemptLog>(entity =>
-            {
-                entity.HasKey(e => e.LogId);
-                entity.Property(e => e.LogId).HasDefaultValueSql("NEWID()");
-                entity.HasOne(e => e.Attempt)
-                      .WithMany(a => a.Logs)
-                      .HasForeignKey(e => e.AttemptId)
-                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ── Attachment ──────────────────────────────────

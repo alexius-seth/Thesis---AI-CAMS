@@ -162,6 +162,32 @@
             </Setter>
         </Style>
 
+        <!-- Inline ghost button -->
+        <Style x:Key="Btn.Ghost" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Per-question points input -->
         <Style x:Key="Input.Points" TargetType="TextBox">
             <Setter Property="FontSize"                 Value="16"/>
@@ -383,6 +409,9 @@
                                                                                Foreground="{StaticResource Text.Primary}"/>
                                                                     <TextBlock Text="{Binding PcLabel}"
                                                                                FontSize="11"
+                                                                               TextTrimming="CharacterEllipsis"
+                                                                               MaxWidth="160"
+                                                                               ToolTip="{Binding PcLabel}"
                                                                                Foreground="{StaticResource Text.Muted}"/>
                                                                 </StackPanel>
                                                             </StackPanel>
@@ -496,10 +525,25 @@
                                                                    FontSize="11"
                                                                    Foreground="{StaticResource Status.Danger}"
                                                                    TextWrapping="Wrap" Margin="0,2,0,0"/>
-                                                        <TextBlock Text="Grade this manually below."
-                                                                   FontSize="11"
-                                                                   Foreground="{StaticResource Text.Muted}"
-                                                                   Margin="0,4,0,0"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                            <TextBlock Text="Grade this manually below."
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource Text.Muted}"
+                                                                       VerticalAlignment="Center"/>
+                                                            <TextBlock Text="  ·  "
+                                                                       Foreground="{StaticResource Text.Muted}"
+                                                                       VerticalAlignment="Center"/>
+                                                            <Button Style="{StaticResource Btn.Ghost}"
+                                                                    Click="RetryAiGrading_Click"
+                                                                    IsEnabled="{Binding IsNotAiRetrying}">
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="Retry AI Grading" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Accent.Primary}" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </Button>
+                                                            <ProgressBar IsIndeterminate="True" Width="50" Height="4" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                         Visibility="{Binding IsAiRetrying, Converter={StaticResource BoolToVis}}"/>
+                                                        </StackPanel>
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>

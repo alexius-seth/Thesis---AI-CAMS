@@ -40,10 +40,10 @@ namespace ACPAMS.Views.Student
                 SessionManager.CurrentAttempt == null) return;
 
             var exam = SessionManager.CurrentExam;
-            ExamTitleText.Text = $"{exam.CourseCode} — {exam.Title?.ToUpper() ?? "EXAM"}";
-            ExamSubtitleText.Text = exam.ExamName ?? string.Empty;
+            ExamTitleText.Text = $"{exam.CourseCode} — {exam.ExamName?.ToUpper() ?? "EXAM"}";
+            ExamSubtitleText.Text = !string.IsNullOrEmpty(exam.ExamCode) ? $"Code: {exam.ExamCode}" : string.Empty;
 
-            _questions = await _examService.GetQuestionsAsync(exam.ExamId);
+            _questions = await _examService.GetQuestionsAsync(exam.ExamId, SessionManager.CurrentAttempt.AttemptId);
 
             if (_questions.Count == 0)
             {
@@ -57,6 +57,7 @@ namespace ACPAMS.Views.Student
             StartTimer();
             UpdateTimerDisplay();
             BuildNavPane();
+            UpdateProgress();
             LoadQuestion(0);
 
             // Start monitoring
@@ -69,6 +70,7 @@ namespace ACPAMS.Views.Student
         private void OnPageUnloaded(object sender, RoutedEventArgs e)
         {
             StopMonitoring();
+            ACPAMS.MainWindow.ExitKioskFullscreenStatic();
         }
 
         // ── MONITORING SETUP ─────────────────────────────────────────────
@@ -98,6 +100,28 @@ namespace ACPAMS.Views.Student
                 }
             };
 
+            _monitoring.EyeStatusUpdated += (ear, isOpen) =>
+            {
+                EyeStatusDot.Fill = isOpen
+                    ? new SolidColorBrush(Color.FromRgb(21, 128, 61))
+                    : new SolidColorBrush(Color.FromRgb(180, 83, 9));
+                EyeStatusText.Text = $"Eyes: {(isOpen ? "Open" : "Closed")} (EAR: {ear:F2})";
+            };
+
+            _monitoring.GazeDirectionUpdated += direction =>
+            {
+                var (color, text) = direction switch
+                {
+                    "Center" => (Color.FromRgb(21, 128, 61), "Gaze: Center"),
+                    "Left" => (Color.FromRgb(198, 40, 40), "Gaze: Looking Left"),
+                    "Right" => (Color.FromRgb(198, 40, 40), "Gaze: Looking Right"),
+                    "Closed" => (Color.FromRgb(180, 83, 9), "Gaze: Closed"),
+                    _ => (Color.FromRgb(100, 116, 139), $"Gaze: {direction}")
+                };
+                GazeStatusDot.Fill = new SolidColorBrush(color);
+                GazeStatusText.Text = text;
+            };
+
             var attemptId = SessionManager.CurrentAttempt?.AttemptId ?? Guid.Empty;
             bool initialized = _monitoring.Initialize(attemptId);
 
@@ -125,13 +149,15 @@ namespace ACPAMS.Views.Student
             // Only show alerts for these specific events
             if (type == SuspiciousEventType.ClipboardAttempt ||
                 type == SuspiciousEventType.AltTabAttempt ||
-                type == SuspiciousEventType.WindowFocusLost)
+                type == SuspiciousEventType.WindowFocusLost ||
+                type == SuspiciousEventType.GazeDiverted)
             {
                 ShowAlert(type switch
                 {
                     SuspiciousEventType.ClipboardAttempt => "Clipboard Attempt",
                     SuspiciousEventType.AltTabAttempt => "Alt+Tab Blocked",
                     SuspiciousEventType.WindowFocusLost => "Window Focus Lost",
+                    SuspiciousEventType.GazeDiverted => "Gaze Diverted",
                     _ => "Warning"
                 }, description);
                 return;
@@ -395,7 +421,7 @@ namespace ACPAMS.Views.Student
 
                     btn.Click += async (s, e) =>
                     {
-                        _ = SaveCurrentAnswer();
+                        await SaveCurrentAnswer();
                         LoadQuestion(index);
                     };
 
@@ -443,8 +469,12 @@ namespace ACPAMS.Views.Student
             int answered = _answeredIndices.Count;
             int total = _questions.Count;
             ProgressText.Text = $"{answered} / {total}";
-            ProgressBar.Width = total > 0 ? (double)answered / total * 100 : 0;
+            ProgressBar.Width = total > 0 && ProgressBarTrack.ActualWidth > 0
+                ? (double)answered / total * ProgressBarTrack.ActualWidth
+                : 0;
         }
+
+        private void ProgressBarTrack_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateProgress();
 
         // ── QUESTION LOADING ──────────────────────────────────────────────
         private async void LoadQuestion(int index)
@@ -463,14 +493,14 @@ namespace ACPAMS.Views.Student
             UserControl canvas = question.QuestionType switch
             {
                 "identification" or "essay" =>
-                    new Canvas.TextInputCanvas(question, existingAnswer),
+                    new Canvas.TextInputCanvas(question, existingAnswer, index + 1, _questions.Count),
                 "multiple_choice" or "true_false" =>
                     new Canvas.OptionSelectorCanvas(question, existingAnswer),
                 "enumeration" =>
-                    new Canvas.EnumerationCanvas(question, existingAnswer),
+                    new Canvas.EnumerationCanvas(question, existingAnswer, index + 1, _questions.Count),
                 "coding" =>
                     new Canvas.CodingCanvas(question, existingAnswer),
-                _ => new Canvas.TextInputCanvas(question, existingAnswer)
+                _ => new Canvas.TextInputCanvas(question, existingAnswer, index + 1, _questions.Count)
             };
 
             ExamCanvasHost.Content = canvas;
@@ -490,6 +520,7 @@ namespace ACPAMS.Views.Student
             string? answerText = null;
             string? sourceCode = null;
             string? languageUsed = null;
+            string? executionOutput = null;
 
             if (canvas is Canvas.TextInputCanvas tc)
                 answerText = tc.GetAnswer();
@@ -501,6 +532,7 @@ namespace ACPAMS.Views.Student
             {
                 sourceCode = cc.GetSourceCode();
                 languageUsed = cc.GetLanguage();
+                executionOutput = cc.GetExecutionOutput();
             }
 
             bool hasAnswer = !string.IsNullOrWhiteSpace(answerText)
@@ -511,7 +543,7 @@ namespace ACPAMS.Views.Student
             await _examService.SaveAnswerAsync(
                 SessionManager.CurrentAttempt.AttemptId,
                 question.QuestionId,
-                answerText, sourceCode, languageUsed);
+                answerText, sourceCode, languageUsed, executionOutput);
 
             UpdateProgress();
             UpdateNavPane();
@@ -559,8 +591,8 @@ namespace ACPAMS.Views.Student
             SessionManager.CurrentAttempt = null;
             SessionManager.CurrentExam = null;
 
+            ACPAMS.MainWindow.ExitKioskFullscreenStatic();
             ACPAMS.MainWindow.ClearNavigationHistory();
-            ACPAMS.MainWindow.Resize(520, 520);
             ACPAMS.MainWindow.Navigate(new ExamSubmissionConfirmationPage());
         }
     }

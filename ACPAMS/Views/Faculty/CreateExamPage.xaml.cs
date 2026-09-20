@@ -8,6 +8,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using ACPAMS.Services;
 using ACPAMS.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace ACPAMS.Views.Faculty
 {
@@ -22,7 +24,15 @@ namespace ACPAMS.Views.Faculty
         private Dictionary<string, RubricData> _rubricData = new Dictionary<string, RubricData>();
 
         // Supported programming languages
-        private readonly string[] _supportedLanguages = new[] { "Java", "C", "C#", "C++", "Python" };
+        private readonly string[] _supportedLanguages = new[] { "C", "Python", "Java" };
+
+        private ExamSection? _sectionPendingDelete;
+
+        private Guid? _editingExamId;
+        private string? _editingExamName;
+        private string? _editingCourseCode;
+        private int? _editingTimeLimitMinutes;
+        private bool? _editingRandomizeQuestions;
 
         public class ExamSection
         {
@@ -52,6 +62,8 @@ namespace ACPAMS.Views.Faculty
             public string ProgrammingLanguage { get; set; }
             public string SectionId { get; set; }
             public string ExpectedAnswers { get; set; } // comma-separated for enumeration
+            public string? StarterCode { get; set; }
+            public double PromptHeight { get; set; } = 80;
         }
 
         // Default constructor
@@ -74,6 +86,137 @@ namespace ACPAMS.Views.Faculty
             UpdateActiveSectionHeader();
             ResetAllTypeButtons();
             UpdateHeaderWithCategory();
+        }
+
+        // Constructor for editing existing exam
+        public CreateExamPage(Guid examId) : this("Examination")
+        {
+            _editingExamId = examId;
+            Loaded += async (s, e) => await LoadExistingExamAsync(examId);
+        }
+
+        private async Task LoadExistingExamAsync(Guid examId)
+        {
+            try
+            {
+                using var dbContext = new ACPAMS.Data.AppDbContext();
+                var exam = await dbContext.Exams
+                    .Include(e => e.Questions)
+                        .ThenInclude(q => q.Options)
+                    .Include(e => e.Questions)
+                        .ThenInclude(q => q.Rubric)
+                            .ThenInclude(r => r.Criteria)
+                                .ThenInclude(c => c.Levels)
+                    .FirstOrDefaultAsync(e => e.ExamId == examId);
+
+                if (exam == null)
+                {
+                    ToastNotification.Show("Exam not found.", Application.Current.MainWindow, 3, true);
+                    return;
+                }
+
+                _editingExamId = exam.ExamId;
+                _editingExamName = exam.ExamName;
+                _editingCourseCode = exam.CourseCode;
+                _editingTimeLimitMinutes = exam.DurationMinutes;
+                _editingRandomizeQuestions = exam.RandomizeQuestions;
+
+                _sections.Clear();
+                _rubricData.Clear();
+
+                var grouped = exam.Questions
+                    .GroupBy(q => string.IsNullOrWhiteSpace(q.SectionName) ? "General" : q.SectionName)
+                    .ToList();
+
+                foreach (var g in grouped)
+                {
+                    var firstQ = g.FirstOrDefault();
+                    var sectionType = firstQ != null ? GetProperTypeName(firstQ.QuestionType) : "Identification";
+                    var sec = new ExamSection
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = g.Key,
+                        Type = sectionType,
+                        Instructions = string.Empty,
+                        IsActive = false,
+                        Questions = new List<QuestionItem>()
+                    };
+
+                    foreach (var q in g.OrderBy(x => x.OrderIndex ?? 0))
+                    {
+                        var properType = GetProperTypeName(q.QuestionType);
+                        var qi = new QuestionItem
+                        {
+                            Id = q.QuestionId.ToString(),
+                            Text = q.Text,
+                            Points = (int)(q.Points ?? 1),
+                            Type = properType,
+                            Order = q.OrderIndex ?? 1,
+                            CorrectAnswer = q.CorrectAnswer ?? string.Empty,
+                            ExpectedAnswer = q.CorrectAnswer ?? string.Empty,
+                            IsTrue = q.CorrectAnswer == "True" ? true : (q.CorrectAnswer == "False" ? false : null),
+                            ProgrammingLanguage = q.ProgrammingLanguage ?? "C",
+                            StarterCode = q.StarterCode,
+                            SectionId = sec.Id,
+                            ExpectedAnswers = q.CorrectAnswer ?? string.Empty
+                        };
+
+                        if (properType == "Multiple Choice" && q.Options != null)
+                        {
+                            var opts = q.Options.OrderBy(o => o.OrderIndex).ToList();
+                            if (opts.Count > 0) qi.OptionA = opts[0].OptionText;
+                            if (opts.Count > 1) qi.OptionB = opts[1].OptionText;
+                            if (opts.Count > 2) qi.OptionC = opts[2].OptionText;
+                            if (opts.Count > 3) qi.OptionD = opts[3].OptionText;
+                        }
+
+                        if (q.Rubric != null)
+                        {
+                            _rubricData[qi.Id] = new RubricData
+                            {
+                                Description = q.Rubric.Description ?? string.Empty,
+                                AiInstructions = q.Rubric.AiInstructions ?? string.Empty,
+                                TotalWeight = (int)(q.Rubric.TotalWeight ?? 0),
+                                Criteria = q.Rubric.Criteria.OrderBy(c => c.OrderIndex).Select(c => new RubricCriteriaData
+                                {
+                                    Name = c.CriteriaName,
+                                    Description = c.Description ?? string.Empty,
+                                    MaxScore = (double)(c.MaxScore ?? 0),
+                                    WeightPercentage = c.WeightPercentage ?? 0,
+                                    Levels = c.Levels.OrderBy(l => l.OrderIndex).Select(l => new RubricLevelData
+                                    {
+                                        Name = l.LevelName,
+                                        Points = (double)(l.ScorePercentage ?? 0),
+                                        ScorePercentage = (double)(l.ScorePercentage ?? 0),
+                                        Descriptor = l.Descriptor ?? string.Empty
+                                    }).ToList()
+                                }).ToList()
+                            };
+                        }
+
+                        sec.Questions.Add(qi);
+                    }
+
+                    _sections.Add(sec);
+                }
+
+                if (_sections.Count > 0)
+                {
+                    _sections[0].IsActive = true;
+                    _selectedSection = _sections[0];
+                    SelectTypeButton(_selectedSection.Type);
+                }
+
+                UpdateSectionList();
+                UpdateQuestionsDisplay();
+                UpdateActiveSectionHeader();
+
+                ToastNotification.Show($"Loaded exam: {_editingExamName}", Application.Current.MainWindow);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load exam:\n\n{ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void UpdateHeaderWithCategory()
@@ -205,7 +348,11 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
-            var publishModal = new PublishConfirmModal();
+            var publishModal = new PublishConfirmModal(
+                _editingExamName,
+                _editingCourseCode,
+                _editingTimeLimitMinutes,
+                _editingRandomizeQuestions);
             publishModal.Owner = Application.Current.MainWindow;
 
             if (publishModal.ShowDialog() == true)
@@ -257,6 +404,7 @@ namespace ACPAMS.Views.Faculty
                             ExpectedAnswer = q.ExpectedAnswer,
                             IsTrue = q.IsTrue,
                             ProgrammingLanguage = q.ProgrammingLanguage,
+                            StarterCode = q.StarterCode,
                             SectionId = q.SectionId,
                             ExpectedAnswers = q.ExpectedAnswers
                         }).ToList()
@@ -269,10 +417,12 @@ namespace ACPAMS.Views.Faculty
                         publishModal.TimeLimitMinutes,
                         sectionsToSave,
                         rubricData,
-                        instructorId
+                        instructorId,
+                        publishModal.RandomizeQuestions,
+                        _editingExamId
                     );
 
-                    ToastNotification.Show($"Exam '{exam.Title}' published successfully!",
+                    ToastNotification.Show($"Exam '{exam.ExamName}' published successfully!",
                         Application.Current.MainWindow, 4, false);
 
                     NavigateToDashboard(sender, e);
@@ -481,6 +631,13 @@ namespace ACPAMS.Views.Faculty
 
                 grid.Children.Add(infoStack);
 
+                var rightStack = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(rightStack, 2);
+
                 var badge = new Border
                 {
                     Background = (Brush)FindResource("Bg.Base"),
@@ -488,9 +645,9 @@ namespace ACPAMS.Views.Faculty
                     BorderThickness = new System.Windows.Thickness(1),
                     CornerRadius = new CornerRadius(10),
                     Padding = new System.Windows.Thickness(7, 2, 7, 2),
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new System.Windows.Thickness(0, 0, 4, 0)
                 };
-                Grid.SetColumn(badge, 2);
 
                 var countText = new TextBlock
                 {
@@ -500,7 +657,43 @@ namespace ACPAMS.Views.Faculty
                     Foreground = (Brush)FindResource("Text.Secondary")
                 };
                 badge.Child = countText;
-                grid.Children.Add(badge);
+                rightStack.Children.Add(badge);
+
+                var deleteBtn = new Button
+                {
+                    Background = Brushes.Transparent,
+                    BorderThickness = new System.Windows.Thickness(0),
+                    Padding = new System.Windows.Thickness(4, 2, 4, 2),
+                    Cursor = Cursors.Hand,
+                    ToolTip = $"Delete {section.Name}",
+                    Tag = section,
+                    Opacity = 0.5,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Content = new TextBlock
+                    {
+                        Text = "\uE74D",
+                        FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                        FontSize = 11,
+                        Foreground = (Brush)FindResource("Text.Muted")
+                    }
+                };
+
+                deleteBtn.MouseEnter += (s, e) =>
+                {
+                    deleteBtn.Opacity = 1.0;
+                    if (deleteBtn.Content is TextBlock tb)
+                        tb.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+                };
+                deleteBtn.MouseLeave += (s, e) =>
+                {
+                    deleteBtn.Opacity = 0.5;
+                    if (deleteBtn.Content is TextBlock tb)
+                        tb.Foreground = (Brush)FindResource("Text.Muted");
+                };
+                deleteBtn.Click += DeleteSectionBtn_Click;
+
+                rightStack.Children.Add(deleteBtn);
+                grid.Children.Add(rightStack);
 
                 button.Content = grid;
                 button.Click += SectionButton_Click;
@@ -542,7 +735,48 @@ namespace ACPAMS.Views.Faculty
 
             container.Children.Clear();
 
-            if (_selectedSection == null) return;
+            if (_selectedSection == null)
+            {
+                var emptyCard = new Border
+                {
+                    Background = (Brush)FindResource("Bg.Surface"),
+                    BorderBrush = (Brush)FindResource("Border.Subtle"),
+                    BorderThickness = new System.Windows.Thickness(1),
+                    CornerRadius = new CornerRadius(8),
+                    Padding = new System.Windows.Thickness(40, 36, 40, 36),
+                    Margin = new System.Windows.Thickness(0, 48, 0, 0),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                var emptyStack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+                emptyStack.Children.Add(new TextBlock
+                {
+                    Text = "\uE82D",
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 32,
+                    Foreground = (Brush)FindResource("Text.Muted"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new System.Windows.Thickness(0, 0, 0, 12)
+                });
+                emptyStack.Children.Add(new TextBlock
+                {
+                    Text = "No active section",
+                    FontSize = 15,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = (Brush)FindResource("Text.Primary"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new System.Windows.Thickness(0, 0, 0, 4)
+                });
+                emptyStack.Children.Add(new TextBlock
+                {
+                    Text = "Add a Section from the sidebar to begin.",
+                    FontSize = 13,
+                    Foreground = (Brush)FindResource("Text.Secondary"),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                });
+                emptyCard.Child = emptyStack;
+                container.Children.Add(emptyCard);
+                return;
+            }
 
             foreach (var q in _selectedSection.Questions)
             {
@@ -655,21 +889,49 @@ namespace ACPAMS.Views.Faculty
                 // ---- Body ----
                 var bodyStack = new StackPanel { Margin = new System.Windows.Thickness(18, 16, 18, 16) };
 
+                var promptContainer = new Grid
+                {
+                    Margin = new System.Windows.Thickness(0, 0, 0, 4)
+                };
+                promptContainer.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                promptContainer.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+                double currentHeight = q.PromptHeight >= 80 ? q.PromptHeight : 80;
                 var questionTextBox = new TextBox
                 {
                     Text = q.Text,
                     Style = (Style)FindResource("Input.Text"),
-                    Height = 60,
+                    MinHeight = 80,
+                    MaxHeight = 500,
+                    Height = currentHeight,
                     TextWrapping = TextWrapping.Wrap,
                     AcceptsReturn = true,
                     VerticalContentAlignment = VerticalAlignment.Top,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     Tag = q
                 };
                 questionTextBox.TextChanged += (s, e) =>
                 {
                     (questionTextBox.Tag as QuestionItem).Text = questionTextBox.Text;
                 };
-                bodyStack.Children.Add(questionTextBox);
+                Grid.SetRow(questionTextBox, 0);
+                promptContainer.Children.Add(questionTextBox);
+
+                var resizeGrip = new System.Windows.Controls.Primitives.Thumb
+                {
+                    Style = (Style)FindResource("Thumb.PromptResizeGrip"),
+                    ToolTip = "Drag to resize prompt height"
+                };
+                resizeGrip.DragDelta += (s, e) =>
+                {
+                    double newHeight = Math.Clamp(questionTextBox.ActualHeight + e.VerticalChange, 80, 500);
+                    questionTextBox.Height = newHeight;
+                    q.PromptHeight = newHeight;
+                };
+                Grid.SetRow(resizeGrip, 1);
+                promptContainer.Children.Add(resizeGrip);
+
+                bodyStack.Children.Add(promptContainer);
 
                 var properType = GetProperTypeName(q.Type);
 
@@ -853,9 +1115,14 @@ namespace ACPAMS.Views.Faculty
                             Margin = new System.Windows.Thickness(0, 0, 0, 16)
                         };
 
+                        string activeLang = (!string.IsNullOrEmpty(q.ProgrammingLanguage) && _supportedLanguages.Contains(q.ProgrammingLanguage))
+                            ? q.ProgrammingLanguage
+                            : "C";
+                        q.ProgrammingLanguage = activeLang;
+
                         foreach (var lang in _supportedLanguages)
                         {
-                            bool isSelected = (q.ProgrammingLanguage ?? "Java") == lang;
+                            bool isSelected = activeLang == lang;
                             var border = new Border
                             {
                                 Background = isSelected ? (Brush)FindResource("Accent.PrimaryBg") : (Brush)FindResource("Bg.Base"),
@@ -972,12 +1239,18 @@ namespace ACPAMS.Views.Faculty
 
                         var stubBox = new TextBox
                         {
-                            Text = "// Write your code here",
+                            Text = q.StarterCode ?? "// Write your code here",
                             Style = (Style)FindResource("Input.Text"),
                             Height = 60,
                             FontFamily = new FontFamily("Consolas"),
                             AcceptsReturn = true,
-                            IsReadOnly = false
+                            IsReadOnly = false,
+                            Tag = q
+                        };
+                        stubBox.TextChanged += (s, e) =>
+                        {
+                            if (stubBox.Tag is QuestionItem qi)
+                                qi.StarterCode = stubBox.Text;
                         };
                         bodyStack.Children.Add(stubBox);
 
@@ -1093,7 +1366,8 @@ namespace ACPAMS.Views.Faculty
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 8) };
 
             string optionText = GetOptionText(q, letter);
-            bool isCorrect = (q.CorrectAnswer == letter);
+            bool isCorrect = string.Equals(q.CorrectAnswer?.Trim(), letter, StringComparison.OrdinalIgnoreCase)
+                || (!string.IsNullOrWhiteSpace(optionText) && string.Equals(q.CorrectAnswer?.Trim(), optionText.Trim(), StringComparison.OrdinalIgnoreCase));
 
             var toggleBtn = new Button
             {
@@ -1251,7 +1525,7 @@ namespace ACPAMS.Views.Faculty
                     newQuestion.Text = "Enter your enumeration question here...";
                     break;
                 case "Coding":
-                    newQuestion.ProgrammingLanguage = "Java";
+                    newQuestion.ProgrammingLanguage = "C";
                     newQuestion.Text = "Enter your coding problem description here...";
                     break;
                 default:
@@ -1316,6 +1590,96 @@ namespace ACPAMS.Views.Faculty
                     }
                 }
             }
+        }
+
+        private void DeleteSectionBtn_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+
+            if (sender is not Button btn || btn.Tag is not ExamSection section)
+                return;
+
+            _sectionPendingDelete = section;
+
+            if (DeleteSectionPromptText != null)
+            {
+                int qCount = section.Questions.Count;
+                string qPhrase = qCount == 1 ? "1 question" : $"{qCount} questions";
+                DeleteSectionPromptText.Text = $"Delete '{section.Name}' and its {qPhrase}? This action cannot be undone.";
+            }
+
+            if (DeleteSectionModalOverlay != null)
+            {
+                DeleteSectionModalOverlay.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void CancelDeleteSection_Click(object sender, RoutedEventArgs e)
+        {
+            _sectionPendingDelete = null;
+            if (DeleteSectionModalOverlay != null)
+            {
+                DeleteSectionModalOverlay.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void DeleteSectionOverlay_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource == DeleteSectionModalOverlay)
+            {
+                CancelDeleteSection_Click(sender, e);
+            }
+        }
+
+        private void ConfirmDeleteSection_Click(object sender, RoutedEventArgs e)
+        {
+            if (_sectionPendingDelete == null) return;
+
+            var targetSection = _sectionPendingDelete;
+            string sectionName = targetSection.Name;
+
+            foreach (var q in targetSection.Questions)
+            {
+                _rubricData.Remove(q.Id);
+            }
+
+            int deletedIndex = _sections.IndexOf(targetSection);
+            bool wasActive = targetSection == _selectedSection || targetSection.IsActive;
+
+            _sections.Remove(targetSection);
+
+            if (wasActive)
+            {
+                if (_sections.Count > 0)
+                {
+                    int newIndex = Math.Min(deletedIndex, _sections.Count - 1);
+                    var nextSection = _sections[newIndex];
+
+                    foreach (var s in _sections)
+                        s.IsActive = false;
+
+                    nextSection.IsActive = true;
+                    _selectedSection = nextSection;
+                    SelectTypeButton(nextSection.Type);
+                }
+                else
+                {
+                    _selectedSection = null;
+                    ResetAllTypeButtons();
+                }
+            }
+
+            _sectionPendingDelete = null;
+            if (DeleteSectionModalOverlay != null)
+            {
+                DeleteSectionModalOverlay.Visibility = Visibility.Collapsed;
+            }
+
+            UpdateSectionList();
+            UpdateQuestionsDisplay();
+            UpdateActiveSectionHeader();
+
+            ToastNotification.Show($"Section '{sectionName}' deleted.", Application.Current.MainWindow);
         }
 
         private Brush GetTypeBadgeBackground(string type)
@@ -1623,13 +1987,19 @@ namespace ACPAMS.Views.Faculty
                 foreach (var item in group)
                 {
                     var q = item.Dto;
+                    string? correctAns = q.CorrectAnswer;
+                    if (group.Key == "Multiple Choice")
+                    {
+                        correctAns = NormalizeOptionKey(correctAns, q.OptionA, q.OptionB, q.OptionC, q.OptionD);
+                    }
+
                     section.Questions.Add(new QuestionItem
                     {
                         Text = q.Text,
                         Type = group.Key,
                         Points = q.Points > 0 ? q.Points : 5,
                         Order = order++,
-                        CorrectAnswer = q.CorrectAnswer,
+                        CorrectAnswer = correctAns,
                         OptionA = q.OptionA,
                         OptionB = q.OptionB,
                         OptionC = q.OptionC,
@@ -1637,7 +2007,9 @@ namespace ACPAMS.Views.Faculty
                         ExpectedAnswer = q.ExpectedAnswer,
                         ExpectedAnswers = q.ExpectedAnswers,
                         IsTrue = q.IsTrue,
-                        ProgrammingLanguage = q.ProgrammingLanguage
+                        ProgrammingLanguage = (!string.IsNullOrEmpty(q.ProgrammingLanguage) && _supportedLanguages.Contains(q.ProgrammingLanguage, StringComparer.OrdinalIgnoreCase))
+                            ? _supportedLanguages.First(l => l.Equals(q.ProgrammingLanguage, StringComparison.OrdinalIgnoreCase))
+                            : (group.Key == "Coding" ? "C" : null)
                     });
                 }
 
@@ -1729,10 +2101,11 @@ namespace ACPAMS.Views.Faculty
                     else
                         EnsureSection().Type = typeValue;
                 }
-                else if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^[A-Da-d]\)"))
+                else if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^\(?([A-Da-d])[\)\.\:\-]\s*"))
                 {
-                    var letter = trimmed.Substring(0, 1).ToUpper();
-                    mcOptions[letter] = trimmed.Substring(2).Trim();
+                    var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"^\(?([A-Da-d])[\)\.\:\-]\s*(.*)$");
+                    var letter = match.Groups[1].Value.ToUpper();
+                    mcOptions[letter] = match.Groups[2].Value.Trim();
                 }
                 else if (trimmed.StartsWith("ANSWERS:", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1756,7 +2129,12 @@ namespace ACPAMS.Views.Faculty
                 else if (trimmed.StartsWith("LANGUAGE:", StringComparison.OrdinalIgnoreCase))
                 {
                     if (currentQuestion != null)
-                        currentQuestion.ProgrammingLanguage = trimmed.Substring("LANGUAGE:".Length).Trim();
+                    {
+                        var langVal = trimmed.Substring("LANGUAGE:".Length).Trim();
+                        currentQuestion.ProgrammingLanguage = _supportedLanguages.Contains(langVal, StringComparer.OrdinalIgnoreCase)
+                            ? _supportedLanguages.First(l => l.Equals(langVal, StringComparison.OrdinalIgnoreCase))
+                            : "C";
+                    }
                 }
                 else if (trimmed.StartsWith("POINTS:", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1826,6 +2204,25 @@ namespace ACPAMS.Views.Faculty
             mcOptions.TryGetValue("B", out var b); question.OptionB = b;
             mcOptions.TryGetValue("C", out var c); question.OptionC = c;
             mcOptions.TryGetValue("D", out var d); question.OptionD = d;
+
+            question.CorrectAnswer = NormalizeOptionKey(question.CorrectAnswer, a, b, c, d);
+        }
+
+        public static string NormalizeOptionKey(string? raw, string? optA, string? optB, string? optC, string? optD)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            var trimmed = raw.Trim();
+
+            var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"^\(?([A-Da-d])(?:[\.\:\-\)]|\s|$)");
+            if (match.Success)
+                return match.Groups[1].Value.ToUpperInvariant();
+
+            if (!string.IsNullOrEmpty(optA) && string.Equals(trimmed, optA.Trim(), StringComparison.OrdinalIgnoreCase)) return "A";
+            if (!string.IsNullOrEmpty(optB) && string.Equals(trimmed, optB.Trim(), StringComparison.OrdinalIgnoreCase)) return "B";
+            if (!string.IsNullOrEmpty(optC) && string.Equals(trimmed, optC.Trim(), StringComparison.OrdinalIgnoreCase)) return "C";
+            if (!string.IsNullOrEmpty(optD) && string.Equals(trimmed, optD.Trim(), StringComparison.OrdinalIgnoreCase)) return "D";
+
+            return trimmed;
         }
 
         private void NavigateToHome(object sender, RoutedEventArgs e)

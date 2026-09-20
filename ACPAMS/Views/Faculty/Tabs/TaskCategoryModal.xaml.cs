@@ -24,14 +24,59 @@ namespace ACPAMS.Views.Faculty
         // Maps each category button to its check indicator border
         private readonly Dictionary<Button, Border> _checkMap = new();
 
+        private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMNCRP_DISABLED = 1;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public TaskCategoryModal()
         {
             InitializeComponent();
             Loaded += OnLoaded;
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            int policy = DWMNCRP_DISABLED;
+            DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
+            SyncToOwner();
+        }
+
+        private void SyncToOwner()
+        {
+            var owner = Owner ?? Application.Current.MainWindow;
+            if (owner != null)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                if (owner.WindowState == WindowState.Maximized)
+                {
+                    WindowState = WindowState.Maximized;
+                }
+                else
+                {
+                    Left = owner.Left;
+                    Top = owner.Top;
+                    Width = owner.ActualWidth;
+                    Height = owner.ActualHeight;
+                }
+            }
+            else
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Width = SystemParameters.PrimaryScreenWidth;
+                Height = SystemParameters.PrimaryScreenHeight;
+                Left = 0;
+                Top = 0;
+            }
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            SyncToOwner();
+
             // Build the check indicator map after InitializeComponent
             // so the named elements are available
             _checkMap[BtnExamination] = FindCheckBorder(BtnExamination);

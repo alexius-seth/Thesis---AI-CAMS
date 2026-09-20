@@ -119,7 +119,7 @@ namespace ACPAMS.Services
                 .Where(l => l.EntityType == "StudentExamAttempt" && attemptIds.Contains(l.EntityId))
                 .ToListAsync();
 
-            result.GazeDeviationCount = logs.Count(l => l.Action.Contains("NoFaceDetected") || l.Action.Contains("MultipleFaces"));
+            result.GazeDeviationCount = logs.Count(l => l.Action.Contains("NoFaceDetected") || l.Action.Contains("MultipleFaces") || l.Action.Contains("GazeDiverted"));
             result.WindowSwitchCount = logs.Count(l => l.Action.Contains("AltTab") || l.Action.Contains("WindowFocus"));
             result.ClipboardCount = logs.Count(l => l.Action.Contains("Clipboard"));
 
@@ -170,7 +170,7 @@ namespace ACPAMS.Services
 
                 result.Add(new EvaluationLedgerRowDto
                 {
-                    ExamName = exam.Title ?? exam.ExamName ?? "Untitled Exam",
+                    ExamName = exam.ExamName ?? "Untitled Exam",
                     ScoreText = scoreText,
                     StrengthsCount = strengthsCount,
                     WeaknessesCount = weaknessesCount,

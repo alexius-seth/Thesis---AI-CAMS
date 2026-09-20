@@ -38,9 +38,21 @@ namespace ACPAMS.Views.Faculty
 
         private bool _isSorting = false;
 
+        private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMNCRP_DISABLED = 1;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public AIRubricModal()
         {
             InitializeComponent();
+            SourceInitialized += (s, e) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                int policy = DWMNCRP_DISABLED;
+                DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
+            };
             DataContext = this;
 
             TierColumns = new ObservableCollection<TierColumn>();
@@ -360,11 +372,12 @@ namespace ACPAMS.Views.Faculty
                     Width = 28,
                     Height = 28,
                     Tag = row,
+                    ToolTip = "Delete criterion",
                     Content = new TextBlock
                     {
-                        Text = "✕",
+                        Text = "\uE711",
                         FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                        FontSize = 12,
+                        FontSize = 11,
                         Foreground = (Brush)FindResource("Text.Muted")
                     },
                     Cursor = Cursors.Hand

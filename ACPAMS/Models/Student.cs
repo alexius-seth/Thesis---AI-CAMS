@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -38,8 +38,15 @@ namespace ACPAMS.Models
         [Column("program")]
         public string? Program { get; set; }
 
+        [MaxLength(20)]
+        [Column("year_level")]
+        public string? YearLevel { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("avatar_image")]
+        public byte[]? AvatarImage { get; set; }
 
         // Navigation
         [ForeignKey("UserId")]

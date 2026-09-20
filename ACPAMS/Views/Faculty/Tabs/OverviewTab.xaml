@@ -273,18 +273,18 @@
                             Padding="16,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="STUDENT"
                                        Style="{StaticResource T.TableHeader}"/>
                             <TextBlock Grid.Column="1" Text="PROGRAM"
                                        Style="{StaticResource T.TableHeader}"/>
-                            <TextBlock Grid.Column="2" Text="RISK INDEX"
+                            <TextBlock Grid.Column="2" Text="RISK INDEX" Margin="10,0,0,0"
                                        Style="{StaticResource T.TableHeader}"/>
                             <TextBlock Grid.Column="3" Text="AUTO SCORE"
                                        Style="{StaticResource T.TableHeader}"/>
@@ -456,136 +456,17 @@
                             </Border>
                         </StackPanel>
 
-                        <!-- Weakness 1 -->
-                        <Border BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="0,0,0,1"
-                                Padding="0,0,0,12"
-                                Margin="0,0,0,12">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="28"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0"
-                                        Width="22" Height="22"
-                                        CornerRadius="11"
-                                        Background="{StaticResource Status.DangerBg}"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="1"
-                                               FontSize="11" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Danger}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" Margin="10,0,0,0"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="Pointer Allocation"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Text.Primary}"/>
-                                    <TextBlock Text="C Programming"
-                                               FontSize="11"
-                                               Foreground="{StaticResource Text.Muted}"/>
-                                </StackPanel>
-                                <Border Grid.Column="2"
-                                        Background="{StaticResource Status.DangerBg}"
-                                        BorderBrush="{StaticResource Status.Danger}"
-                                        BorderThickness="1" CornerRadius="4"
-                                        Padding="6,3"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="38% fail"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Danger}"/>
-                                </Border>
-                            </Grid>
-                        </Border>
+                        <!-- Dynamic weakness list panel -->
+                        <StackPanel x:Name="WeaknessListPanel"/>
 
-                        <!-- Weakness 2 -->
-                        <Border BorderBrush="{StaticResource Border.Subtle}"
-                                BorderThickness="0,0,0,1"
-                                Padding="0,0,0,12"
-                                Margin="0,0,0,12">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="28"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0"
-                                        Width="22" Height="22"
-                                        CornerRadius="11"
-                                        Background="{StaticResource Status.WarningBg}"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="2"
-                                               FontSize="11" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Warning}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" Margin="10,0,0,0"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="Exception Handling"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Text.Primary}"/>
-                                    <TextBlock Text="Java"
-                                               FontSize="11"
-                                               Foreground="{StaticResource Text.Muted}"/>
-                                </StackPanel>
-                                <Border Grid.Column="2"
-                                        Background="{StaticResource Status.WarningBg}"
-                                        BorderBrush="{StaticResource Status.Warning}"
-                                        BorderThickness="1" CornerRadius="4"
-                                        Padding="6,3"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="27% fail"
-                                               FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource Status.Warning}"/>
-                                </Border>
-                            </Grid>
-                        </Border>
-
-                        <!-- Weakness 3 -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="60"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0"
-                                    Width="22" Height="22"
-                                    CornerRadius="11"
-                                    Background="#F1F5F9"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text="3"
-                                           FontSize="11" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Secondary}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel Grid.Column="1" Margin="10,0,0,0"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="Syntax Errors"
-                                           FontSize="13" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Text.Primary}"/>
-                                <TextBlock Text="General"
-                                           FontSize="11"
-                                           Foreground="{StaticResource Text.Muted}"/>
-                            </StackPanel>
-                            <Border Grid.Column="2"
-                                    Background="#F1F5F9"
-                                    BorderBrush="{StaticResource Border.Medium}"
-                                    BorderThickness="1" CornerRadius="4"
-                                    Padding="6,3"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text="19% fail"
-                                           FontSize="10" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Secondary}"/>
-                            </Border>
-                        </Grid>
-
+                        <!-- Clean fallback state when no evaluations/weaknesses exist yet -->
+                        <TextBlock x:Name="WeaknessEmptyState"
+                                   Text="No weaknesses identified yet. Awaiting completed evaluations."
+                                   FontSize="12"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"
+                                   Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
 

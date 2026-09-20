@@ -1,0 +1,111 @@
+<UserControl x:Class="ACPAMS.Views.Faculty.Controls.GlobalSearchBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignWidth="300" d:DesignHeight="36">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="Text.Primary"   Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary" Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"     Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Border.Subtle"  Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Bg.Surface"     Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Accent.Primary" Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+
+        <!-- Search box with visible text & auto-collapsing watermark -->
+        <Style x:Key="GlobalSearchBoxStyle" TargetType="TextBox">
+            <Setter Property="FontFamily"              Value="Segoe UI"/>
+            <Setter Property="FontSize"                Value="13"/>
+            <Setter Property="Foreground"              Value="#1A202C"/>
+            <Setter Property="CaretBrush"              Value="#1A202C"/>
+            <Setter Property="SelectionBrush"          Value="#3182CE"/>
+            <Setter Property="Background"              Value="{StaticResource Bg.Surface}"/>
+            <Setter Property="BorderBrush"             Value="{StaticResource Border.Subtle}"/>
+            <Setter Property="BorderThickness"         Value="1"/>
+            <Setter Property="Padding"                 Value="34,0,12,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid>
+                                <!-- Search Icon -->
+                                <TextBlock Text="&#xE721;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="13"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           VerticalAlignment="Center"
+                                           Margin="11,0,0,0"
+                                           IsHitTestVisible="False"/>
+
+                                <!-- Watermark Placeholder -->
+                                <TextBlock x:Name="Placeholder"
+                                           Text="Search assessments, students..."
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           VerticalAlignment="Center"
+                                           Margin="34,0,12,0"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+
+                                <!-- Actual Text Input -->
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Focusable="False"
+                                              HorizontalScrollBarVisibility="Hidden"
+                                              VerticalScrollBarVisibility="Hidden"
+                                              VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Placeholder" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid VerticalAlignment="Center">
+        <TextBox x:Name="SearchInput"
+                 Style="{StaticResource GlobalSearchBoxStyle}"
+                 Height="36"
+                 Foreground="#1A202C"
+                 CaretBrush="#1A202C"
+                 SelectionBrush="#3182CE"
+                 FontSize="13"
+                 VerticalContentAlignment="Center"
+                 TextChanged="SearchInput_TextChanged"
+                 PreviewKeyDown="SearchInput_PreviewKeyDown"/>
+
+        <Popup x:Name="SearchPopup"
+               PlacementTarget="{Binding ElementName=SearchInput}"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               PopupAnimation="Fade">
+            <Border Width="340" MaxHeight="380"
+                    Background="#FFFFFF"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Margin="0,4,0,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="3" Direction="270" Opacity="0.15"/>
+                </Border.Effect>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="SearchResultsPanel" Margin="0,4"/>
+                </ScrollViewer>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>
+

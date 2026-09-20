@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ACPAMS.Views.Faculty
 {
-    public partial class StudentReportPage : UserControl
+    public partial class StudentReportPage : UserControl, IRefreshableView
     {
         public StudentReportViewModel Report { get; set; } = new();
         private Guid _attemptId;
@@ -24,10 +24,15 @@ namespace ACPAMS.Views.Faculty
             _attemptId = attemptId;
             DataContext = this;
             InitializeComponent();
-            LoadReport();
+            Loaded += async (s, e) => await LoadReportAsync();
         }
 
-        private async void LoadReport()
+        public async System.Threading.Tasks.Task RefreshAsync()
+        {
+            await LoadReportAsync();
+        }
+
+        private async System.Threading.Tasks.Task LoadReportAsync()
         {
             try
             {
@@ -39,11 +44,20 @@ namespace ACPAMS.Views.Faculty
                     .Include(a => a.Exam)
                     .Include(a => a.Answers)
                         .ThenInclude(ans => ans.Question)
+                            .ThenInclude(q => q!.Options)
                     .FirstOrDefaultAsync(a => a.AttemptId == _attemptId);
 
                 if (attempt == null)
                 {
                     MessageBox.Show("Attempt not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var currentInstructorId = SessionManager.CurrentInstructorId;
+                if (string.IsNullOrEmpty(currentInstructorId) || attempt.Exam?.InstructorId != currentInstructorId)
+                {
+                    MessageBox.Show("You do not have permission to view this report.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MainWindow.NavigateBackStatic();
                     return;
                 }
 
@@ -64,7 +78,7 @@ namespace ACPAMS.Views.Faculty
                 Report.StudentId = attempt.Student?.StudentId ?? "N/A";
                 Report.Program = attempt.Student?.Program ?? "N/A";
                 Report.Section = "N/A";
-                Report.ExamName = attempt.Exam?.ExamName ?? attempt.Exam?.Title ?? "Unknown Exam";
+                Report.ExamName = attempt.Exam?.ExamName ?? "Unknown Exam";
                 Report.ExamCode = attempt.Exam?.ExamCode ?? "N/A";
                 Report.StartedAt = attempt.StartedAt ?? DateTime.Now;
                 Report.SubmittedAt = attempt.SubmittedAt;
@@ -122,7 +136,9 @@ namespace ACPAMS.Views.Faculty
                     Number = index + 1,
                     Text = a.Question?.Text ?? "Unknown Question",
                     Type = a.Question?.QuestionType ?? "Unknown",
-                    StudentAnswer = a.AnswerText ?? a.SourceCode ?? "No answer provided",
+                    StudentAnswer = a.Question?.QuestionType == "multiple_choice"
+                        ? AutoCheckerService.FormatOptionDisplay(a.AnswerText, a.Question?.Options)
+                        : (a.AnswerText ?? a.SourceCode ?? "No answer provided"),
                     ObtainedPoints = a.ObtainedPoints.HasValue ? (double)a.ObtainedPoints.Value : (double?)null,
                     MaxPoints = a.Question?.Points.HasValue == true ? (double)a.Question.Points.Value : 0,
                     Status = a.ObtainedPoints.HasValue ? "graded" : "pending"
@@ -184,7 +200,7 @@ namespace ACPAMS.Views.Faculty
         private void StudentName_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (_studentId != null)
-                MainWindow.Navigate(new StudentInformationTab(_studentId));
+                MainWindow.Navigate(new StudentInformationTab(_studentId, NavigationOrigin.Reports, _examId));
         }
 
         private async void GenerateAssessment_Click(object sender, RoutedEventArgs e)
@@ -222,6 +238,55 @@ namespace ACPAMS.Views.Faculty
             finally
             {
                 if (sender is Button btn) btn.IsEnabled = true;
+            }
+        }
+
+        private void ExportPdf_Click(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PDF Document (*.pdf)|*.pdf",
+                FileName = $"{(string.IsNullOrWhiteSpace(Report.StudentName) ? "Student" : Report.StudentName.Replace(" ", "_"))}_{(string.IsNullOrWhiteSpace(Report.ExamCode) ? "Exam" : Report.ExamCode)}_Report.pdf"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    PdfExportService.ExportStudentReport(Report, saveDialog.FileName);
+                    MessageBox.Show("Student performance report exported successfully!", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to export PDF: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void CopyReport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("ACPAMS STUDENT EXAM REPORT");
+                sb.AppendLine("----------------------------------------");
+                sb.AppendLine($"Student: {Report.StudentName} ({Report.StudentId})");
+                sb.AppendLine($"Exam: {Report.ExamName} ({Report.ExamCode})");
+                sb.AppendLine($"Score: {Report.TotalScore:F1} / {Report.MaxPossibleScore:F1} ({Report.TotalScorePercent:P1})");
+                sb.AppendLine($"Risk Level: {Report.RiskLevel} (Integrity Score: {Report.CheatingScore:F0})");
+                sb.AppendLine($"Total Flags: {Report.TotalFlags}");
+                sb.AppendLine($"Status: {Report.Status}");
+                sb.AppendLine($"Started: {Report.StartedAt:g}");
+                if (Report.SubmittedAt.HasValue)
+                    sb.AppendLine($"Submitted: {Report.SubmittedAt.Value:g}");
+                sb.AppendLine("----------------------------------------");
+
+                Clipboard.SetText(sb.ToString());
+                ToastNotification.Show("Report copied to clipboard!", Application.Current.MainWindow);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to copy report: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

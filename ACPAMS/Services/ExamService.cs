@@ -1,4 +1,4 @@
-﻿using ACPAMS.Data;
+using ACPAMS.Data;
 using ACPAMS.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,20 +9,34 @@ namespace ACPAMS.Services
         public ExamService() { }
         public ExamService(AppDbContext dbContext, string instructorId) { }
 
-        public async Task<List<Question>> GetQuestionsAsync(Guid examId)
+        public async Task<List<Question>> GetQuestionsAsync(Guid examId, Guid? attemptId = null)
         {
             using var context = new AppDbContext();
-            return await context.Questions
+            var randomize = await context.Exams
+                .Where(e => e.ExamId == examId)
+                .Select(e => e.RandomizeQuestions)
+                .FirstOrDefaultAsync();
+
+            var questions = await context.Questions
                 .Include(q => q.Options)
                 .Where(q => q.ExamId == examId)
                 .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
+
+            if (randomize && attemptId.HasValue)
+            {
+                var rng = new Random(attemptId.Value.GetHashCode());
+                return questions.OrderBy(_ => rng.Next()).ToList();
+            }
+
+            return questions;
         }
 
         public async Task SaveAnswerAsync(Guid attemptId, Guid questionId,
                                           string? answerText = null,
                                           string? sourceCode = null,
-                                          string? languageUsed = null)
+                                          string? languageUsed = null,
+                                          string? executionOutput = null)
         {
             using var context = new AppDbContext();
 
@@ -35,6 +49,8 @@ namespace ACPAMS.Services
                 existing.AnswerText = answerText;
                 existing.SourceCode = sourceCode;
                 existing.LanguageUsed = languageUsed;
+                if (executionOutput != null)
+                    existing.ExecutionOutput = executionOutput;
             }
             else
             {
@@ -46,6 +62,7 @@ namespace ACPAMS.Services
                     AnswerText = answerText,
                     SourceCode = sourceCode,
                     LanguageUsed = languageUsed,
+                    ExecutionOutput = executionOutput,
                     ExecutionStatus = "not_run"
                 });
             }
@@ -66,6 +83,9 @@ namespace ACPAMS.Services
                 attempt.SubmittedAt = DateTime.Now;
                 await context.SaveChangesAsync();
             }
+
+            // Auto-grade objective questions immediately upon submit
+            await new AutoCheckerService().AutoGradeAttemptAsync(attemptId);
 
             // Kick off AI grading for any essay/coding answers in this attempt.
             // Runs in the background (AiJobProcessorService's poller) — this
@@ -108,34 +128,79 @@ namespace ACPAMS.Services
             public string SectionId { get; set; } = string.Empty;
             public double Points { get; set; }
             public int Order { get; set; }
+            public string? StarterCode { get; set; }
             public bool? IsTrue { get; set; }
         }
 
         public async Task<Exam> SaveExamAsync(
-     string examName,
-     string courseCode,
-     string generatedExamCode,
-     int timeLimitMinutes,
-     List<ExamSectionData> sections,
-     Dictionary<string, RubricData> rubricData,
-     string instructorId)
+            string examName,
+            string courseCode,
+            string generatedExamCode,
+            int timeLimitMinutes,
+            List<ExamSectionData> sections,
+            Dictionary<string, RubricData> rubricData,
+            string instructorId,
+            bool randomizeQuestions = false,
+            Guid? existingExamId = null)
         {
             using var context = new AppDbContext();
 
-            var exam = new Exam
+            Exam exam;
+            if (existingExamId.HasValue)
             {
-                ExamId = Guid.NewGuid(),
-                InstructorId = instructorId,
-                ExamName = examName,
-                Title = examName,
-                CourseCode = courseCode,
-                ExamCode = generatedExamCode,
-                DurationMinutes = timeLimitMinutes,
-                Status = "active",
-                CreatedAt = DateTime.Now
-            };
+                var existing = await context.Exams
+                    .Include(e => e.Questions)
+                        .ThenInclude(q => q.Options)
+                    .Include(e => e.Questions)
+                        .ThenInclude(q => q.Rubric)
+                    .FirstOrDefaultAsync(e => e.ExamId == existingExamId.Value);
 
-            context.Exams.Add(exam);
+                if (existing != null)
+                {
+                    exam = existing;
+                    exam.ExamName = examName;
+                    exam.CourseCode = courseCode;
+                    exam.DurationMinutes = timeLimitMinutes;
+                    exam.RandomizeQuestions = randomizeQuestions;
+
+                    if (exam.Questions != null && exam.Questions.Any())
+                    {
+                        context.Questions.RemoveRange(exam.Questions);
+                    }
+                }
+                else
+                {
+                    exam = new Exam
+                    {
+                        ExamId = existingExamId.Value,
+                        InstructorId = instructorId,
+                        ExamName = examName,
+                        CourseCode = courseCode,
+                        ExamCode = generatedExamCode,
+                        DurationMinutes = timeLimitMinutes,
+                        Status = "active",
+                        CreatedAt = DateTime.Now,
+                        RandomizeQuestions = randomizeQuestions
+                    };
+                    context.Exams.Add(exam);
+                }
+            }
+            else
+            {
+                exam = new Exam
+                {
+                    ExamId = Guid.NewGuid(),
+                    InstructorId = instructorId,
+                    ExamName = examName,
+                    CourseCode = courseCode,
+                    ExamCode = generatedExamCode,
+                    DurationMinutes = timeLimitMinutes,
+                    Status = "active",
+                    CreatedAt = DateTime.Now,
+                    RandomizeQuestions = randomizeQuestions
+                };
+                context.Exams.Add(exam);
+            }
 
             int orderIndex = 1;
             var originalIdToQuestionId = new Dictionary<string, Guid>();
@@ -179,9 +244,7 @@ namespace ACPAMS.Services
                             _ => q.CorrectAnswer
                         },
                         ProgrammingLanguage = q.ProgrammingLanguage,
-                        // Only coding questions should use ExpectedOutput now that
-                        // identification's answer is correctly routed to CorrectAnswer above.
-                        ExpectedOutput = normalizedType == "coding" ? q.ExpectedAnswer : null,
+                        StarterCode = q.StarterCode,
                         Points = (decimal)q.Points,
                         SectionName = sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General",
                         OrderIndex = orderIndex++,

@@ -73,7 +73,8 @@ namespace ACPAMS.Views.Student
                     ExamCodeUsed = examCode,
                     StartedAt = DateTime.Now,
                     Status = "in_progress",
-                    IpAddress = GetLocalIpAddress()
+                    IpAddress = GetLocalIpAddress(),
+                    DeviceInfo = Environment.MachineName
                 };
 
                 context.StudentExamAttempts.Add(attempt);
@@ -82,7 +83,7 @@ namespace ACPAMS.Views.Student
                 SessionManager.CurrentAttempt = attempt;
                 SessionManager.CurrentExam = exam;
 
-                ACPAMS.MainWindow.Resize(1280, 800);
+                ACPAMS.MainWindow.EnterKioskFullscreenStatic();
                 ACPAMS.MainWindow.Navigate(new StudentExamPage());
             }
             catch (Exception ex)
@@ -110,6 +111,16 @@ namespace ACPAMS.Views.Student
             }
             catch { }
             return "unknown";
+        }
+
+        private void ProfileBtn_Click(object sender, RoutedEventArgs e)
+        {
+            ACPAMS.MainWindow.Navigate(new StudentProfilePage());
+        }
+
+        private void LogOutBtn_Click(object sender, RoutedEventArgs e)
+        {
+            SessionManager.Logout();
         }
     }
 }

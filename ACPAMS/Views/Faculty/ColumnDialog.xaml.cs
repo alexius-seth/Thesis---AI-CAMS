@@ -8,9 +8,21 @@ namespace ACPAMS.Views.Faculty
         public string ColumnName { get; private set; } = string.Empty;
         public int Points { get; private set; } = 1;
 
+        private const int DWMWA_NCRENDERING_POLICY = 2;
+        private const int DWMNCRP_DISABLED = 1;
+
+        [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
         public ColumnDialog(string title, string defaultName = "", int defaultPoints = 1)
         {
             InitializeComponent();
+            SourceInitialized += (s, e) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                int policy = DWMNCRP_DISABLED;
+                DwmSetWindowAttribute(hwnd, DWMWA_NCRENDERING_POLICY, ref policy, sizeof(int));
+            };
 
             // Set the title
             TitleText.Text = title;

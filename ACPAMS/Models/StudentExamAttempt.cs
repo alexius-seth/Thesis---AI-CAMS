@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -48,12 +48,25 @@ namespace ACPAMS.Models
         [Column("device_info")]
         public string? DeviceInfo { get; set; }
 
+        [NotMapped]
+        public string? DeviceName
+        {
+            get => DeviceInfo;
+            set => DeviceInfo = value;
+        }
+
+        [NotMapped]
+        public string? HostName
+        {
+            get => DeviceInfo;
+            set => DeviceInfo = value;
+        }
+
         // Navigation
         [ForeignKey("StudentId")]
         public Student? Student { get; set; }
         [ForeignKey("ExamId")]
         public Exam? Exam { get; set; }
         public ICollection<StudentAnswer> Answers { get; set; } = new List<StudentAnswer>();
-        public ICollection<ExamAttemptLog> Logs { get; set; } = new List<ExamAttemptLog>();
     }
 }

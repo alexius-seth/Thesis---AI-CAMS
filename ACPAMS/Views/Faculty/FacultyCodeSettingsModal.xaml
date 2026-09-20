@@ -1,0 +1,196 @@
+<Window x:Class="ACPAMS.Views.Faculty.FacultyCodeSettingsModal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Faculty Registration Code"
+        Width="460"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#1A202C"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#64748B"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Overlay.Bg"       Color="#1A202C"/>
+
+        <Style x:Key="Input.Field" TargetType="TextBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="Foreground"               Value="{StaticResource Text.Primary}"/>
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="Padding"                  Value="12,0"/>
+            <Setter Property="Height"                   Value="40"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height"          Value="40"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Secondary" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource Text.Secondary}"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="Medium"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource Border.Medium}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height"          Value="40"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Modal Card -->
+    <Border Background="{StaticResource Bg.Surface}"
+            BorderBrush="{StaticResource Border.Subtle}"
+            BorderThickness="1" CornerRadius="12"
+            Width="460"
+            VerticalAlignment="Center" HorizontalAlignment="Center">
+
+            <StackPanel Margin="28,24,28,24">
+
+                <!-- Header -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Border Width="40" Height="40" CornerRadius="8"
+                            Background="{StaticResource Accent.PrimaryBg}"
+                            Margin="0,0,12,0">
+                        <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18" Foreground="{StaticResource Accent.Primary}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Faculty Registration Code"
+                                   FontSize="16" FontWeight="Bold"
+                                   Foreground="{StaticResource Text.Primary}"/>
+                        <TextBlock Text="Configure the secret passcode required for faculty signup"
+                                   FontSize="12" Foreground="{StaticResource Text.Muted}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Divider -->
+                <Border Height="1" Background="{StaticResource Border.Subtle}" Margin="0,0,0,18"/>
+
+                <!-- Inline Error Banner -->
+                <Border x:Name="ErrorCard" Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1"
+                        CornerRadius="6" Padding="12,8" Margin="0,0,0,14" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE783;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   Foreground="#DC2626" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ErrorMessageText" FontSize="12" Foreground="#DC2626"
+                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Current Code Field -->
+                <TextBlock Text="Current Registration Code" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                <Border Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Medium}"
+                        BorderThickness="1" CornerRadius="6" Height="40" Margin="0,0,0,14">
+                    <TextBox x:Name="CurrentCodeBox" Style="{StaticResource Input.Field}"
+                             FontFamily="Consolas" FontSize="13"/>
+                </Border>
+
+                <!-- New Code Field -->
+                <TextBlock Text="New Registration Code" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                <Border Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Medium}"
+                        BorderThickness="1" CornerRadius="6" Height="40" Margin="0,0,0,14">
+                    <TextBox x:Name="NewCodeBox" Style="{StaticResource Input.Field}"
+                             FontFamily="Consolas" FontSize="13"/>
+                </Border>
+
+                <!-- Confirm Code Field -->
+                <TextBlock Text="Confirm New Registration Code" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                <Border Background="{StaticResource Bg.Surface}"
+                        BorderBrush="{StaticResource Border.Medium}"
+                        BorderThickness="1" CornerRadius="6" Height="40" Margin="0,0,0,8">
+                    <TextBox x:Name="ConfirmCodeBox" Style="{StaticResource Input.Field}"
+                             FontFamily="Consolas" FontSize="13"/>
+                </Border>
+
+                <!-- Security Note -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,22">
+                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                               Foreground="{StaticResource Text.Muted}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock FontSize="11" Foreground="{StaticResource Text.Muted}" TextWrapping="Wrap"
+                               Text="Saved securely on disk as an irreversible SHA-256 hash."/>
+                </StackPanel>
+
+                <!-- Action Buttons -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Style="{StaticResource Btn.Secondary}"
+                            Content="Cancel" Click="CancelBtn_Click"/>
+                    <Button Grid.Column="2" x:Name="SaveBtn" Style="{StaticResource Btn.Primary}"
+                            Content="Save Code" Click="SaveBtn_Click"/>
+                </Grid>
+
+            </StackPanel>
+        </Border>
+</Window>

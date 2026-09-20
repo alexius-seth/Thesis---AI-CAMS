@@ -352,11 +352,81 @@ namespace ACPAMS.Views.Faculty.Tabs
             }
         }
 
+        private async void RetryAiGrading_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe || fe.DataContext is not QuestionAnswerVM vm)
+                return;
+
+            if (_selectedAttempt == null || vm.AnswerId == Guid.Empty)
+                return;
+
+            vm.IsAiRetrying = true;
+
+            try
+            {
+                var aiJobService = new AiJobService();
+                await aiJobService.RetryAnswerGradingAsync(vm.AnswerId);
+
+                // Update this question in-place without resetting scroll or wiping other answers
+                if (_examId.HasValue)
+                {
+                    var updatedQuestions = await _service.GetQuestionsForAttemptAsync(_examId.Value, _selectedAttempt.AttemptId);
+                    var updatedQ = updatedQuestions.FirstOrDefault(q => q.AnswerId == vm.AnswerId);
+                    if (updatedQ != null)
+                    {
+                        vm.ObtainedPoints = updatedQ.ObtainedPoints;
+                        vm.GradedBy = updatedQ.GradedBy;
+                        vm.AiOverallFeedback = updatedQ.AiOverallFeedback;
+                        vm.AiGradingFailed = updatedQ.AiGradingFailed;
+                        vm.AiGradingError = updatedQ.AiGradingError;
+                        vm.AiCriteriaBreakdown.Clear();
+                        foreach (var criterion in updatedQ.AiCriteriaBreakdown)
+                        {
+                            vm.AiCriteriaBreakdown.Add(new AiCriterionBreakdownVM
+                            {
+                                CriteriaName = criterion.CriteriaName,
+                                MatchedTier = criterion.MatchedTier,
+                                AwardedScore = criterion.AwardedScore,
+                                Justification = criterion.Justification
+                            });
+                        }
+                        vm.NotifyBreakdownChanged();
+                    }
+
+                    // Update summary KPI numbers in the header
+                    var data = await _service.GetGradingDataAsync(_examId.Value);
+                    TotalSubmissions = data.TotalSubmissions;
+                    AiAutoGraded = data.AiAutoGraded;
+                    PendingReview = data.PendingReview;
+                    Finalized = data.Finalized;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"AI grading retry failed: {ex.Message}", "Retry Failed",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                if (_examId.HasValue)
+                {
+                    var updatedQuestions = await _service.GetQuestionsForAttemptAsync(_examId.Value, _selectedAttempt.AttemptId);
+                    var updatedQ = updatedQuestions.FirstOrDefault(q => q.AnswerId == vm.AnswerId);
+                    if (updatedQ != null)
+                    {
+                        vm.AiGradingFailed = updatedQ.AiGradingFailed;
+                        vm.AiGradingError = updatedQ.AiGradingError;
+                    }
+                }
+            }
+            finally
+            {
+                vm.IsAiRetrying = false;
+            }
+        }
+
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            // Returns to whichever page opened Grading (Dashboard, Faculty Home, etc.)
-            // via MainWindow's navigation history — same pattern as MonitoringTab's Back button.
-            MainWindow.NavigateBackStatic();
+            // Explicitly return to the main hub rather than popping whatever page was visited before
+            MainWindow.NavigateToFacultyHomeStatic();
         }
     }
 }

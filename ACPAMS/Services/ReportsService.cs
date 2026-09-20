@@ -7,23 +7,7 @@ namespace ACPAMS.Services
     public class ReportsService
     {
         // Rough, rule-based estimate — NOT AI-derived. Flags-per-attempt is
-        // normalized against a cap (10 flags = 0% integrity) and averaged.
-        // Adjust FLAG_CAP if this feels too harsh/lenient in practice.
-        private const int FLAG_CAP = 10;
-
-        // ── Aggregate metrics + per-attempt rows across ALL of this instructor's exams ──
-        // Used by the generic "View Student Reports" quick-nav (browse everything).
-        public async Task<ReportsSummaryDto> GetSummaryAsync(string instructorId)
-        {
-            using var context = new AppDbContext();
-
-            var examIds = await context.Exams
-                .Where(e => e.InstructorId == instructorId)
-                .Select(e => e.ExamId)
-                .ToListAsync();
-
-            return await BuildSummaryAsync(context, examIds);
-        }
+        private static int FLAG_CAP => AppSettingsService.IntegrityFlagCap;
 
         // ── Same aggregate, scoped to ONE exam only ──────────────────────
         // Used by "View Report" on a specific completed exam, so students from
@@ -89,7 +73,7 @@ namespace ACPAMS.Services
                 .Where(l => l.EntityType == "StudentExamAttempt" && attemptIds.Contains(l.EntityId))
                 .ToListAsync();
 
-            int gazeCount = relevantLogs.Count(l => l.Action.Contains("NoFaceDetected") || l.Action.Contains("MultipleFaces"));
+            int gazeCount = relevantLogs.Count(l => l.Action.Contains("NoFaceDetected") || l.Action.Contains("MultipleFaces") || l.Action.Contains("GazeDiverted"));
             int windowCount = relevantLogs.Count(l => l.Action.Contains("AltTab") || l.Action.Contains("WindowFocus"));
             int clipboardCount = relevantLogs.Count(l => l.Action.Contains("Clipboard"));
 
@@ -129,7 +113,7 @@ namespace ACPAMS.Services
                     FinalScoreText = a.TotalScore.HasValue && maxPts > 0
                         ? $"{a.TotalScore.Value:0.##} / {maxPts:0.##}"
                         : "—",
-                    IsPassing = a.TotalScore.HasValue && maxPts > 0 && (a.TotalScore.Value / maxPts) >= 0.75m,
+                    IsPassing = a.TotalScore.HasValue && maxPts > 0 && (a.TotalScore.Value / maxPts) >= (AppSettingsService.PassingGrade / 100m),
                     AnomalyCount = flagCount,
                     RiskLevel = risk
                 });
@@ -204,15 +188,18 @@ namespace ACPAMS.Services
         // ── For the exam-selector dropdown on ReportsTab's generic view ──
         public async Task<List<ExamOptionDto>> GetInstructorExamsAsync(string instructorId)
         {
+            if (string.IsNullOrEmpty(instructorId))
+                return new List<ExamOptionDto>();
+
             using var context = new AppDbContext();
 
             return await context.Exams
-                .Where(e => e.InstructorId == instructorId)
+                .Where(e => e.InstructorId == instructorId && e.Status != "archived")
                 .OrderByDescending(e => e.CreatedAt)
                 .Select(e => new ExamOptionDto
                 {
                     ExamId = e.ExamId,
-                    Title = e.Title ?? e.ExamName ?? "Untitled Exam"
+                    Title = e.ExamName ?? "Untitled Exam"
                 })
                 .ToListAsync();
         }

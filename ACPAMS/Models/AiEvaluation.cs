@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -41,20 +41,6 @@ namespace ACPAMS.Models
 
         [Column("ai_response_raw")]
         public string? AiResponseRaw { get; set; }
-
-        [MaxLength(50)]
-        [Column("prompt_version")]
-        public string? PromptVersion { get; set; }
-
-        [Column("final_adjusted_score")]
-        public decimal? FinalAdjustedScore { get; set; }
-
-        [MaxLength(50)]
-        [Column("reviewed_by")]
-        public string? ReviewedBy { get; set; }
-
-        [Column("review_notes")]
-        public string? ReviewNotes { get; set; }
 
         // Navigation
         [ForeignKey("AnswerId")]

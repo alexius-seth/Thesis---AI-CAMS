@@ -1,4 +1,4 @@
-﻿using ACPAMS.Data;
+using ACPAMS.Data;
 using ACPAMS.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -55,6 +55,7 @@ namespace ACPAMS.Views.Auth
                 {
                     SessionManager.CurrentStudent = await context.Students
                         .FirstOrDefaultAsync(s => s.UserId == user.UserId);
+                    SessionManager.RefreshAvatarCache();
 
                     ACPAMS.MainWindow.Resize(520, 480);
                     ACPAMS.MainWindow.Navigate(new Student.ExamEntryPage());
@@ -63,6 +64,7 @@ namespace ACPAMS.Views.Auth
                 {
                     SessionManager.CurrentInstructor = await context.Instructors
                         .FirstOrDefaultAsync(i => i.UserId == user.UserId);
+                    SessionManager.RefreshAvatarCache();
 
                     ACPAMS.MainWindow.Resize(1280, 800);
                     ACPAMS.MainWindow.Navigate(new FacultyHomePage());
@@ -116,9 +118,8 @@ namespace ACPAMS.Views.Auth
             }
             else
             {
-                // FacultySignUpPage still a Window — open separately
-                var facultySignUp = new FacultySignUpPage();
-                facultySignUp.Show();
+                ACPAMS.MainWindow.Resize(520, 720);
+                ACPAMS.MainWindow.Navigate(new FacultySignUpPage());
             }
         }
     }

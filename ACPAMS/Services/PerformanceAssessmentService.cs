@@ -28,10 +28,10 @@ namespace ACPAMS.Services
     /// </summary>
     public class PerformanceAssessmentService
     {
-        // Must match GeminiRubricGradingService.ModelEndpoint / AiJobService.GeminiModelName.
-        private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
-        private const string GeminiModelName = "gemini-3.5-flash";
+        // Dynamic model configured in Faculty Settings
+        private static string ModelEndpoint =>
+            $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
+        private static string GeminiModelName => AppSettingsService.GetGeminiModel();
 
         private static readonly HttpClient _http = new();
 
@@ -56,9 +56,9 @@ namespace ACPAMS.Services
             if (questionDetails.Count == 0)
                 throw new InvalidOperationException("No graded questions found for this attempt yet.");
 
-            string apiKey = App.Configuration["Gemini:ApiKey"]
-                ?? throw new InvalidOperationException(
-                    "Gemini API key not set. Run: dotnet user-secrets set \"Gemini:ApiKey\" \"your-key\"");
+            string apiKey = AppSettingsService.GetGeminiApiKey();
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Gemini API key not set. Please configure it in Faculty Settings.");
 
             var promptText = BuildPrompt(attempt.Student, attempt.Exam, questionDetails);
 
@@ -214,7 +214,7 @@ namespace ACPAMS.Services
                 academic strengths and weaknesses — NOT to grade anything (grading is already done).
 
                 Student: {{student.FirstName}} {{student.LastName}}
-                Exam: {{exam.Title ?? exam.ExamName ?? "Untitled Exam"}}
+                Exam: {{exam.ExamName ?? "Untitled Exam"}}
                 Overall score: {{totalEarned}} / {{totalMax}}
 
                 PER-QUESTION RESULTS (JSON):

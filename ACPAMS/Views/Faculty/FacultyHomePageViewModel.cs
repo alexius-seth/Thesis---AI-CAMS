@@ -17,6 +17,7 @@ namespace ACPAMS.ViewModels
     public class FacultyHomePageViewModel : INotifyPropertyChanged
     {
         private readonly string _instructorId;
+        private readonly bool _isArchivedView;
 
         // Guards against overlapping loads (e.g. if Loaded fires more than once).
         private bool _isLoadInFlight;
@@ -30,10 +31,13 @@ namespace ACPAMS.ViewModels
         public ICommand EditExamCommand { get; set; }
         public ICommand ViewLogsCommand { get; set; }
         public ICommand ArchiveExamCommand { get; set; }
+        public ICommand UnarchiveExamCommand { get; set; }
         public ICommand DeleteExamCommand { get; set; }
         public ICommand ViewReportCommand { get; set; }
         public ICommand ViewDashboardCommand { get; set; }
         public ICommand ViewScoresCommand { get; set; }
+
+        public bool IsArchivedView => _isArchivedView;
 
         /// <summary>Single command for the "Recently Completed" row action button —
         /// branches to Review Submissions / Finalize Grades / View Report based on
@@ -66,7 +70,16 @@ namespace ACPAMS.ViewModels
             {
                 _selectedExam = value;
                 OnPropertyChanged();
+                if (value != null)
+                {
+                    OnAssessmentSelected(value.ExamId);
+                }
             }
+        }
+
+        public void OnAssessmentSelected(Guid examId)
+        {
+            MainWindow.NavigateToReportsStatic(examId);
         }
 
         public bool IsLoading
@@ -85,9 +98,10 @@ namespace ACPAMS.ViewModels
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public FacultyHomePageViewModel(string instructorId)
+        public FacultyHomePageViewModel(string instructorId, bool isArchivedView = false)
         {
             _instructorId = instructorId;
+            _isArchivedView = isArchivedView;
             Exams = new ObservableCollection<ExamStatusDto>();
             Exams.CollectionChanged += (s, e) =>
             {
@@ -109,6 +123,10 @@ namespace ACPAMS.ViewModels
             ArchiveExamCommand = new RelayCommand(async param =>
             {
                 if (param is ExamStatusDto exam) await ArchiveExamAsync(exam.ExamId);
+            });
+            UnarchiveExamCommand = new RelayCommand(async param =>
+            {
+                if (param is ExamStatusDto exam) await UnarchiveExamAsync(exam.ExamId);
             });
             DeleteExamCommand = new RelayCommand(async param =>
             {
@@ -133,7 +151,7 @@ namespace ACPAMS.ViewModels
 
                 using var context = new AppDbContext();
                 var examStatusService = new ExamStatusService(context);
-                var exams = await examStatusService.GetExamsWithStatusAsync(_instructorId);
+                var exams = await examStatusService.GetExamsWithStatusAsync(_instructorId, archivedOnly: _isArchivedView);
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -174,11 +192,48 @@ namespace ACPAMS.ViewModels
                     await examStatusService.ArchiveExamAsync(examId);
                 }
 
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var card = Exams.FirstOrDefault(e => e.ExamId == examId);
+                    if (card != null) Exams.Remove(card);
+                });
+
                 await LoadExamsAsync();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error archiving exam: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public async Task UnarchiveExamAsync(Guid examId)
+        {
+            var result = MessageBox.Show(
+                "Restore this exam? It will be moved back to the active assessments list.",
+                "Confirm Restore", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                using (var context = new AppDbContext())
+                {
+                    var examStatusService = new ExamStatusService(context);
+                    await examStatusService.UnarchiveExamAsync(examId);
+                }
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var card = Exams.FirstOrDefault(e => e.ExamId == examId);
+                    if (card != null) Exams.Remove(card);
+                });
+
+                await LoadExamsAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error restoring exam: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -202,7 +257,8 @@ namespace ACPAMS.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting exam: {ex.Message}", "Error",
+                var msg = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
+                MessageBox.Show($"Error deleting exam: {msg}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -216,9 +272,7 @@ namespace ACPAMS.ViewModels
 
         // ── Navigation actions (Live / Pending / Done card buttons) ────────
         // Monitor/ViewLogs now open MonitoringTab filtered to this exam's ID.
-        // TODO: MainWindow.NavigateToCreateExamStatic() is still parameterless,
-        // so "Edit Exam" opens the Create/Edit tab but doesn't yet pre-load
-        // this specific exam. Add an examId-aware overload there when ready.
+        // EditExam opens CreateExamPage directly, pre-loading this specific exam.
 
         private void OnMonitorExam(ExamStatusDto exam)
         {
@@ -231,7 +285,7 @@ namespace ACPAMS.ViewModels
             if (exam == null) return;
             try
             {
-                ACPAMS.MainWindow.NavigateToCreateExamStatic();
+                ACPAMS.MainWindow.NavigateToCreateExamStatic(exam.ExamId);
             }
             catch (Exception ex)
             {
@@ -271,7 +325,7 @@ namespace ACPAMS.ViewModels
         private void OnViewReport(ExamStatusDto exam)
         {
             if (exam == null) return;
-            ACPAMS.MainWindow.Navigate(new ReportsTab(exam.ExamId));
+            ACPAMS.MainWindow.NavigateToReportsStatic(exam.ExamId);
         }
 
         // Item 5: dynamic action for the "Recently Completed" table.

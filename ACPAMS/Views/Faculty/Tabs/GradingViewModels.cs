@@ -32,23 +32,81 @@ namespace ACPAMS.Views.Faculty.Tabs
         public bool IsGraded => ObtainedPoints.HasValue;
 
         // ── AI grading reasoning ──────────────────────────────────────────
-        // "ai" | "instructor" | null (never graded yet).
-        public string GradedBy { get; set; }
+        private string _gradedBy;
+        public string GradedBy
+        {
+            get => _gradedBy;
+            set
+            {
+                if (_gradedBy == value) return;
+                _gradedBy = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsAiSuggested));
+            }
+        }
 
         /// <summary>True if the current score/justification came from AI and the
         /// instructor hasn't overridden it yet (GradedBy stays "ai" until they Save).</summary>
         public bool IsAiSuggested => GradedBy == "ai";
 
-        public string AiOverallFeedback { get; set; }
+        private string _aiOverallFeedback;
+        public string AiOverallFeedback
+        {
+            get => _aiOverallFeedback;
+            set
+            {
+                if (_aiOverallFeedback == value) return;
+                _aiOverallFeedback = value;
+                OnPropertyChanged();
+            }
+        }
 
         public ObservableCollection<AiCriterionBreakdownVM> AiCriteriaBreakdown { get; set; } = new();
 
         public bool HasAiBreakdown => AiCriteriaBreakdown.Count > 0;
 
+        public void NotifyBreakdownChanged() => OnPropertyChanged(nameof(HasAiBreakdown));
+
         /// <summary>True if AI grading was attempted for this answer and failed
         /// after all retries — distinct from "AI hasn't gotten to this yet."</summary>
-        public bool AiGradingFailed { get; set; }
-        public string AiGradingError { get; set; }
+        private bool _aiGradingFailed;
+        public bool AiGradingFailed
+        {
+            get => _aiGradingFailed;
+            set
+            {
+                if (_aiGradingFailed == value) return;
+                _aiGradingFailed = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _aiGradingError;
+        public string AiGradingError
+        {
+            get => _aiGradingError;
+            set
+            {
+                if (_aiGradingError == value) return;
+                _aiGradingError = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isAiRetrying;
+        public bool IsAiRetrying
+        {
+            get => _isAiRetrying;
+            set
+            {
+                if (_isAiRetrying == value) return;
+                _isAiRetrying = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsNotAiRetrying));
+            }
+        }
+
+        public bool IsNotAiRetrying => !_isAiRetrying;
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string name = null)

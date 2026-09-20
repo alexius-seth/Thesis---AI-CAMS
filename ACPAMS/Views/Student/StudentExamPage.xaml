@@ -196,13 +196,9 @@
 
                 <!-- Brand -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="30" Height="30" Background="#1A202C"
-                            CornerRadius="6" Margin="0,0,8,0">
-                        <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="ACPAMS" FontSize="14" FontWeight="Bold"
+                    <Image Source="/FINAL LOGO.ico" Width="28" Height="28" Margin="0,0,8,0"
+                           RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                    <TextBlock Text="AI-CAMS" FontSize="14" FontWeight="Bold"
                                Foreground="{StaticResource Text.Primary}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
@@ -281,8 +277,9 @@
                                                    Foreground="{StaticResource Accent.Primary}"
                                                    HorizontalAlignment="Right"/>
                                     </Grid>
-                                    <Border Height="5" CornerRadius="3"
-                                            Background="{StaticResource Border.Subtle}">
+                                    <Border x:Name="ProgressBarTrack" Height="5" CornerRadius="3"
+                                            Background="{StaticResource Border.Subtle}"
+                                            SizeChanged="ProgressBarTrack_SizeChanged">
                                         <Border x:Name="ProgressBar"
                                                 HorizontalAlignment="Left"
                                                 Width="0" CornerRadius="3"
@@ -424,11 +421,25 @@
                                     <TextBlock x:Name="ClipboardStatusText" Text="Clipboard monitoring..."
                                          FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                     <Ellipse x:Name="AltTabStatusDot" Width="6" Height="6"
                                         Fill="{StaticResource Status.Warning}"
                                         Margin="0,0,6,0" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="AltTabStatusText" Text="Alt+Tab monitoring..."
+                                        FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Ellipse x:Name="EyeStatusDot" Width="6" Height="6"
+                                        Fill="{StaticResource Status.Warning}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="EyeStatusText" Text="Eyes: Detecting..."
+                                        FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse x:Name="GazeStatusDot" Width="6" Height="6"
+                                        Fill="{StaticResource Status.Warning}"
+                                        Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GazeStatusText" Text="Gaze: Detecting..."
                                         FontSize="10" Foreground="{StaticResource Text.Secondary}"/>
                                 </StackPanel>
                             </StackPanel>

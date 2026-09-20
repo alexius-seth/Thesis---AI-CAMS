@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -6,8 +6,16 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-	  <UserSecretsId>b94e6095-872c-46e1-87cc-0fe6e22f1a8e</UserSecretsId>
-  </PropertyGroup>
+		<UserSecretsId>b94e6095-872c-46e1-87cc-0fe6e22f1a8e</UserSecretsId>
+		<ApplicationIcon>FINAL LOGO.ico</ApplicationIcon>
+		<Title>AI-assisted Centralized Assessment Monitoring System (AI-CAMS)</Title>
+		<Product>AI-assisted Centralized Assessment Monitoring System (AI-CAMS)</Product>
+		<AssemblyTitle>AI-assisted Centralized Assessment Monitoring System (AI-CAMS)</AssemblyTitle>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Resource Include="FINAL LOGO.ico" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <None Remove="Resources\Models\haarcascade_frontalface_default.xml" />
@@ -23,6 +31,13 @@
 	  </Content>
 	  <Content Include="Resources\Models\shape_predictor_68_face_landmarks.dat">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="appsettings.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Tools\**\*">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <Visible>false</Visible>
 	  </Content>
 	</ItemGroup>
 
@@ -51,6 +66,8 @@
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260627" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
+		<PackageReference Include="QuestPDF" Version="2026.9.0" />
+		<PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
 	</ItemGroup>
 
 

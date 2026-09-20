@@ -127,12 +127,10 @@
                     <DropShadowEffect Color="#94A3B8" Opacity="0.18" BlurRadius="32" ShadowDepth="6"/>
                 </Border.Effect>
                 <StackPanel Margin="36,32,36,32">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
-                        <Border Width="36" Height="36" Background="#1A202C" CornerRadius="8" Margin="0,0,10,0">
-                            <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="ACPAMS" FontSize="20" FontWeight="Bold"
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="-8,0,0,24">
+                        <Image Source="/FINAL LOGO.ico" Width="36" Height="36" Margin="-8,0,6,0"
+                               RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                        <TextBlock Text="AI-CAMS" FontSize="20" FontWeight="Bold"
                                    Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                     </StackPanel>
                     <TextBlock Text="Sign Up" FontSize="22" FontWeight="Bold"
@@ -198,21 +196,43 @@
 
                     <!-- Program -->
                     <TextBlock Text="Program" FontSize="12" FontWeight="SemiBold"
-           Foreground="{StaticResource Text.Secondary}"
-           Margin="0,0,0,6"/>
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,6"/>
                     <Border Background="{StaticResource Bg.Surface}"
-        BorderBrush="{StaticResource Border.Subtle}"
-        BorderThickness="1" CornerRadius="6" Height="42"
-        Margin="0,0,0,24">
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="6" Height="42"
+                            Margin="0,0,0,16">
                         <ComboBox x:Name="ProgramBox"
-              Background="Transparent"
-              BorderThickness="0"
-              Padding="12,0"
-              VerticalContentAlignment="Center"
-              FontFamily="Segoe UI"
-              FontSize="13">
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  Padding="12,0"
+                                  VerticalContentAlignment="Center"
+                                  FontFamily="Segoe UI"
+                                  FontSize="13">
                             <ComboBoxItem Content="BS Computer Science"/>
                             <ComboBoxItem Content="BS Information Technology"/>
+                        </ComboBox>
+                    </Border>
+
+                    <!-- Year Level -->
+                    <TextBlock Text="Year Level" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}"
+                               Margin="0,0,0,6"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="6" Height="42"
+                            Margin="0,0,0,24">
+                        <ComboBox x:Name="YearLevelBox"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  Padding="12,0"
+                                  VerticalContentAlignment="Center"
+                                  FontFamily="Segoe UI"
+                                  FontSize="13">
+                            <ComboBoxItem Content="1st Year"/>
+                            <ComboBoxItem Content="2nd Year"/>
+                            <ComboBoxItem Content="3rd Year"/>
+                            <ComboBoxItem Content="4th Year"/>
                         </ComboBox>
                     </Border>
                     

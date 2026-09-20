@@ -15,20 +15,10 @@ namespace ACPAMS.Services
     /// </summary>
     public class GeminiExamImportService
     {
-        // Model history: gemini-1.5-flash was retired by Google (404).
-        // gemini-3.1-flash-lite hit a 403 PERMISSION_DENIED (account/billing
-        // issue on the Google Cloud project, unrelated to this code). Team
-        // decision: using gemini-3.5-flash.
-        //
-        // IMPORTANT: this model name now lives in THREE places, not two —
-        // GeminiRubricGradingService.ModelEndpoint, AiJobService.GeminiModelName,
-        // and here. If it ever needs to change again, update all three, or
-        // (better) pull this out into a single shared config value so this
-        // stops being a manual-sync problem. Check
-        // https://ai.google.dev/gemini-api/docs/changelog for the current
-        // model name if this ever 404s/403s.
-        private const string ModelEndpoint =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
+        // Active models: gemini-2.5-flash-lite (default), gemini-2.5-flash, etc.
+        // Managed dynamically via AppSettingsService.GetGeminiModel().
+        private static string ModelEndpoint =>
+            $"https://generativelanguage.googleapis.com/v1beta/models/{AppSettingsService.GetGeminiModel()}:generateContent";
 
         private static readonly HttpClient _http = new();
 
@@ -37,9 +27,9 @@ namespace ACPAMS.Services
             if (string.IsNullOrWhiteSpace(rawFileText))
                 throw new InvalidOperationException("The imported file is empty.");
 
-            string apiKey = App.Configuration["Gemini:ApiKey"]
-                ?? throw new InvalidOperationException(
-                    "Gemini API key not set. Run: dotnet user-secrets set \"Gemini:ApiKey\" \"your-key\"");
+            string apiKey = AppSettingsService.GetGeminiApiKey();
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Gemini API key not set. Please configure it in Faculty Settings.");
 
             var promptText = BuildPrompt(rawFileText);
 
@@ -158,7 +148,7 @@ namespace ACPAMS.Services
                 "Identification", "Enumeration", "Coding", "Essay".
 
                 Type inference guide:
-                - Multiple Choice: question has 2+ labeled options (A/B/C/D, 1/2/3/4, etc.)
+                - Multiple Choice: question has 2+ labeled options (A/B/C/D, 1/2/3/4, etc.). Set "correctAnswer" to the single uppercase option letter ("A", "B", "C", or "D").
                 - True or False: question asks for a true/false judgment
                 - Identification: short factual answer expected, no options given
                 - Enumeration: question asks to list multiple items

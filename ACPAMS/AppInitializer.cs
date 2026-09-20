@@ -49,7 +49,7 @@ namespace ACPAMS
                         UserId = Guid.NewGuid(),
                         FirstName = "Default",
                         LastName = "Instructor",
-                        Department = "Computer Studies",
+                        Department = "Department of Computer Studies",
                         CreatedAt = DateTime.Now
                     };
 

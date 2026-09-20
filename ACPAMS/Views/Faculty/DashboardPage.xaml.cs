@@ -72,7 +72,7 @@ namespace ACPAMS.Views.Faculty
                 _currentExamId = live.ExamId;
 
                 StatusChip.Visibility = Visibility.Visible;
-                StatusChipLabel.Text = $"  ·  {live.CourseCode} {live.Title}";
+                StatusChipLabel.Text = $"  ·  {live.CourseCode} {live.ExamName}";
 
                 if (TabContent.Content is OverviewTab overview)
                 {
@@ -112,6 +112,11 @@ namespace ACPAMS.Views.Faculty
             MainWindow.NavigateToCreateExamStatic();
         }
 
+        private void NavigateToArchivedExams(object sender, RoutedEventArgs e)
+        {
+            MainWindow.NavigateToArchivedExamsStatic();
+        }
+
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
             // Already here - do nothing
@@ -141,6 +146,28 @@ namespace ACPAMS.Views.Faculty
             {
                 ToastNotification.Show("No exam selected to grade", Application.Current.MainWindow, 3);
             }
+        }
+
+        private void NavigateToReports(object sender, RoutedEventArgs e)
+        {
+            if (_currentExamId.HasValue)
+            {
+                MainWindow.Navigate(new ReportsTab(_currentExamId.Value));
+            }
+            else
+            {
+                MainWindow.Navigate(new ReportsTab(null));
+            }
+        }
+
+        private void NavigateToSettings(object sender, RoutedEventArgs e)
+        {
+            MainWindow.NavigateToSettingsStatic();
+        }
+
+        private void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            SessionManager.Logout();
         }
     }
 }

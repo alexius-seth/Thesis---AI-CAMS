@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,10 +19,6 @@ namespace ACPAMS.Models
         [MaxLength(50)]
         [Column("instructor_id")]
         public string InstructorId { get; set; } = string.Empty;
-
-        [MaxLength(200)]
-        [Column("title")]
-        public string? Title { get; set; }
 
         [MaxLength(20)]
         [Column("course_code")]
@@ -50,8 +46,18 @@ namespace ACPAMS.Models
         public string Status { get; set; } = "draft";
         // Values: "draft" | "active" | "archived"
 
+        [NotMapped]
+        public bool IsArchived
+        {
+            get => Status == "archived";
+            set => Status = value ? "archived" : "active";
+        }
+
         [Column("instructions")]
         public string? Instructions { get; set; }
+
+        [Column("randomize_questions")]
+        public bool RandomizeQuestions { get; set; } = false;
 
         // Navigation
         [ForeignKey("InstructorId")]
