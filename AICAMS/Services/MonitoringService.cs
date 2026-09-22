@@ -589,13 +589,20 @@ namespace ACPAMS.Services
         public async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid? examId = null)
         {
             using var context = new AppDbContext();
+            var currentInstructorId = SessionManager.CurrentInstructorId;
             var query = context.StudentExamAttempts
                 .Include(a => a.Student)
                 .Include(a => a.Exam)
                 .Where(a => a.Status == "in_progress" || a.Status == "submitted");
 
             if (examId.HasValue)
+            {
                 query = query.Where(a => a.ExamId == examId);
+            }
+            else if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                query = query.Where(a => a.Exam != null && a.Exam.InstructorId == currentInstructorId);
+            }
 
             var attempts = await query
                 .OrderByDescending(a => a.StartedAt)
@@ -695,14 +702,23 @@ namespace ACPAMS.Services
         public async Task<MonitoringStatsDto> GetStatisticsAsync(Guid? examId = null)
         {
             using var context = new AppDbContext();
-            var query = context.StudentExamAttempts.Where(a => a.Status == "in_progress");
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            var query = context.StudentExamAttempts.Include(a => a.Exam).Where(a => a.Status == "in_progress");
             if (examId.HasValue)
+            {
                 query = query.Where(a => a.ExamId == examId);
+            }
+            else if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                query = query.Where(a => a.Exam != null && a.Exam.InstructorId == currentInstructorId);
+            }
 
             var activeCount = await query.CountAsync();
+            var activeAttemptIds = await query.Select(a => a.AttemptId.ToString()).ToListAsync();
 
             var flagCount = await context.AuditLogs
                 .Where(l => l.EntityType == "StudentExamAttempt"
+                            && (activeAttemptIds.Count > 0 ? activeAttemptIds.Contains(l.EntityId) : false)
                             && l.CreatedAt >= DateTime.Now.AddMinutes(-30)
                             && !l.Action.Contains("HeadTurned")
                             && !l.Action.Contains("HeadTilted"))
@@ -710,6 +726,7 @@ namespace ACPAMS.Services
 
             var highRiskCount = await context.AuditLogs
                 .Where(l => l.EntityType == "StudentExamAttempt"
+                            && (activeAttemptIds.Count > 0 ? activeAttemptIds.Contains(l.EntityId) : false)
                             && (l.Action.Contains("NoFaceDetected") ||
                                 l.Action.Contains("AltTab") ||
                                 l.Action.Contains("WindowFocus"))

@@ -20,11 +20,19 @@ namespace ACPAMS.Services
             if (student == null)
                 throw new InvalidOperationException($"Student {studentId} not found.");
 
-            var attempts = await context.StudentExamAttempts
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            var attemptsQuery = context.StudentExamAttempts
                 .Include(a => a.Exam)
                 .Include(a => a.Answers)
                     .ThenInclude(ans => ans.Question)
-                .Where(a => a.StudentId == studentId && (a.Status == "submitted" || a.Status == "graded"))
+                .Where(a => a.StudentId == studentId && (a.Status == "submitted" || a.Status == "graded"));
+
+            if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                attemptsQuery = attemptsQuery.Where(a => a.Exam != null && a.Exam.InstructorId == currentInstructorId);
+            }
+
+            var attempts = await attemptsQuery
                 .OrderBy(a => a.SubmittedAt ?? a.StartedAt)
                 .ToListAsync();
 

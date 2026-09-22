@@ -116,7 +116,7 @@ graph TD
 * **Presentation Layer**: MVVM pattern with data-bound WPF XAML controls, vector icons (`Segoe MDL2 Assets`), and reactive UI updates.
 * **Service Layer**: Dedicated singleton and scoped services (`CodeRunnerService`, `ReportsService`, `ExamStatusService`, `GlobalSearchService`, `NotificationService`, `AvatarService`).
 * **Data Access Layer**: EF Core 8 with Code-First migrations, SQL Server change tracking, and resilient connection execution strategies.
-* **AI Engine**: HTTP client integrated with Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`, configurable in `ACPAMS/appsettings.json`) featuring exponential backoff, rate-limit retries, and strict JSON schema responses.
+* **AI Engine**: HTTP client integrated with Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`, configurable in `AICAMS/appsettings.json`) featuring exponential backoff, rate-limit retries, and strict JSON schema responses.
 
 ---
 
@@ -158,9 +158,9 @@ graph TD
 
 ### 1. Local Development (LocalDB)
 For single-machine development or evaluation, the system automatically uses Microsoft SQL Server LocalDB.
-The default connection string in `ACPAMS/Data/AppDbContext.cs` is:
+The default connection string in `AICAMS/Data/AppDbContext.cs` is:
 ```csharp
-Server=(localdb)\mssqllocaldb;Database=acpams_db;Trusted_Connection=True;TrustServerCertificate=True;
+Server=(localdb)\mssqllocaldb;Database=aicams;Trusted_Connection=True;TrustServerCertificate=True;
 ```
 
 ### 2. Multi-PC Computer Lab Deployment (LAN Host)
@@ -175,19 +175,19 @@ In a computer laboratory, the **Instructor's PC** acts as the centralized databa
 3. Restart the `SQL Server (SQLEXPRESS)` service.
 4. In **SQL Server Management Studio (SSMS)**:
    * Right-click server -> `Properties` -> `Security` -> Select **SQL Server and Windows Authentication mode**.
-   * Create a login for student workstations (e.g., User: `acpams_user`, Password: `LabPassword@123`).
-   * Grant `db_owner` role on database `acpams_db`.
+   * Create a login for student workstations (e.g., User: `aicams_user`, Password: `LabPassword@123`).
+   * Grant `db_owner` role on database `aicams`.
 
 #### Step B: Open Windows Firewall Port on Instructor PC
 Execute in Administrator PowerShell on the Host PC:
 ```powershell
-New-NetFirewallRule -DisplayName "ACPAMS SQL Server (Port 1433)" -Direction Inbound -LocalPort 1433 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "AICAMS SQL Server (Port 1433)" -Direction Inbound -LocalPort 1433 -Protocol TCP -Action Allow
 ```
 
 #### Step C: Update Connection String on Student Workstations
-In `ACPAMS/Data/AppDbContext.cs`, set the host's LAN IP address:
+In `AICAMS/Data/AppDbContext.cs`, set the host's LAN IP address:
 ```csharp
-options.UseSqlServer("Server=192.168.1.100,1433;Database=acpams_db;User Id=acpams_user;Password=LabPassword@123;TrustServerCertificate=True;");
+options.UseSqlServer("Server=192.168.1.100,1433;Database=aicams;User Id=aicams_user;Password=LabPassword@123;TrustServerCertificate=True;");
 ```
 
 ### 3. Default Seed Accounts
@@ -201,7 +201,7 @@ Upon initial startup, `AppInitializer.cs` automatically executes EF Core migrati
 
 ## 🛠 Zero-Install Portable Compiler Toolchain
 
-ACPAMS packages self-contained, portable compiler toolchains inside `ACPAMS/Tools/` so student PCs require zero manual compiler installations.
+AI-CAMS packages self-contained, portable compiler toolchains inside `AICAMS/Tools/` so student PCs require zero manual compiler installations.
 
 ### Setup Portable Toolchains (Run Once on Build Machine)
 Run the included PowerShell script from the repository root:
@@ -211,7 +211,7 @@ powershell -ExecutionPolicy Bypass -File .\setup-portable-tools.ps1
 
 The script configures the required directory hierarchy:
 ```
-ACPAMS/
+AICAMS/
 └── Tools/
     ├── Python/          # Python 3.11 embeddable runtime
     │   ├── python.exe
@@ -239,24 +239,24 @@ When building for deployment, these portable binaries are copied alongside the e
 ### Build Instructions
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/alexius-seth/Thesis---Acams.git
+   git clone https://github.com/alexius-seth/Thesis---AI-CAMS.git
    cd Thesis---Acams
    ```
 2. **Restore dependencies**:
    ```bash
-   dotnet restore ACPAMS/ACPAMS.csproj
+   dotnet restore AICAMS/AICAMS.csproj
    ```
 3. **Apply EF Core Migrations**:
    ```bash
-   dotnet ef database update --project ACPAMS/ACPAMS.csproj
+   dotnet ef database update --project AICAMS/AICAMS.csproj
    ```
 4. **Build the project**:
    ```bash
-   dotnet build ACPAMS/ACPAMS.csproj -c Release
+   dotnet build AICAMS/AICAMS.csproj -c Release
    ```
 5. **Run the application**:
    ```bash
-   dotnet run --project ACPAMS/ACPAMS.csproj
+   dotnet run --project AICAMS/AICAMS.csproj
    ```
 
 ### Gemini API Key Configuration

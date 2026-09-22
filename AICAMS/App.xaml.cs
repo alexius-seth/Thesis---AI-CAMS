@@ -19,9 +19,16 @@ namespace ACPAMS
         {
             base.OnStartup(e);
 
+            string userAppSettingsPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AICAMS",
+                "appsettings.user.json"
+            );
+
             Configuration = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile(userAppSettingsPath, optional: true, reloadOnChange: true)
                 .AddUserSecrets<App>(optional: true)
                 .Build();
 

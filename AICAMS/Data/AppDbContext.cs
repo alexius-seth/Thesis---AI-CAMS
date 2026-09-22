@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using ACPAMS.Models;
 
 namespace ACPAMS.Data
@@ -47,9 +48,10 @@ namespace ACPAMS.Data
         // ── Connection ──────────────────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer(
-                "Server=(localdb)\\mssqllocaldb;Database=acpams_db;Trusted_Connection=True;TrustServerCertificate=True;"
-            );
+            string connStr = App.Configuration?.GetConnectionString("DefaultConnection")
+                ?? "Server=(localdb)\\mssqllocaldb;Database=aicams;Trusted_Connection=True;TrustServerCertificate=True;";
+
+            options.UseSqlServer(connStr);
         }
 
         // ── Model Configuration ─────────────────────────────

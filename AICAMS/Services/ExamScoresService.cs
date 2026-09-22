@@ -17,7 +17,14 @@ namespace ACPAMS.Services
         {
             using var context = new AppDbContext();
 
+            var currentInstructorId = SessionManager.CurrentInstructorId;
             var exam = await context.Exams.FirstOrDefaultAsync(e => e.ExamId == examId);
+
+            if (exam == null)
+                throw new InvalidOperationException($"Exam {examId} not found.");
+
+            if (!string.IsNullOrEmpty(currentInstructorId) && exam.InstructorId != currentInstructorId)
+                throw new UnauthorizedAccessException("You do not have permission to view scores for this exam.");
 
             var questions = await context.Questions
                 .Where(q => q.ExamId == examId)

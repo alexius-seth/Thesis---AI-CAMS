@@ -28,13 +28,21 @@ namespace ACPAMS.Services
             // answers, what % were never overridden by an instructor? Real,
             // computable from GradedBy — unlike the class-wide "AI vs
             // Instructor" chart elsewhere, which has no baseline to compare yet.
-            var aiGradableAnswers = await context.StudentAnswers
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            var aiGradableAnswersQuery = context.StudentAnswers
                 .Include(a => a.Question)
                 .Include(a => a.Attempt)
+                    .ThenInclude(att => att!.Exam)
                 .Where(a => a.Attempt != null && a.Attempt.StudentId == studentId
                          && a.Question != null && AiGradedTypes.Contains(a.Question.QuestionType)
-                         && a.GradedBy != null)
-                .ToListAsync();
+                         && a.GradedBy != null);
+
+            if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                aiGradableAnswersQuery = aiGradableAnswersQuery.Where(a => a.Attempt!.Exam != null && a.Attempt.Exam.InstructorId == currentInstructorId);
+            }
+
+            var aiGradableAnswers = await aiGradableAnswersQuery.ToListAsync();
 
             if (aiGradableAnswers.Count > 0)
             {
@@ -47,8 +55,15 @@ namespace ACPAMS.Services
             // Risk score — same flag-based approach used elsewhere
             // (StudentReportPage, ReportsTab), just aggregated across every
             // attempt this student has made instead of one.
-            var attemptIds = await context.StudentExamAttempts
-                .Where(a => a.StudentId == studentId && (a.Status == "submitted" || a.Status == "graded"))
+            var attemptsQuery = context.StudentExamAttempts
+                .Where(a => a.StudentId == studentId && (a.Status == "submitted" || a.Status == "graded"));
+
+            if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                attemptsQuery = attemptsQuery.Where(a => a.Exam != null && a.Exam.InstructorId == currentInstructorId);
+            }
+
+            var attemptIds = await attemptsQuery
                 .Select(a => a.AttemptId.ToString())
                 .ToListAsync();
 
@@ -76,12 +91,20 @@ namespace ACPAMS.Services
         {
             using var context = new AppDbContext();
 
-            var answers = await context.StudentAnswers
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            var answersQuery = context.StudentAnswers
                 .Include(a => a.Question)
                 .Include(a => a.Attempt)
+                    .ThenInclude(att => att!.Exam)
                 .Where(a => a.Attempt != null && a.Attempt.StudentId == studentId
-                         && a.Question != null && a.ObtainedPoints.HasValue)
-                .ToListAsync();
+                         && a.Question != null && a.ObtainedPoints.HasValue);
+
+            if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                answersQuery = answersQuery.Where(a => a.Attempt!.Exam != null && a.Attempt.Exam.InstructorId == currentInstructorId);
+            }
+
+            var answers = await answersQuery.ToListAsync();
 
             var byType = answers
                 .GroupBy(a => a.Question!.QuestionType)
@@ -106,8 +129,16 @@ namespace ACPAMS.Services
         {
             using var context = new AppDbContext();
 
-            var attemptIds = await context.StudentExamAttempts
-                .Where(a => a.StudentId == studentId && (a.Status == "submitted" || a.Status == "graded"))
+            var currentInstructorId = SessionManager.CurrentInstructorId;
+            var attemptsQuery = context.StudentExamAttempts
+                .Where(a => a.StudentId == studentId && (a.Status == "submitted" || a.Status == "graded"));
+
+            if (!string.IsNullOrEmpty(currentInstructorId))
+            {
+                attemptsQuery = attemptsQuery.Where(a => a.Exam != null && a.Exam.InstructorId == currentInstructorId);
+            }
+
+            var attemptIds = await attemptsQuery
                 .Select(a => a.AttemptId.ToString())
                 .ToListAsync();
 
@@ -133,6 +164,7 @@ namespace ACPAMS.Services
         {
             using var context = new AppDbContext();
 
+            var currentInstructorId = SessionManager.CurrentInstructorId;
             var assessments = await context.Set<AiAssessment>()
                 .Where(a => a.StudentId == studentId)
                 .OrderByDescending(a => a.GeneratedAt)
@@ -144,6 +176,7 @@ namespace ACPAMS.Services
             {
                 var exam = await context.Exams.FirstOrDefaultAsync(e => e.ExamId == assessment.ExamId);
                 if (exam == null) continue;
+                if (!string.IsNullOrEmpty(currentInstructorId) && exam.InstructorId != currentInstructorId) continue;
 
                 var attempt = await context.StudentExamAttempts
                     .Include(a => a.Answers)

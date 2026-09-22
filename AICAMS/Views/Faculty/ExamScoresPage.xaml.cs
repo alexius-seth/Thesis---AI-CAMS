@@ -47,36 +47,51 @@ namespace ACPAMS.Views.Faculty
 
         private async Task LoadAsync()
         {
-            // Defensive catch-up — grades any objective answer that slipped
-            // through before this exam ever had a submission (e.g. exams
-            // submitted before AutoCheckerService existed, or before this
-            // page was ever opened for them).
-            await new AutoCheckerService().AutoGradeExamAsync(_examId);
-
-            var summary = await _service.GetExamScoresAsync(_examId);
-
-            ExamTitleText.Text = summary.ExamTitle;
-            TotalTestTakersValue.Text = summary.TotalTestTakers.ToString();
-
-            if (summary.HasAverage)
+            try
             {
-                AverageScoreValue.Text = $"{summary.AverageScorePercent:0.#}%";
-                AverageScoreSub.Text = "Across finalized + fully-scored attempts";
+                // Defensive catch-up — grades any objective answer that slipped
+                // through before this exam ever had a submission (e.g. exams
+                // submitted before AutoCheckerService existed, or before this
+                // page was ever opened for them).
+                await new AutoCheckerService().AutoGradeExamAsync(_examId);
+
+                var summary = await _service.GetExamScoresAsync(_examId);
+
+                ExamTitleText.Text = summary.ExamTitle;
+                TotalTestTakersValue.Text = summary.TotalTestTakers.ToString();
+
+                if (summary.HasAverage)
+                {
+                    AverageScoreValue.Text = $"{summary.AverageScorePercent:0.#}%";
+                    AverageScoreSub.Text = "Across finalized + fully-scored attempts";
+                }
+                else
+                {
+                    AverageScoreValue.Text = "—";
+                    AverageScoreSub.Text = "No finalized scores yet";
+                }
+
+                UnfinalizedValue.Text = summary.UnfinalizedCount.ToString();
+                UnfinalizedCard.Visibility = summary.UnfinalizedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+                BuildSectionColumns(summary.SectionNames);
+
+                ScoresGrid.ItemsSource = summary.Rows;
+                ScoresGrid.SelectionChanged -= ScoresGrid_SelectionChanged; // avoid double-subscribing on reload
+                ScoresGrid.SelectionChanged += ScoresGrid_SelectionChanged;
             }
-            else
+            catch (UnauthorizedAccessException ex)
             {
-                AverageScoreValue.Text = "—";
-                AverageScoreSub.Text = "No finalized scores yet";
+                _autoRefreshTimer.Stop();
+                MessageBox.Show(ex.Message, "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MainWindow.NavigateBackStatic();
             }
-
-            UnfinalizedValue.Text = summary.UnfinalizedCount.ToString();
-            UnfinalizedCard.Visibility = summary.UnfinalizedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-
-            BuildSectionColumns(summary.SectionNames);
-
-            ScoresGrid.ItemsSource = summary.Rows;
-            ScoresGrid.SelectionChanged -= ScoresGrid_SelectionChanged; // avoid double-subscribing on reload
-            ScoresGrid.SelectionChanged += ScoresGrid_SelectionChanged;
+            catch (Exception ex)
+            {
+                _autoRefreshTimer.Stop();
+                MessageBox.Show(ex.Message, "Error Loading Exam Scores", MessageBoxButton.OK, MessageBoxImage.Error);
+                MainWindow.NavigateBackStatic();
+            }
         }
 
         private async void ScoresGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)

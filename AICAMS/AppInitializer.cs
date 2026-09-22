@@ -12,6 +12,21 @@ namespace ACPAMS
         private static string _currentInstructorId;
         private static bool _isInitialized = false;
 
+        public const string DefaultPassword = "Admin@1234";
+
+        public static bool IsDefaultPassword(string passwordHash)
+        {
+            if (string.IsNullOrEmpty(passwordHash)) return false;
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(DefaultPassword, passwordHash);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static void Initialize(AppDbContext dbContext)
         {
             _dbContext = dbContext;
@@ -23,6 +38,16 @@ namespace ACPAMS
             {
                 // Ensure database is created
                 _dbContext.Database.Migrate();
+
+                // Self-healing schema check for questions.section_name
+                _dbContext.Database.ExecuteSqlRaw(@"
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('questions') AND name = 'section_name'
+                    )
+                    BEGIN
+                        ALTER TABLE questions ADD section_name NVARCHAR(MAX) NULL;
+                    END");
 
                 // Initialize default data
                 InitializeDefaultData();

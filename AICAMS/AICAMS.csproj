@@ -11,6 +11,7 @@
 		<Title>AI-assisted Centralized Assessment Monitoring System (AI-CAMS)</Title>
 		<Product>AI-assisted Centralized Assessment Monitoring System (AI-CAMS)</Product>
 		<AssemblyTitle>AI-assisted Centralized Assessment Monitoring System (AI-CAMS)</AssemblyTitle>
+		<RootNamespace>ACPAMS</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>

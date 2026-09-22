@@ -459,91 +459,41 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- CHART 1: AI vs Human Override (Donut)
-                     PENDING: needs an AI-generated baseline score to compare
-                     against instructor grades. No such data exists yet, so this
-                     chart is still showing its original static mock numbers. -->
+                <!-- CHART 1: AI vs Instructor Override -->
                 <Border Grid.Column="0" Style="{StaticResource Card}" Padding="20,18">
                     <StackPanel>
                         <TextBlock Text="AI vs. Instructor Override"
                                    Style="{StaticResource T.CardTitle}"
                                    Margin="0,0,0,3"/>
-                        <TextBlock Text="Grade shifts made by instructor vs. AI baseline — pending AI integration"
+                        <TextBlock Text="Grade shifts made by instructor vs. AI baseline"
                                    Style="{StaticResource T.CardSubtitle}"
                                    Margin="0,0,0,16"/>
 
-                        <!-- Donut chart simulation -->
-                        <Grid Height="140" Margin="0,0,0,16">
-                            <Ellipse Width="120" Height="120"
-                                     HorizontalAlignment="Center"
-                                     VerticalAlignment="Center"
-                                     Fill="Transparent"
-                                     Stroke="{StaticResource Chart.BgBlue}"
-                                     StrokeThickness="20"/>
-                            <!-- Simulated arc segments using rotation -->
-                            <Ellipse Width="120" Height="120"
-                                     HorizontalAlignment="Center"
-                                     VerticalAlignment="Center"
-                                     Fill="Transparent"
-                                     Stroke="{StaticResource Chart.Blue}"
-                                     StrokeThickness="20"
-                                     StrokeDashArray="2.2 1"/>
-                            <Ellipse Width="120" Height="120"
-                                     HorizontalAlignment="Center"
-                                     VerticalAlignment="Center"
-                                     Fill="Transparent"
-                                     Stroke="{StaticResource Chart.Purple}"
-                                     StrokeThickness="20"
-                                     StrokeDashArray="0.88 3.12">
-                                <Ellipse.RenderTransform>
-                                    <RotateTransform Angle="198"
-                                                     CenterX="60"
-                                                     CenterY="60"/>
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
-                            <!-- Center label -->
-                            <StackPanel HorizontalAlignment="Center"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="88%"
-                                           FontSize="18" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Primary}"
-                                           HorizontalAlignment="Center"/>
-                                <TextBlock Text="Match"
-                                           FontSize="10"
+                        <!-- Empty state when comparison baseline data is unavailable -->
+                        <Border x:Name="OverrideEmptyState"
+                                MinHeight="170"
+                                Background="{StaticResource Bg.Base}"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="16"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="&#xE946;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="22"
                                            Foreground="{StaticResource Text.Muted}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock Text="AI vs. Instructor comparison data unavailable for this assessment."
+                                           FontSize="12"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           TextWrapping="Wrap"
+                                           TextAlignment="Center"
                                            HorizontalAlignment="Center"/>
                             </StackPanel>
-                        </Grid>
-
-                        <!-- Legend -->
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Border Width="10" Height="10" CornerRadius="2"
-                                        Background="{StaticResource Chart.Blue}"
-                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="AI Score Accepted"
-                                           FontSize="12"
-                                           Foreground="{StaticResource Text.Secondary}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"/>
-                                <TextBlock Text="88%"
-                                           FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Chart.Blue}"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <Border Width="10" Height="10" CornerRadius="2"
-                                        Background="{StaticResource Chart.Purple}"
-                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Instructor Override"
-                                           FontSize="12"
-                                           Foreground="{StaticResource Text.Secondary}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,8,0"/>
-                                <TextBlock Text="12%"
-                                           FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{StaticResource Chart.Purple}"/>
-                            </StackPanel>
-                        </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
 

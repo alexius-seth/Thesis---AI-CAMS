@@ -12,8 +12,28 @@ namespace ACPAMS.Services
     public static class AppSettingsService
     {
         private static readonly HttpClient _httpClient = new();
-        private static readonly string SettingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
-        private static readonly string KeyFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "gemini.key.dat");
+        private static readonly string AppDataDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AICAMS"
+        );
+        private static readonly string KeyFilePath = Path.Combine(AppDataDir, "gemini.key.dat");
+        private static readonly string UserSettingsFilePath = Path.Combine(AppDataDir, "appsettings.user.json");
+        private static readonly string BaseSettingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+
+        private static void EnsureAppDataDir()
+        {
+            try
+            {
+                if (!Directory.Exists(AppDataDir))
+                {
+                    Directory.CreateDirectory(AppDataDir);
+                }
+            }
+            catch
+            {
+                // Fallback if directory creation encounters issues
+            }
+        }
 
         // ─── Grading Thresholds (Defaults) ──────────────────────────────────
         public static decimal PassingGrade { get; set; } = 75.0m;
@@ -59,42 +79,50 @@ namespace ACPAMS.Services
         {
             try
             {
-                if (File.Exists(SettingsFilePath))
+                if (File.Exists(BaseSettingsFilePath))
                 {
-                    string content = File.ReadAllText(SettingsFilePath);
-                    var json = JsonNode.Parse(content) as JsonObject;
-                    if (json != null)
-                    {
-                        if (json["Grading"] is JsonObject grading)
-                        {
-                            if (grading["PassingGrade"] != null) PassingGrade = (decimal)grading["PassingGrade"]!;
-                            if (grading["ExcellentThreshold"] != null) ExcellentThreshold = (decimal)grading["ExcellentThreshold"]!;
-                            if (grading["GoodThreshold"] != null) GoodThreshold = (decimal)grading["GoodThreshold"]!;
-                            if (grading["FairThreshold"] != null) FairThreshold = (decimal)grading["FairThreshold"]!;
-                            if (grading["IntegrityFlagCap"] != null) IntegrityFlagCap = (int)grading["IntegrityFlagCap"]!;
-                        }
+                    ApplySettingsJson(File.ReadAllText(BaseSettingsFilePath));
+                }
 
-                        if (json["Monitoring"] is JsonObject monitoring)
-                        {
-                            if (monitoring["HeadYawThreshold"] != null) HeadYawThreshold = (double)monitoring["HeadYawThreshold"]!;
-                            if (monitoring["HeadPitchThreshold"] != null) HeadPitchThreshold = (double)monitoring["HeadPitchThreshold"]!;
-                            if (monitoring["NoFaceFrameThreshold"] != null) NoFaceFrameThreshold = (int)monitoring["NoFaceFrameThreshold"]!;
-                            if (monitoring["WiggleRoomFrames"] != null) WiggleRoomFrames = (int)monitoring["WiggleRoomFrames"]!;
-                            if (monitoring["AlertCooldownSeconds"] != null) AlertCooldownSeconds = (int)monitoring["AlertCooldownSeconds"]!;
-                            if (monitoring["ScoreDecayRate"] != null) ScoreDecayRate = (double)monitoring["ScoreDecayRate"]!;
-                        }
-
-                        if (json["Gemini"] is JsonObject gemini)
-                        {
-                            if (gemini["Model"] != null)
-                                GeminiModel = NormalizeModelName(gemini["Model"]!.ToString());
-                        }
-                    }
+                if (File.Exists(UserSettingsFilePath))
+                {
+                    ApplySettingsJson(File.ReadAllText(UserSettingsFilePath));
                 }
             }
             catch
             {
                 // Fallback to default thresholds if file read/parse fails
+            }
+        }
+
+        private static void ApplySettingsJson(string content)
+        {
+            var json = JsonNode.Parse(content) as JsonObject;
+            if (json == null) return;
+
+            if (json["Grading"] is JsonObject grading)
+            {
+                if (grading["PassingGrade"] != null) PassingGrade = (decimal)grading["PassingGrade"]!;
+                if (grading["ExcellentThreshold"] != null) ExcellentThreshold = (decimal)grading["ExcellentThreshold"]!;
+                if (grading["GoodThreshold"] != null) GoodThreshold = (decimal)grading["GoodThreshold"]!;
+                if (grading["FairThreshold"] != null) FairThreshold = (decimal)grading["FairThreshold"]!;
+                if (grading["IntegrityFlagCap"] != null) IntegrityFlagCap = (int)grading["IntegrityFlagCap"]!;
+            }
+
+            if (json["Monitoring"] is JsonObject monitoring)
+            {
+                if (monitoring["HeadYawThreshold"] != null) HeadYawThreshold = (double)monitoring["HeadYawThreshold"]!;
+                if (monitoring["HeadPitchThreshold"] != null) HeadPitchThreshold = (double)monitoring["HeadPitchThreshold"]!;
+                if (monitoring["NoFaceFrameThreshold"] != null) NoFaceFrameThreshold = (int)monitoring["NoFaceFrameThreshold"]!;
+                if (monitoring["WiggleRoomFrames"] != null) WiggleRoomFrames = (int)monitoring["WiggleRoomFrames"]!;
+                if (monitoring["AlertCooldownSeconds"] != null) AlertCooldownSeconds = (int)monitoring["AlertCooldownSeconds"]!;
+                if (monitoring["ScoreDecayRate"] != null) ScoreDecayRate = (double)monitoring["ScoreDecayRate"]!;
+            }
+
+            if (json["Gemini"] is JsonObject gemini)
+            {
+                if (gemini["Model"] != null)
+                    GeminiModel = NormalizeModelName(gemini["Model"]!.ToString());
             }
         }
 
@@ -125,6 +153,15 @@ namespace ACPAMS.Services
                     byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.CurrentUser);
                     return Encoding.UTF8.GetString(decryptedBytes);
                 }
+
+                // Check legacy path in BaseDirectory for seamless upgrade
+                string legacyKey = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "gemini.key.dat");
+                if (File.Exists(legacyKey))
+                {
+                    byte[] encryptedBytes = File.ReadAllBytes(legacyKey);
+                    byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, null, DataProtectionScope.CurrentUser);
+                    return Encoding.UTF8.GetString(decryptedBytes);
+                }
             }
             catch
             {
@@ -139,6 +176,7 @@ namespace ACPAMS.Services
             if (string.IsNullOrWhiteSpace(plainKey))
                 throw new ArgumentException("API key cannot be empty.", nameof(plainKey));
 
+            EnsureAppDataDir();
             byte[] plainBytes = Encoding.UTF8.GetBytes(plainKey.Trim());
             byte[] encryptedBytes = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
             File.WriteAllBytes(KeyFilePath, encryptedBytes);
@@ -168,19 +206,12 @@ namespace ACPAMS.Services
 
             try
             {
-                JsonObject root = new JsonObject();
-                if (File.Exists(SettingsFilePath))
+                UpdateJson(root =>
                 {
-                    string content = File.ReadAllText(SettingsFilePath);
-                    root = JsonNode.Parse(content) as JsonObject ?? new JsonObject();
-                }
-
-                JsonObject geminiNode = root["Gemini"] as JsonObject ?? new JsonObject();
-                geminiNode["Model"] = GeminiModel;
-                root["Gemini"] = geminiNode;
-
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(SettingsFilePath, root.ToJsonString(options));
+                    JsonObject geminiNode = root["Gemini"] as JsonObject ?? new JsonObject();
+                    geminiNode["Model"] = GeminiModel;
+                    root["Gemini"] = geminiNode;
+                });
             }
             catch
             {
@@ -308,10 +339,16 @@ namespace ACPAMS.Services
 
         private static void UpdateJson(Action<JsonObject> modify)
         {
+            EnsureAppDataDir();
             JsonObject json;
-            if (File.Exists(SettingsFilePath))
+            if (File.Exists(UserSettingsFilePath))
             {
-                string content = File.ReadAllText(SettingsFilePath);
+                string content = File.ReadAllText(UserSettingsFilePath);
+                json = JsonNode.Parse(content) as JsonObject ?? new JsonObject();
+            }
+            else if (File.Exists(BaseSettingsFilePath))
+            {
+                string content = File.ReadAllText(BaseSettingsFilePath);
                 json = JsonNode.Parse(content) as JsonObject ?? new JsonObject();
             }
             else
@@ -321,7 +358,7 @@ namespace ACPAMS.Services
 
             modify(json);
 
-            File.WriteAllText(SettingsFilePath, json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(UserSettingsFilePath, json.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
             if (App.Configuration is Microsoft.Extensions.Configuration.IConfigurationRoot root)
             {

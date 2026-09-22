@@ -4,7 +4,7 @@
     Run this script once before packaging the student build.
 #>
 param(
-    [string]$DestinationDir = "$PSScriptRoot\..\ACPAMS\Tools"
+    [string]$DestinationDir = "$PSScriptRoot\AICAMS\Tools"
 )
 
 $ErrorActionPreference = "Stop"

@@ -12,6 +12,7 @@ namespace ACPAMS.Views.Auth
     {
         private readonly AuthService _authService;
         private bool _passwordVisible = false;
+        private Models.User? _pendingInstructorUser;
 
         public LoginPage()
         {
@@ -66,6 +67,17 @@ namespace ACPAMS.Views.Auth
                         .FirstOrDefaultAsync(i => i.UserId == user.UserId);
                     SessionManager.RefreshAvatarCache();
 
+                    if (AppInitializer.IsDefaultPassword(user.PasswordHash) || password == AppInitializer.DefaultPassword)
+                    {
+                        _pendingInstructorUser = user;
+                        NewPasswordBox.Password = string.Empty;
+                        ConfirmPasswordBox.Password = string.Empty;
+                        ChangePasswordErrorTxt.Text = string.Empty;
+                        ChangePasswordErrorTxt.Visibility = Visibility.Collapsed;
+                        ChangePasswordOverlay.Visibility = Visibility.Visible;
+                        return;
+                    }
+
                     ACPAMS.MainWindow.Resize(1280, 800);
                     ACPAMS.MainWindow.Navigate(new FacultyHomePage());
                 }
@@ -79,6 +91,86 @@ namespace ACPAMS.Views.Auth
             {
                 LogInBtn.IsEnabled = true;
                 LogInBtn.Content = "Log In";
+            }
+        }
+
+        private void CancelChangePasswordBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _pendingInstructorUser = null;
+            SessionManager.CurrentUser = null;
+            SessionManager.CurrentInstructor = null;
+            ChangePasswordOverlay.Visibility = Visibility.Collapsed;
+            PasswordBox.Password = string.Empty;
+            PasswordVisibleBox.Text = string.Empty;
+        }
+
+        private async void SavePasswordBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (_pendingInstructorUser == null) return;
+
+            string newPass = NewPasswordBox.Password.Trim();
+            string confirmPass = ConfirmPasswordBox.Password.Trim();
+
+            if (string.IsNullOrWhiteSpace(newPass))
+            {
+                ChangePasswordErrorTxt.Text = "New password cannot be empty.";
+                ChangePasswordErrorTxt.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (newPass.Length < 6)
+            {
+                ChangePasswordErrorTxt.Text = "Password must be at least 6 characters long.";
+                ChangePasswordErrorTxt.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (newPass == AppInitializer.DefaultPassword)
+            {
+                ChangePasswordErrorTxt.Text = "Password cannot be the default password.";
+                ChangePasswordErrorTxt.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (newPass != confirmPass)
+            {
+                ChangePasswordErrorTxt.Text = "Passwords do not match.";
+                ChangePasswordErrorTxt.Visibility = Visibility.Visible;
+                return;
+            }
+
+            try
+            {
+                SavePasswordBtn.IsEnabled = false;
+                SavePasswordBtn.Content = "Saving...";
+
+                using var context = new AppDbContext();
+                var dbUser = await context.Users.FirstOrDefaultAsync(u => u.UserId == _pendingInstructorUser.UserId);
+                if (dbUser != null)
+                {
+                    string newHash = BCrypt.Net.BCrypt.HashPassword(newPass);
+                    dbUser.PasswordHash = newHash;
+                    await context.SaveChangesAsync();
+
+                    _pendingInstructorUser.PasswordHash = newHash;
+                    SessionManager.CurrentUser = _pendingInstructorUser;
+                }
+
+                ChangePasswordOverlay.Visibility = Visibility.Collapsed;
+                _pendingInstructorUser = null;
+
+                ACPAMS.MainWindow.Resize(1280, 800);
+                ACPAMS.MainWindow.Navigate(new FacultyHomePage());
+            }
+            catch (Exception ex)
+            {
+                ChangePasswordErrorTxt.Text = $"Failed to update password: {ex.Message}";
+                ChangePasswordErrorTxt.Visibility = Visibility.Visible;
+            }
+            finally
+            {
+                SavePasswordBtn.IsEnabled = true;
+                SavePasswordBtn.Content = "Save & Continue";
             }
         }
 
