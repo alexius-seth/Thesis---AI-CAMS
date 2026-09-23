@@ -51,7 +51,7 @@ namespace ACPAMS.Services
         public static double ScoreDecayRate { get; set; } = 0.02;
 
         // ─── Gemini AI Model (Defaults) ─────────────────────────────────────
-        public static string GeminiModel { get; set; } = "gemini-2.5-flash-lite";
+        public static string GeminiModel { get; set; } = "gemini-3.5-flash";
 
         static AppSettingsService()
         {
@@ -131,14 +131,20 @@ namespace ACPAMS.Services
         public static string NormalizeModelName(string? model)
         {
             if (string.IsNullOrWhiteSpace(model))
-                return "gemini-2.5-flash-lite";
+                return "gemini-3.5-flash";
 
             string cleanModelName = model.Trim();
             while (cleanModelName.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
             {
                 cleanModelName = cleanModelName.Substring("models/".Length).TrimStart('/');
             }
-            return string.IsNullOrWhiteSpace(cleanModelName) ? "gemini-2.5-flash-lite" : cleanModelName;
+
+            if (cleanModelName.Equals("gemini 3.5 flash", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanModelName = "gemini-3.5-flash";
+            }
+
+            return string.IsNullOrWhiteSpace(cleanModelName) ? "gemini-3.5-flash" : cleanModelName;
         }
 
         public static string SanitizeModelName(string? model) => NormalizeModelName(model);

@@ -9,6 +9,7 @@ using System.Windows.Shapes;
 using ACPAMS.Services;
 using ACPAMS.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ACPAMS.Views.Faculty
@@ -45,24 +46,59 @@ namespace ACPAMS.Views.Faculty
             public List<QuestionItem> Questions { get; set; } = new List<QuestionItem>();
         }
 
+        public class TestCaseItem
+        {
+            public string Input { get; set; } = string.Empty;
+            public string ExpectedOutput { get; set; } = string.Empty;
+        }
+
         public class QuestionItem
         {
             public string Id { get; set; } = Guid.NewGuid().ToString();
-            public string Text { get; set; }
+            public string Text { get; set; } = string.Empty;
+            public string Prompt
+            {
+                get => Text;
+                set => Text = value;
+            }
             public int Points { get; set; }
-            public string Type { get; set; }
+            public string Type { get; set; } = string.Empty;
             public int Order { get; set; }
-            public string CorrectAnswer { get; set; }
-            public string OptionA { get; set; }
-            public string OptionB { get; set; }
-            public string OptionC { get; set; }
-            public string OptionD { get; set; }
-            public string ExpectedAnswer { get; set; }
+            public string? CorrectAnswer { get; set; }
+            public string? OptionA { get; set; }
+            public string? OptionB { get; set; }
+            public string? OptionC { get; set; }
+            public string? OptionD { get; set; }
+            public string? ExpectedAnswer { get; set; }
             public bool? IsTrue { get; set; }
-            public string ProgrammingLanguage { get; set; }
-            public string SectionId { get; set; }
-            public string ExpectedAnswers { get; set; } // comma-separated for enumeration
+            public string ProgrammingLanguage { get; set; } = "C";
+            public string TargetLanguage
+            {
+                get => ProgrammingLanguage;
+                set => ProgrammingLanguage = value;
+            }
+            public string SectionId { get; set; } = string.Empty;
+            public List<string> AcceptedAnswers { get; set; } = new List<string>();
+            public string ExpectedAnswers
+            {
+                get => string.Join(", ", AcceptedAnswers);
+                set
+                {
+                    if (string.IsNullOrWhiteSpace(value))
+                        AcceptedAnswers = new List<string>();
+                    else
+                        AcceptedAnswers = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(s => s.Trim()).ToList();
+                }
+            }
             public string? StarterCode { get; set; }
+            public string? StarterCodeStub
+            {
+                get => StarterCode;
+                set => StarterCode = value;
+            }
+            public string? Rubric { get; set; }
+            public List<TestCaseItem> TestCases { get; set; } = new List<TestCaseItem>();
             public double PromptHeight { get; set; } = 80;
         }
 
@@ -303,11 +339,11 @@ namespace ACPAMS.Views.Faculty
                 return "Multiple Choice";
             if (lowerType.Contains("true") && lowerType.Contains("false"))
                 return "True or False";
-            if (lowerType == "essay")
+            if (lowerType.Contains("essay"))
                 return "Essay";
             if (lowerType.Contains("enumeration") || lowerType == "enum")
                 return "Enumeration";
-            if (lowerType.Contains("coding") || lowerType == "code")
+            if (lowerType.Contains("coding") || lowerType == "code" || lowerType.Contains("programming"))
                 return "Coding";
 
             return trimmed;
@@ -1254,6 +1290,32 @@ namespace ACPAMS.Views.Faculty
                         };
                         bodyStack.Children.Add(stubBox);
 
+                        if (q.TestCases != null && q.TestCases.Count > 0)
+                        {
+                            var tcHeader = new TextBlock
+                            {
+                                Text = $"Test Cases ({q.TestCases.Count})",
+                                Style = (Style)FindResource("T.FieldLabel"),
+                                Margin = new System.Windows.Thickness(0, 8, 0, 4)
+                            };
+                            bodyStack.Children.Add(tcHeader);
+
+                            var tcPanel = new StackPanel { Margin = new System.Windows.Thickness(0, 0, 0, 6) };
+                            foreach (var tc in q.TestCases)
+                            {
+                                var tcText = new TextBlock
+                                {
+                                    Text = $"• In: {tc.Input}  →  Out: {tc.ExpectedOutput}",
+                                    FontFamily = new FontFamily("Consolas"),
+                                    FontSize = 11,
+                                    Foreground = (Brush)FindResource("Text.Secondary"),
+                                    Margin = new System.Windows.Thickness(8, 2, 0, 2)
+                                };
+                                tcPanel.Children.Add(tcText);
+                            }
+                            bodyStack.Children.Add(tcPanel);
+                        }
+
                         bodyStack.Children.Add(CreateAIRubricSection(q));
                         break;
                 }
@@ -1880,19 +1942,26 @@ namespace ACPAMS.Views.Faculty
                 {
                     ToastNotification.Show("Reading file with AI...", Application.Current.MainWindow, 3, false);
 
-                    var rawText = System.IO.File.ReadAllText(dialog.FileName);
-                    var aiSections = await new GeminiExamImportService().ParseExamTextAsync(rawText);
+                    var rawText = await System.IO.File.ReadAllTextAsync(dialog.FileName);
+                    var aiSections = await new ExamImportService().ParseExamTextAsync(rawText);
 
                     importedSections = aiSections.SelectMany(ConvertImportedSection).ToList();
                     usedAiParsing = true;
                 }
+                catch (JsonException jEx)
+                {
+                    // Directly bubble JsonException so malformed model output is diagnosed instead of silently falling back
+                    throw new InvalidOperationException($"Gemini returned invalid or unparseable JSON: {jEx.Message}", jEx);
+                }
                 catch (Exception aiEx)
                 {
-                    // AI parsing failed or returned something unusable — fall back to
-                    // the strict SECTION:/Q:/ANSWER: format instead of silently
-                    // producing a broken exam from a bad AI response.
-                    System.Diagnostics.Debug.WriteLine($"AI import failed, falling back to strict parser: {aiEx.Message}");
+                    if (aiEx.InnerException is JsonException innerJsonEx)
+                    {
+                        throw new InvalidOperationException($"Gemini returned invalid JSON structure: {innerJsonEx.Message}", innerJsonEx);
+                    }
 
+                    // Fall back to the structured parser only for non-JSON issues (e.g. offline, missing key)
+                    System.Diagnostics.Debug.WriteLine($"AI import unavailable ({aiEx.Message}), using structured parser.");
                     importedSections = ParseExamTxtFile(dialog.FileName);
                     usedAiParsing = false;
                 }
@@ -1903,6 +1972,10 @@ namespace ACPAMS.Views.Faculty
                         Application.Current.MainWindow, 4, true);
                     return;
                 }
+
+                // Clear existing sections before populating imported sections
+                _sections.Clear();
+                _rubricData.Clear();
 
                 foreach (var section in importedSections)
                 {
@@ -1915,18 +1988,18 @@ namespace ACPAMS.Views.Faculty
                 foreach (var s in _sections)
                     s.IsActive = false;
 
-                var lastImported = importedSections.Last();
-                lastImported.IsActive = true;
-                _selectedSection = lastImported;
+                var firstImported = _sections.First();
+                firstImported.IsActive = true;
+                _selectedSection = firstImported;
 
-                SelectTypeButton(lastImported.Type);
+                SelectTypeButton(firstImported.Type);
 
                 UpdateSectionList();
                 UpdateQuestionsDisplay();
                 UpdateActiveSectionHeader();
 
                 int totalQuestions = importedSections.Sum(s => s.Questions.Count);
-                string parsedBy = usedAiParsing ? "AI-parsed" : "parsed using the standard format";
+                string parsedBy = usedAiParsing ? "AI-parsed" : "parsed using structured text format";
                 ToastNotification.Show(
                     $"Imported {importedSections.Count} section(s) and {totalQuestions} question(s) ({parsedBy}). " +
                     "Review the questions, then Publish when ready — nothing has been saved yet.",
@@ -1943,35 +2016,102 @@ namespace ACPAMS.Views.Faculty
             }
         }
 
-        // Maps the AI service's DTOs onto this page's own ExamSection/QuestionItem
-        // shape, running the same type-normalization (GetProperTypeName) used
-        // everywhere else on this page so AI-produced type strings match what
-        // the UI/section buttons expect.
-        // The rest of ACPAMS (AddSectionModal, AutoCheckerService, GradingTab)
-        // assumes one question type per section — a real file the AI parses
-        // often has mixed types in what's conceptually "one quiz". Rather than
-        // force everything into one type (losing questions) or one "Mixed"
-        // section (which the rest of the app was never built to expect), split
-        // the AI's section into one ACPAMS section per distinct type, each
-        // named after the original section plus its type, e.g.
-        // "Chapter 3 Quiz — Multiple Choice", "Chapter 3 Quiz — Coding".
+        private string DetermineQuestionType(ImportedQuestionDto q, string? sectionType)
+        {
+            if (!string.IsNullOrEmpty(q.QuestionType))
+            {
+                var pt = GetProperTypeName(q.QuestionType);
+                if (!string.IsNullOrEmpty(pt) && pt != "Identification")
+                    return pt;
+            }
+
+            if ((q.Options != null && q.Options.Count >= 2) ||
+                (!string.IsNullOrEmpty(q.OptionA) && !string.IsNullOrEmpty(q.OptionB)))
+            {
+                return "Multiple Choice";
+            }
+
+            if ((q.TestCases != null && q.TestCases.Count > 0) ||
+                !string.IsNullOrEmpty(q.StarterCode) ||
+                !string.IsNullOrEmpty(q.TargetLanguage) ||
+                (!string.IsNullOrEmpty(q.Type) && GetProperTypeName(q.Type) == "Coding"))
+            {
+                return "Coding";
+            }
+
+            if ((q.ExpectedAnswers != null && q.ExpectedAnswers.Count > 0) ||
+                (!string.IsNullOrEmpty(q.Type) && GetProperTypeName(q.Type) == "Enumeration"))
+            {
+                return "Enumeration";
+            }
+
+            if (!string.IsNullOrEmpty(q.Rubric) ||
+                (!string.IsNullOrEmpty(q.Type) && GetProperTypeName(q.Type) == "Essay"))
+            {
+                return "Essay";
+            }
+
+            if (q.IsTrue.HasValue ||
+                (!string.IsNullOrEmpty(q.CorrectAnswer) && (q.CorrectAnswer.Equals("True", StringComparison.OrdinalIgnoreCase) || q.CorrectAnswer.Equals("False", StringComparison.OrdinalIgnoreCase))))
+            {
+                return "True or False";
+            }
+
+            if (!string.IsNullOrEmpty(sectionType))
+            {
+                var sType = GetProperTypeName(sectionType);
+                if (!string.IsNullOrEmpty(sType) && sType != "Identification")
+                    return sType;
+            }
+
+            if (!string.IsNullOrEmpty(q.ExpectedAnswer) || !string.IsNullOrEmpty(q.CorrectAnswer))
+            {
+                return "Identification";
+            }
+
+            return "Essay";
+        }
+
         private List<ExamSection> ConvertImportedSection(ImportedSectionDto dto)
         {
-            var baseName = string.IsNullOrWhiteSpace(dto.Name) ? "Imported Section" : dto.Name;
+            var baseName = !string.IsNullOrWhiteSpace(dto.SectionTitle) ? dto.SectionTitle : (!string.IsNullOrWhiteSpace(dto.Name) ? dto.Name : "Imported Section");
             var instructions = dto.Instructions ?? string.Empty;
+
+            var properSectionType = !string.IsNullOrEmpty(dto.QuestionType) ? GetProperTypeName(dto.QuestionType) : GetProperTypeName(baseName);
+            bool hasExplicitSectionType = !string.IsNullOrEmpty(properSectionType) && properSectionType != "Identification";
+
+            var result = new List<ExamSection>();
+
+            if (hasExplicitSectionType)
+            {
+                var section = new ExamSection
+                {
+                    Name = baseName,
+                    Type = properSectionType,
+                    Instructions = instructions,
+                    IsActive = false,
+                    Questions = new List<QuestionItem>()
+                };
+
+                int order = 0;
+                foreach (var q in dto.Questions)
+                {
+                    section.Questions.Add(BuildQuestionItem(q, properSectionType, order++));
+                }
+                result.Add(section);
+                return result;
+            }
 
             var questionsByType = dto.Questions
                 .Select(q => new
                 {
                     Dto = q,
-                    ProperType = GetProperTypeName(string.IsNullOrWhiteSpace(q.Type) ? "Identification" : q.Type)
+                    ProperType = DetermineQuestionType(q, dto.QuestionType)
                 })
                 .GroupBy(x => x.ProperType)
                 .ToList();
 
             bool isMixed = questionsByType.Count > 1;
-            var result = new List<ExamSection>();
-
             foreach (var group in questionsByType)
             {
                 var section = new ExamSection
@@ -1986,37 +2126,139 @@ namespace ACPAMS.Views.Faculty
                 int order = 0;
                 foreach (var item in group)
                 {
-                    var q = item.Dto;
-                    string? correctAns = q.CorrectAnswer;
-                    if (group.Key == "Multiple Choice")
-                    {
-                        correctAns = NormalizeOptionKey(correctAns, q.OptionA, q.OptionB, q.OptionC, q.OptionD);
-                    }
-
-                    section.Questions.Add(new QuestionItem
-                    {
-                        Text = q.Text,
-                        Type = group.Key,
-                        Points = q.Points > 0 ? q.Points : 5,
-                        Order = order++,
-                        CorrectAnswer = correctAns,
-                        OptionA = q.OptionA,
-                        OptionB = q.OptionB,
-                        OptionC = q.OptionC,
-                        OptionD = q.OptionD,
-                        ExpectedAnswer = q.ExpectedAnswer,
-                        ExpectedAnswers = q.ExpectedAnswers,
-                        IsTrue = q.IsTrue,
-                        ProgrammingLanguage = (!string.IsNullOrEmpty(q.ProgrammingLanguage) && _supportedLanguages.Contains(q.ProgrammingLanguage, StringComparer.OrdinalIgnoreCase))
-                            ? _supportedLanguages.First(l => l.Equals(q.ProgrammingLanguage, StringComparison.OrdinalIgnoreCase))
-                            : (group.Key == "Coding" ? "C" : null)
-                    });
+                    section.Questions.Add(BuildQuestionItem(item.Dto, group.Key, order++));
                 }
-
                 result.Add(section);
             }
 
             return result;
+        }
+
+        private QuestionItem BuildQuestionItem(ImportedQuestionDto q, string targetType, int order)
+        {
+            string rawPrompt = !string.IsNullOrWhiteSpace(q.Prompt) ? q.Prompt : (q.Text ?? string.Empty);
+
+            // Clean leftover prefixes
+            string cleanPrompt = System.Text.RegularExpressions.Regex.Replace(
+                rawPrompt,
+                @"^(?:Section\s+\d+[:\.\s]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+
+            string[] instructionsToStrip = new[]
+            {
+                "Select the single correct answer from the provided choices.",
+                "List the required terms or concepts accurately.",
+                "Provide detailed, structured technical explanations based on the prompt.",
+                "Write robust, syntactically correct implementations in one of the supported languages: C, Python, or Java."
+            };
+            foreach (var inst in instructionsToStrip)
+            {
+                if (cleanPrompt.StartsWith(inst, StringComparison.OrdinalIgnoreCase))
+                {
+                    cleanPrompt = cleanPrompt.Substring(inst.Length).Trim();
+                    cleanPrompt = System.Text.RegularExpressions.Regex.Replace(
+                        cleanPrompt,
+                        @"^(?:Section\s+\d+[:\.\s]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
+                        "",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                }
+            }
+
+            // Rubric extraction: if rubric is inside prompt, move it to q.Rubric
+            int rubricIdx = cleanPrompt.IndexOf("Evaluation Rubric:", StringComparison.OrdinalIgnoreCase);
+            if (rubricIdx >= 0)
+            {
+                if (string.IsNullOrWhiteSpace(q.Rubric))
+                    q.Rubric = cleanPrompt.Substring(rubricIdx).Trim();
+                cleanPrompt = cleanPrompt.Substring(0, rubricIdx).Trim();
+            }
+
+            string? optA = q.OptionA;
+            string? optB = q.OptionB;
+            string? optC = q.OptionC;
+            string? optD = q.OptionD;
+
+            if (targetType == "Multiple Choice")
+            {
+                if (q.Options != null && q.Options.Count > 0)
+                {
+                    var stripped = q.Options.Select(o =>
+                        System.Text.RegularExpressions.Regex.Replace(o.Trim(), @"^\(?[A-Da-d]\)[\.\:\-\s]*", "").Trim()
+                    ).ToList();
+                    if (stripped.Count > 0 && string.IsNullOrEmpty(optA)) optA = stripped[0];
+                    if (stripped.Count > 1 && string.IsNullOrEmpty(optB)) optB = stripped[1];
+                    if (stripped.Count > 2 && string.IsNullOrEmpty(optC)) optC = stripped[2];
+                    if (stripped.Count > 3 && string.IsNullOrEmpty(optD)) optD = stripped[3];
+                }
+            }
+
+            string? correctAns = q.CorrectAnswer;
+            if (targetType == "Multiple Choice")
+            {
+                correctAns = NormalizeOptionKey(correctAns, optA, optB, optC, optD);
+            }
+
+            string? targetLang = q.TargetLanguage ?? q.ProgrammingLanguage;
+            if (!string.IsNullOrEmpty(targetLang) && _supportedLanguages.Contains(targetLang, StringComparer.OrdinalIgnoreCase))
+            {
+                targetLang = _supportedLanguages.First(l => l.Equals(targetLang, StringComparison.OrdinalIgnoreCase));
+            }
+            else if (targetType == "Coding")
+            {
+                targetLang = "C";
+            }
+
+            int defaultPts = targetType == "Multiple Choice" ? 2 : (targetType == "Coding" ? 15 : (targetType == "Enumeration" ? 4 : 5));
+
+            var qItem = new QuestionItem
+            {
+                Prompt = cleanPrompt,
+                Type = targetType,
+                Points = q.Points > 0 ? q.Points : defaultPts,
+                Order = order,
+                CorrectAnswer = correctAns,
+                OptionA = optA,
+                OptionB = optB,
+                OptionC = optC,
+                OptionD = optD,
+                ExpectedAnswer = q.ExpectedAnswer,
+                AcceptedAnswers = q.ExpectedAnswers != null && q.ExpectedAnswers.Count > 0
+                    ? new List<string>(q.ExpectedAnswers)
+                    : new List<string>(),
+                IsTrue = q.IsTrue,
+                TargetLanguage = targetLang ?? "C",
+                Rubric = q.Rubric
+            };
+
+            // Explicit Coding Question Binding
+            if (targetType == "Coding")
+            {
+                if (!string.IsNullOrWhiteSpace(q.StarterCode))
+                    qItem.StarterCodeStub = q.StarterCode.Trim();
+
+                if (q.TestCases?.Any() == true)
+                {
+                    qItem.TestCases.Clear();
+                    foreach (var tc in q.TestCases)
+                    {
+                        qItem.TestCases.Add(new TestCaseItem { Input = tc.Input ?? string.Empty, ExpectedOutput = tc.ExpectedOutput ?? string.Empty });
+                    }
+                }
+            }
+
+            // Explicit Essay Rubric Binding
+            if (!string.IsNullOrWhiteSpace(q.Rubric))
+            {
+                _rubricData[qItem.Id] = new RubricData
+                {
+                    Description = q.Rubric,
+                    AiInstructions = "Grade student response using the rubric criteria.",
+                    TotalWeight = qItem.Points
+                };
+            }
+
+            return qItem;
         }
 
         private List<ExamSection> ParseExamTxtFile(string filePath)
@@ -2024,34 +2266,68 @@ namespace ACPAMS.Views.Faculty
             var lines = System.IO.File.ReadAllLines(filePath);
             var sections = new List<ExamSection>();
 
-            ExamSection currentSection = null;
-            QuestionItem currentQuestion = null;
+            ExamSection? currentSection = null;
+            QuestionItem? currentQuestion = null;
             var mcOptions = new Dictionary<string, string>();
             int order = 0;
+            string codingState = string.Empty;
+            string currentLangBlock = string.Empty;
 
             void FlushQuestion()
             {
                 if (currentQuestion == null || currentSection == null) return;
+
+                if (!string.IsNullOrWhiteSpace(currentQuestion.Prompt))
+                {
+                    currentQuestion.Prompt = System.Text.RegularExpressions.Regex.Replace(
+                        currentQuestion.Prompt,
+                        @"^(?:Section\s+\d+[:\.\s]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
+                        "",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                }
+
+                if (currentSection.Type == "Coding")
+                {
+                    currentQuestion.Type = "Coding";
+                    if (string.IsNullOrWhiteSpace(currentQuestion.TargetLanguage))
+                        currentQuestion.TargetLanguage = "C";
+                    mcOptions.Clear();
+                }
 
                 if (string.IsNullOrEmpty(currentQuestion.Type))
                     currentQuestion.Type = DetectQuestionType(currentQuestion, mcOptions);
 
                 ApplyOptionsForType(currentQuestion, mcOptions);
 
+                if (!string.IsNullOrWhiteSpace(currentQuestion.StarterCodeStub))
+                    currentQuestion.StarterCodeStub = currentQuestion.StarterCodeStub.Trim();
+
+                if (!string.IsNullOrWhiteSpace(currentQuestion.Rubric))
+                {
+                    _rubricData[currentQuestion.Id] = new RubricData
+                    {
+                        Description = currentQuestion.Rubric.Trim(),
+                        AiInstructions = "Grade student response using the rubric criteria.",
+                        TotalWeight = currentQuestion.Points
+                    };
+                }
+
                 currentQuestion.Order = order++;
                 currentSection.Questions.Add(currentQuestion);
                 currentQuestion = null;
                 mcOptions = new Dictionary<string, string>();
+                codingState = string.Empty;
+                currentLangBlock = string.Empty;
             }
 
-            ExamSection EnsureSection()
+            ExamSection EnsureSection(string defaultName = "Imported Section", string defaultType = "Identification")
             {
                 if (currentSection != null) return currentSection;
 
                 currentSection = new ExamSection
                 {
-                    Name = "Imported Section",
-                    Type = "Identification",
+                    Name = defaultName,
+                    Type = defaultType,
                     Instructions = string.Empty,
                     IsActive = false
                 };
@@ -2060,59 +2336,127 @@ namespace ACPAMS.Views.Faculty
                 return currentSection;
             }
 
-            foreach (var rawLine in lines)
+            var sectionRegex = new System.Text.RegularExpressions.Regex(
+                @"^(?:SECTION:\s*|(?:Section\s+\d+:?|Part\s+\d+:?|\[.*?\])\s*)(.*)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            var questionHeaderRegex = new System.Text.RegularExpressions.Regex(
+                @"^(?:Q(?:\d+)?[:\.]\s*|Question\s*\d+\b[:\.\s]*)(.*)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            var numberedItemRegex = new System.Text.RegularExpressions.Regex(
+                @"^(\d+)[\.\)]\s+(.*)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
             {
-                var trimmed = rawLine.Trim();
+                var trimmed = lines[lineIndex].Trim();
                 if (string.IsNullOrWhiteSpace(trimmed)) continue;
 
-                if (trimmed.StartsWith("SECTION:", StringComparison.OrdinalIgnoreCase))
+                var sectionMatch = sectionRegex.Match(trimmed);
+                var qHeaderMatch = questionHeaderRegex.Match(trimmed);
+
+                // Section header
+                if (sectionMatch.Success && !qHeaderMatch.Success)
                 {
                     FlushQuestion();
+                    var headerTitle = sectionMatch.Groups[1].Value.Trim();
+                    if (string.IsNullOrEmpty(headerTitle)) headerTitle = trimmed;
+
+                    var detectedType = GetProperTypeName(headerTitle);
                     currentSection = new ExamSection
                     {
-                        Name = trimmed.Substring("SECTION:".Length).Trim(),
-                        Type = "Identification", // refined below once questions are known
+                        Name = headerTitle,
+                        Type = !string.IsNullOrEmpty(detectedType) ? detectedType : "Identification",
                         Instructions = string.Empty,
                         IsActive = false
                     };
                     sections.Add(currentSection);
                     order = 0;
+                    continue;
                 }
-                else if (trimmed.StartsWith("INSTRUCTIONS:", StringComparison.OrdinalIgnoreCase))
-                {
-                    EnsureSection().Instructions = trimmed.Substring("INSTRUCTIONS:".Length).Trim();
-                }
-                else if (trimmed.StartsWith("Q:", StringComparison.OrdinalIgnoreCase))
+
+                // Explicit Question header e.g. "Question 1", "Question 3", "Question 6: Array Element...", "Q1: ..."
+                if (qHeaderMatch.Success)
                 {
                     FlushQuestion();
+                    var sType = currentSection != null ? currentSection.Type : "Identification";
                     EnsureSection();
 
+                    string qTitle = qHeaderMatch.Groups[1].Value.Trim();
                     currentQuestion = new QuestionItem
                     {
-                        Text = trimmed.Substring(2).Trim(),
-                        Points = 5
+                        Prompt = qTitle,
+                        Type = sType != "Identification" ? sType : string.Empty,
+                        Points = sType == "Multiple Choice" ? 2 : (sType == "Coding" ? 15 : (sType == "Enumeration" ? 4 : 5)),
+                        TargetLanguage = sType == "Coding" ? "C" : string.Empty
                     };
+                    continue;
                 }
-                else if (trimmed.StartsWith("TYPE:", StringComparison.OrdinalIgnoreCase))
+
+                if (trimmed.StartsWith("INSTRUCTIONS:", StringComparison.OrdinalIgnoreCase))
+                {
+                    EnsureSection().Instructions = trimmed.Substring("INSTRUCTIONS:".Length).Trim();
+                    continue;
+                }
+
+                if (trimmed.StartsWith("POINTS:", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (currentQuestion != null &&
+                        int.TryParse(trimmed.Substring("POINTS:".Length).Trim(), out int pts))
+                        currentQuestion.Points = pts;
+                    continue;
+                }
+
+                if (trimmed.StartsWith("TYPE:", StringComparison.OrdinalIgnoreCase))
                 {
                     var typeValue = GetProperTypeName(trimmed.Substring("TYPE:".Length).Trim());
                     if (currentQuestion != null)
                         currentQuestion.Type = typeValue;
                     else
                         EnsureSection().Type = typeValue;
+                    continue;
                 }
-                else if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^\(?([A-Da-d])[\)\.\:\-]\s*"))
+
+                // Multiple Choice Option: A) ... or * A) ... or A. ...
+                bool isBlockedByCoding = currentSection?.Type == "Coding" && (codingState == "specification" || codingState == "startercode" || codingState == "testcases");
+                var mcMatch = System.Text.RegularExpressions.Regex.Match(trimmed, @"^(?:\*\s*)?\(?([A-Da-d])[\)\.\:\-]\s*(.*)$");
+                if (mcMatch.Success && !isBlockedByCoding)
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(trimmed, @"^\(?([A-Da-d])[\)\.\:\-]\s*(.*)$");
-                    var letter = match.Groups[1].Value.ToUpper();
-                    mcOptions[letter] = match.Groups[2].Value.Trim();
+                    var letter = mcMatch.Groups[1].Value.ToUpper();
+                    if (letter == "A" && mcOptions.Count >= 2)
+                    {
+                        FlushQuestion();
+                        EnsureSection("Multiple Choice Questions", "Multiple Choice");
+                        currentQuestion = new QuestionItem
+                        {
+                            Type = "Multiple Choice",
+                            Points = 2
+                        };
+                    }
+
+                    mcOptions[letter] = mcMatch.Groups[2].Value.Trim();
+                    if (currentQuestion != null) currentQuestion.Type = "Multiple Choice";
+                    if (currentSection != null && currentSection.Type == "Identification")
+                    {
+                        currentSection.Type = "Multiple Choice";
+                        currentSection.Name = "Multiple Choice Questions";
+                    }
+                    continue;
                 }
-                else if (trimmed.StartsWith("ANSWERS:", StringComparison.OrdinalIgnoreCase))
+
+                if (trimmed.StartsWith("ANSWERS:", StringComparison.OrdinalIgnoreCase))
                 {
                     if (currentQuestion != null)
-                        currentQuestion.ExpectedAnswers = trimmed.Substring("ANSWERS:".Length).Trim();
+                    {
+                        var rawAns = trimmed.Substring("ANSWERS:".Length).Trim();
+                        currentQuestion.AcceptedAnswers = rawAns.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+                        currentQuestion.Type = "Enumeration";
+                    }
+                    continue;
                 }
-                else if (trimmed.StartsWith("ANSWER:", StringComparison.OrdinalIgnoreCase))
+
+                if (trimmed.StartsWith("ANSWER:", StringComparison.OrdinalIgnoreCase))
                 {
                     if (currentQuestion != null)
                     {
@@ -2125,51 +2469,212 @@ namespace ACPAMS.Views.Faculty
                         else if (value.Equals("False", StringComparison.OrdinalIgnoreCase))
                             currentQuestion.IsTrue = false;
                     }
+                    continue;
                 }
-                else if (trimmed.StartsWith("LANGUAGE:", StringComparison.OrdinalIgnoreCase))
+
+                // Enumeration answer bullets (e.g. 1. Encapsulation, * Encapsulation, - Encapsulation)
+                bool isCurrentEnumeration = currentSection?.Type == "Enumeration" || currentQuestion?.Type == "Enumeration";
+                var numItemMatch = numberedItemRegex.Match(trimmed);
+
+                if (isCurrentEnumeration && currentQuestion != null && !string.IsNullOrWhiteSpace(currentQuestion.Prompt))
                 {
-                    if (currentQuestion != null)
+                    if (numItemMatch.Success)
                     {
-                        var langVal = trimmed.Substring("LANGUAGE:".Length).Trim();
-                        currentQuestion.ProgrammingLanguage = _supportedLanguages.Contains(langVal, StringComparer.OrdinalIgnoreCase)
-                            ? _supportedLanguages.First(l => l.Equals(langVal, StringComparison.OrdinalIgnoreCase))
-                            : "C";
+                        currentQuestion.AcceptedAnswers.Add(numItemMatch.Groups[2].Value.Trim());
+                        continue;
+                    }
+                    if (trimmed.StartsWith("- ") || trimmed.StartsWith("* ") || trimmed.StartsWith("• "))
+                    {
+                        currentQuestion.AcceptedAnswers.Add(trimmed.Substring(2).Trim());
+                        continue;
                     }
                 }
-                else if (trimmed.StartsWith("POINTS:", StringComparison.OrdinalIgnoreCase))
+
+                // Coding section handling: Problem Description, Starter Code, Test Cases, Signatures
+                bool isCurrentCoding = currentSection?.Type == "Coding" || currentQuestion?.Type == "Coding";
+                if (isCurrentCoding && currentQuestion != null)
                 {
-                    if (currentQuestion != null &&
-                        int.TryParse(trimmed.Substring("POINTS:".Length).Trim(), out int pts))
-                        currentQuestion.Points = pts;
+                    if (trimmed.StartsWith("Supported Languages:", StringComparison.OrdinalIgnoreCase) ||
+                        trimmed.StartsWith("LANGUAGE:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string langVal = trimmed.Substring(trimmed.IndexOf(':') + 1).Trim();
+                        var firstLang = langVal.Split(new[] { ',', '/' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "C";
+                        currentQuestion.TargetLanguage = _supportedLanguages.Contains(firstLang, StringComparer.OrdinalIgnoreCase)
+                            ? _supportedLanguages.First(l => l.Equals(firstLang, StringComparison.OrdinalIgnoreCase))
+                            : "C";
+                        continue;
+                    }
+
+                    if (trimmed.StartsWith("Problem Description:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        currentQuestion.Prompt = trimmed.Substring("Problem Description:".Length).Trim();
+                        codingState = "description";
+                        continue;
+                    }
+
+                    if (trimmed.StartsWith("Specification", StringComparison.OrdinalIgnoreCase))
+                    {
+                        codingState = "specification";
+                        continue;
+                    }
+
+                    if (codingState == "specification")
+                    {
+                        if (trimmed.StartsWith("Test Cases:", StringComparison.OrdinalIgnoreCase) ||
+                            trimmed.StartsWith("Starter Code:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // transition below
+                        }
+                        else
+                        {
+                            // ignore signature lines (* C: ... * Python: ...)
+                            continue;
+                        }
+                    }
+
+                    if (trimmed.StartsWith("Starter Code:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        codingState = "startercode";
+                        currentLangBlock = string.Empty;
+                        continue;
+                    }
+
+                    if (trimmed.StartsWith("Test Cases:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        codingState = "testcases";
+                        continue;
+                    }
+
+                    if (codingState == "startercode")
+                    {
+                        if (trimmed.Equals("C:", StringComparison.OrdinalIgnoreCase) ||
+                            trimmed.Equals("Python:", StringComparison.OrdinalIgnoreCase) ||
+                            trimmed.Equals("Java:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            currentLangBlock = trimmed.TrimEnd(':').ToUpperInvariant();
+                            continue;
+                        }
+
+                        string targetUpper = (currentQuestion.TargetLanguage ?? "C").ToUpperInvariant();
+                        if (currentLangBlock == targetUpper || string.IsNullOrEmpty(currentLangBlock))
+                        {
+                            currentQuestion.StarterCodeStub = (currentQuestion.StarterCodeStub ?? "") + lines[lineIndex] + "\n";
+                        }
+                        continue;
+                    }
+
+                    if (codingState == "testcases")
+                    {
+                        if (trimmed.StartsWith("Case", StringComparison.OrdinalIgnoreCase) ||
+                            trimmed.Equals("Test Case", StringComparison.OrdinalIgnoreCase) ||
+                            trimmed.Equals("Input", StringComparison.OrdinalIgnoreCase) ||
+                            trimmed.Equals("Expected Output", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        if (trimmed.StartsWith("arr =") || trimmed.Contains("=") || trimmed.StartsWith("\""))
+                        {
+                            var nextIdx = lineIndex + 1;
+                            while (nextIdx < lines.Length && string.IsNullOrWhiteSpace(lines[nextIdx])) nextIdx++;
+                            if (nextIdx < lines.Length && !lines[nextIdx].Trim().StartsWith("Case", StringComparison.OrdinalIgnoreCase) && !lines[nextIdx].Trim().StartsWith("Starter Code", StringComparison.OrdinalIgnoreCase))
+                            {
+                                currentQuestion.TestCases.Add(new TestCaseItem
+                                {
+                                    Input = trimmed,
+                                    ExpectedOutput = lines[nextIdx].Trim()
+                                });
+                                lineIndex = nextIdx;
+                                continue;
+                            }
+                        }
+                        continue;
+                    }
+
+                    if (codingState == "description")
+                    {
+                        currentQuestion.Prompt += " " + trimmed;
+                        continue;
+                    }
                 }
-                else if (currentQuestion != null)
+
+                // Essay Rubric table handling
+                if ((currentSection?.Type == "Essay" || currentQuestion?.Type == "Essay") && trimmed.StartsWith("Evaluation Rubric:", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Wrapped continuation of the question text.
-                    currentQuestion.Text += " " + trimmed;
+                    codingState = "rubric";
+                    currentQuestion!.Rubric = trimmed + "\n";
+                    continue;
+                }
+
+                if (codingState == "rubric" && currentQuestion != null)
+                {
+                    currentQuestion.Rubric += lines[lineIndex] + "\n";
+                    continue;
+                }
+
+                // If no question is active, check if this line is an unnumbered or numbered question prompt
+                if (currentQuestion == null)
+                {
+                    // Avoid creating questions for preamble document headers
+                    if (currentSection == null && (trimmed.Contains("Standard Assessment") || trimmed.Contains("This document serves")))
+                        continue;
+
+                    // Section instructions before Question 1
+                    if (currentSection != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(currentSection.Instructions))
+                            currentSection.Instructions = trimmed;
+                        else
+                            currentSection.Instructions += " " + trimmed;
+                        continue;
+                    }
+
+                    EnsureSection();
+                    currentQuestion = new QuestionItem
+                    {
+                        Prompt = numItemMatch.Success ? numItemMatch.Groups[2].Value.Trim() : trimmed,
+                        Type = currentSection != null && currentSection.Type != "Identification" ? currentSection.Type : string.Empty,
+                        Points = 5
+                    };
+                    continue;
+                }
+
+                // If options already accumulated and new line appears
+                if (mcOptions.Count >= 2)
+                {
+                    FlushQuestion();
+                    EnsureSection();
+                    currentQuestion = new QuestionItem
+                    {
+                        Prompt = numItemMatch.Success ? numItemMatch.Groups[2].Value.Trim() : trimmed,
+                        Type = currentSection != null && currentSection.Type != "Identification" ? currentSection.Type : string.Empty,
+                        Points = 5
+                    };
+                    continue;
+                }
+
+                // Continuation line of question prompt
+                if (trimmed.StartsWith("Prompt:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var pText = trimmed.Substring("Prompt:".Length).Trim();
+                    if (string.IsNullOrWhiteSpace(currentQuestion.Prompt))
+                        currentQuestion.Prompt = pText;
+                    else
+                        currentQuestion.Prompt += " " + pText;
+                }
+                else if (string.IsNullOrWhiteSpace(currentQuestion.Prompt))
+                {
+                    currentQuestion.Prompt = trimmed;
+                }
+                else
+                {
+                    currentQuestion.Prompt += " " + trimmed;
                 }
             }
 
             FlushQuestion();
 
-            // The data model gives each section a single Type. A TYPE: line is
-            // optional per-question, so once a section's questions are all known,
-            // settle the section (and every question in it) on whichever type
-            // was most common — keeps mixed/ambiguous files from producing a
-            // section that silently doesn't match its own questions.
-            foreach (var section in sections)
-            {
-                if (section.Questions.Count == 0) continue;
-
-                var mostCommon = section.Questions
-                    .GroupBy(q => q.Type)
-                    .OrderByDescending(g => g.Count())
-                    .First().Key;
-
-                section.Type = mostCommon;
-                foreach (var q in section.Questions)
-                    q.Type = mostCommon;
-            }
-
+            // Sections already strictly match document sections
             return sections;
         }
 
@@ -2190,22 +2695,33 @@ namespace ACPAMS.Views.Faculty
                  answer.Equals("False", StringComparison.OrdinalIgnoreCase)))
                 return "True or False";
 
+            if (!string.IsNullOrEmpty(question.Type) && question.Type != "Identification")
+                return question.Type;
+
             if (!string.IsNullOrEmpty(answer))
                 return "Identification";
+
+            if (!string.IsNullOrEmpty(question.Type))
+                return question.Type;
 
             return "Essay";
         }
 
         private void ApplyOptionsForType(QuestionItem question, Dictionary<string, string> mcOptions)
         {
-            if (question.Type != "Multiple Choice") return;
+            if (question.Type == "Multiple Choice")
+            {
+                mcOptions.TryGetValue("A", out var a); question.OptionA = a;
+                mcOptions.TryGetValue("B", out var b); question.OptionB = b;
+                mcOptions.TryGetValue("C", out var c); question.OptionC = c;
+                mcOptions.TryGetValue("D", out var d); question.OptionD = d;
 
-            mcOptions.TryGetValue("A", out var a); question.OptionA = a;
-            mcOptions.TryGetValue("B", out var b); question.OptionB = b;
-            mcOptions.TryGetValue("C", out var c); question.OptionC = c;
-            mcOptions.TryGetValue("D", out var d); question.OptionD = d;
-
-            question.CorrectAnswer = NormalizeOptionKey(question.CorrectAnswer, a, b, c, d);
+                question.CorrectAnswer = NormalizeOptionKey(question.CorrectAnswer, a, b, c, d);
+            }
+            else if (question.Type == "Coding" && string.IsNullOrEmpty(question.ProgrammingLanguage))
+            {
+                question.ProgrammingLanguage = "C";
+            }
         }
 
         public static string NormalizeOptionKey(string? raw, string? optA, string? optB, string? optC, string? optD)

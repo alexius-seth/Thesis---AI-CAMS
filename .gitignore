@@ -34,3 +34,6 @@ graphify-out
 # ── Portable compiler and runtime binaries ────────────────────────
 [Tt]ools/
 AICAMS/Tools/
+
+# ── Standalone build and publish artifacts ─────────────────────────
+publish/
