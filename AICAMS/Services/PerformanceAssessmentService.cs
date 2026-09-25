@@ -71,21 +71,63 @@ namespace ACPAMS.Services
                 generationConfig = new
                 {
                     temperature = 0.3,
-                    response_mime_type = "application/json"
+                    responseMimeType = "application/json"
                 }
             };
 
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{ModelEndpoint}?key={apiKey}")
+            HttpResponseMessage? response = null;
+            string rawResponseBody = string.Empty;
+            const int maxRetries = 3;
+            TimeSpan delay = TimeSpan.FromSeconds(2);
+            string activeModel = AppSettingsService.GetGeminiModel();
+            System.Diagnostics.Debug.WriteLine($"Testing Gemini Model: {activeModel} | Request URI: {ModelEndpoint}");
+            Console.WriteLine($"Testing Gemini Model: {activeModel} | Request URI: {ModelEndpoint}");
+
+            for (int retryAttempt = 1; retryAttempt <= maxRetries + 1; retryAttempt++)
             {
-                Content = JsonContent.Create(requestBody)
-            };
+                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{ModelEndpoint}?key={apiKey}")
+                {
+                    Content = JsonContent.Create(requestBody)
+                };
 
-            var response = await _http.SendAsync(httpRequest);
-            string rawResponseBody = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    response = await _http.SendAsync(httpRequest);
+                    rawResponseBody = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
+                    if (response.IsSuccessStatusCode)
+                    {
+                        break;
+                    }
+
+                    int statusCode = (int)response.StatusCode;
+                    if ((statusCode == 500 || statusCode == 503 || statusCode == 429) && retryAttempt <= maxRetries)
+                    {
+                        await Task.Delay(delay * retryAttempt);
+                        continue;
+                    }
+
+                    throw new HttpRequestException(
+                        $"Gemini API call failed ({statusCode} {response.StatusCode}): {rawResponseBody}",
+                        null,
+                        response.StatusCode);
+                }
+                catch (HttpRequestException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when ((ex is TimeoutException || ex is TaskCanceledException) && retryAttempt <= maxRetries)
+                {
+                    await Task.Delay(delay * retryAttempt);
+                }
+            }
+
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                int code = response != null ? (int)response.StatusCode : 0;
                 throw new InvalidOperationException(
-                    $"Gemini API call failed ({(int)response.StatusCode} {response.StatusCode}): {rawResponseBody}");
+                    $"Gemini API call failed ({code}): {rawResponseBody}");
+            }
 
             var envelope = JsonSerializer.Deserialize<GeminiApiResponse>(rawResponseBody)
                 ?? throw new InvalidOperationException("Gemini returned an empty/unparseable response.");

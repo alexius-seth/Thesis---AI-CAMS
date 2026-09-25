@@ -66,7 +66,7 @@ namespace ACPAMS.Services
                     // this model line, that's the first thing to revisit
                     // (migrate to thinking_config with thinking_level="low").
                     temperature = 0.2,
-                    response_mime_type = "application/json"
+                    responseMimeType = "application/json"
                 }
             };
 
@@ -74,6 +74,10 @@ namespace ACPAMS.Services
             string rawResponseBody = string.Empty;
             int maxRetries = 3;
             int delayMs = 1500;
+
+            string activeModel = AppSettingsService.GetGeminiModel();
+            System.Diagnostics.Debug.WriteLine($"Testing Gemini Model: {activeModel} | Request URI: {ModelEndpoint}");
+            Console.WriteLine($"Testing Gemini Model: {activeModel} | Request URI: {ModelEndpoint}");
 
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {

@@ -333,17 +333,17 @@ namespace ACPAMS.Views.Faculty
             var trimmed = type.Trim();
             var lowerType = trimmed.ToLower();
 
-            if (lowerType.Contains("identification") || lowerType == "id")
+            if (lowerType.Contains("identification") || lowerType == "id" || lowerType.Contains("fill"))
                 return "Identification";
-            if (lowerType.Contains("multiple") && lowerType.Contains("choice"))
+            if ((lowerType.Contains("multiple") && lowerType.Contains("choice")) || lowerType == "multiplechoice" || lowerType == "mcq")
                 return "Multiple Choice";
-            if (lowerType.Contains("true") && lowerType.Contains("false"))
+            if ((lowerType.Contains("true") && lowerType.Contains("false")) || lowerType == "trueorfalse" || lowerType == "tf" || lowerType == "t/f")
                 return "True or False";
             if (lowerType.Contains("essay"))
                 return "Essay";
             if (lowerType.Contains("enumeration") || lowerType == "enum")
                 return "Enumeration";
-            if (lowerType.Contains("coding") || lowerType == "code" || lowerType.Contains("programming"))
+            if (lowerType.Contains("coding") || lowerType == "code" || lowerType.Contains("programming") || lowerType.Contains("problem") || lowerType.Contains("hands-on") || lowerType.Contains("hands on"))
                 return "Coding";
 
             return trimmed;
@@ -1935,35 +1935,27 @@ namespace ACPAMS.Views.Faculty
 
             try
             {
+                ToastNotification.Show("Reading file with AI...", Application.Current.MainWindow, 3, false);
+
+                var rawText = await System.IO.File.ReadAllTextAsync(dialog.FileName);
                 List<ExamSection> importedSections;
-                bool usedAiParsing;
 
                 try
                 {
-                    ToastNotification.Show("Reading file with AI...", Application.Current.MainWindow, 3, false);
-
-                    var rawText = await System.IO.File.ReadAllTextAsync(dialog.FileName);
-                    var aiSections = await new ExamImportService().ParseExamTextAsync(rawText);
-
+                    var aiSections = await new GeminiExamImportService().ParseExamTextAsync(rawText);
                     importedSections = aiSections.SelectMany(ConvertImportedSection).ToList();
-                    usedAiParsing = true;
-                }
-                catch (JsonException jEx)
-                {
-                    // Directly bubble JsonException so malformed model output is diagnosed instead of silently falling back
-                    throw new InvalidOperationException($"Gemini returned invalid or unparseable JSON: {jEx.Message}", jEx);
                 }
                 catch (Exception aiEx)
                 {
-                    if (aiEx.InnerException is JsonException innerJsonEx)
-                    {
-                        throw new InvalidOperationException($"Gemini returned invalid JSON structure: {innerJsonEx.Message}", innerJsonEx);
-                    }
+                    System.Diagnostics.Debug.WriteLine($"[ExamImport] AI import failed: {aiEx}");
+                    Console.WriteLine($"[ExamImport] AI import failed: {aiEx}");
 
-                    // Fall back to the structured parser only for non-JSON issues (e.g. offline, missing key)
-                    System.Diagnostics.Debug.WriteLine($"AI import unavailable ({aiEx.Message}), using structured parser.");
-                    importedSections = ParseExamTxtFile(dialog.FileName);
-                    usedAiParsing = false;
+                    MessageBox.Show(
+                        $"AI Import Failed:\n\n{aiEx.Message}\n\nPlease check your AI Settings or wait a few moments before trying again.",
+                        "AI Import Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
                 }
 
                 if (importedSections.Count == 0)
@@ -1999,10 +1991,8 @@ namespace ACPAMS.Views.Faculty
                 UpdateActiveSectionHeader();
 
                 int totalQuestions = importedSections.Sum(s => s.Questions.Count);
-                string parsedBy = usedAiParsing ? "AI-parsed" : "parsed using structured text format";
                 ToastNotification.Show(
-                    $"Imported {importedSections.Count} section(s) and {totalQuestions} question(s) ({parsedBy}). " +
-                    "Review the questions, then Publish when ready — nothing has been saved yet.",
+                    $"Successfully imported {importedSections.Count} section(s) and {totalQuestions} question(s) via Gemini.",
                     Application.Current.MainWindow);
             }
             catch (Exception ex)
@@ -2021,7 +2011,8 @@ namespace ACPAMS.Views.Faculty
             if (!string.IsNullOrEmpty(q.QuestionType))
             {
                 var pt = GetProperTypeName(q.QuestionType);
-                if (!string.IsNullOrEmpty(pt) && pt != "Identification")
+                if (pt == "Multiple Choice" || pt == "True or False" || pt == "Identification" ||
+                    pt == "Enumeration" || pt == "Essay" || pt == "Coding")
                     return pt;
             }
 
@@ -2032,11 +2023,18 @@ namespace ACPAMS.Views.Faculty
             }
 
             if ((q.TestCases != null && q.TestCases.Count > 0) ||
-                !string.IsNullOrEmpty(q.StarterCode) ||
-                !string.IsNullOrEmpty(q.TargetLanguage) ||
-                (!string.IsNullOrEmpty(q.Type) && GetProperTypeName(q.Type) == "Coding"))
+                !string.IsNullOrWhiteSpace(q.StarterCode) ||
+                !string.IsNullOrWhiteSpace(q.TargetLanguage) ||
+                (!string.IsNullOrEmpty(q.Type) && GetProperTypeName(q.Type) == "Coding") ||
+                (!string.IsNullOrWhiteSpace(q.ProgrammingLanguage) && _supportedLanguages.Contains(q.ProgrammingLanguage, StringComparer.OrdinalIgnoreCase)))
             {
                 return "Coding";
+            }
+
+            if (q.IsTrue.HasValue ||
+                (!string.IsNullOrEmpty(q.CorrectAnswer) && (q.CorrectAnswer.Trim().Equals("True", StringComparison.OrdinalIgnoreCase) || q.CorrectAnswer.Trim().Equals("False", StringComparison.OrdinalIgnoreCase))))
+            {
+                return "True or False";
             }
 
             if ((q.ExpectedAnswers != null && q.ExpectedAnswers.Count > 0) ||
@@ -2051,16 +2049,11 @@ namespace ACPAMS.Views.Faculty
                 return "Essay";
             }
 
-            if (q.IsTrue.HasValue ||
-                (!string.IsNullOrEmpty(q.CorrectAnswer) && (q.CorrectAnswer.Equals("True", StringComparison.OrdinalIgnoreCase) || q.CorrectAnswer.Equals("False", StringComparison.OrdinalIgnoreCase))))
-            {
-                return "True or False";
-            }
-
             if (!string.IsNullOrEmpty(sectionType))
             {
                 var sType = GetProperTypeName(sectionType);
-                if (!string.IsNullOrEmpty(sType) && sType != "Identification")
+                if (sType == "Multiple Choice" || sType == "True or False" || sType == "Identification" ||
+                    sType == "Enumeration" || sType == "Essay" || sType == "Coding")
                     return sType;
             }
 
@@ -2077,31 +2070,6 @@ namespace ACPAMS.Views.Faculty
             var baseName = !string.IsNullOrWhiteSpace(dto.SectionTitle) ? dto.SectionTitle : (!string.IsNullOrWhiteSpace(dto.Name) ? dto.Name : "Imported Section");
             var instructions = dto.Instructions ?? string.Empty;
 
-            var properSectionType = !string.IsNullOrEmpty(dto.QuestionType) ? GetProperTypeName(dto.QuestionType) : GetProperTypeName(baseName);
-            bool hasExplicitSectionType = !string.IsNullOrEmpty(properSectionType) && properSectionType != "Identification";
-
-            var result = new List<ExamSection>();
-
-            if (hasExplicitSectionType)
-            {
-                var section = new ExamSection
-                {
-                    Name = baseName,
-                    Type = properSectionType,
-                    Instructions = instructions,
-                    IsActive = false,
-                    Questions = new List<QuestionItem>()
-                };
-
-                int order = 0;
-                foreach (var q in dto.Questions)
-                {
-                    section.Questions.Add(BuildQuestionItem(q, properSectionType, order++));
-                }
-                result.Add(section);
-                return result;
-            }
-
             var questionsByType = dto.Questions
                 .Select(q => new
                 {
@@ -2111,19 +2079,45 @@ namespace ACPAMS.Views.Faculty
                 .GroupBy(x => x.ProperType)
                 .ToList();
 
-            bool isMixed = questionsByType.Count > 1;
+            var result = new List<ExamSection>();
+
+            if (questionsByType.Count == 0)
+                return result;
+
+            if (questionsByType.Count == 1)
+            {
+                var single = questionsByType[0];
+                var section = new ExamSection
+                {
+                    Name = baseName,
+                    Type = single.Key,
+                    Instructions = instructions,
+                    IsActive = false,
+                    Questions = new List<QuestionItem>()
+                };
+
+                int order = 1;
+                foreach (var item in single)
+                {
+                    section.Questions.Add(BuildQuestionItem(item.Dto, single.Key, order++));
+                }
+                result.Add(section);
+                return result;
+            }
+
+            // Mixed question types: split into distinct homogeneous sections
             foreach (var group in questionsByType)
             {
                 var section = new ExamSection
                 {
-                    Name = isMixed ? $"{baseName} — {group.Key}" : baseName,
+                    Name = $"{baseName} ({group.Key})",
                     Type = group.Key,
                     Instructions = instructions,
                     IsActive = false,
                     Questions = new List<QuestionItem>()
                 };
 
-                int order = 0;
+                int order = 1;
                 foreach (var item in group)
                 {
                     section.Questions.Add(BuildQuestionItem(item.Dto, group.Key, order++));
@@ -2141,7 +2135,7 @@ namespace ACPAMS.Views.Faculty
             // Clean leftover prefixes
             string cleanPrompt = System.Text.RegularExpressions.Regex.Replace(
                 rawPrompt,
-                @"^(?:Section\s+\d+[:\.\s]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
+                @"^(?:Section\s+\d+[:\.\s]*|Part\s+[IVXLCDM\d]+[:\.\s—–\-]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
                 "",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
 
@@ -2159,7 +2153,7 @@ namespace ACPAMS.Views.Faculty
                     cleanPrompt = cleanPrompt.Substring(inst.Length).Trim();
                     cleanPrompt = System.Text.RegularExpressions.Regex.Replace(
                         cleanPrompt,
-                        @"^(?:Section\s+\d+[:\.\s]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
+                        @"^(?:Section\s+\d+[:\.\s]*|Part\s+[IVXLCDM\d]+[:\.\s—–\-]*|Question\s+\d+[:\.\s]*|Prompt:\s*|Points:\s*\d+[:\.\s]*)+",
                         "",
                         System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
                 }
@@ -2206,10 +2200,10 @@ namespace ACPAMS.Views.Faculty
             }
             else if (targetType == "Coding")
             {
-                targetLang = "C";
+                targetLang = q.StarterCode?.Contains("#include") == true ? "C" : "Python";
             }
 
-            int defaultPts = targetType == "Multiple Choice" ? 2 : (targetType == "Coding" ? 15 : (targetType == "Enumeration" ? 4 : 5));
+            int defaultPts = targetType == "Multiple Choice" ? 2 : (targetType == "Coding" ? 15 : (targetType == "Enumeration" ? 4 : (targetType == "True or False" ? 1 : 5)));
 
             var qItem = new QuestionItem
             {
@@ -2227,13 +2221,43 @@ namespace ACPAMS.Views.Faculty
                     ? new List<string>(q.ExpectedAnswers)
                     : new List<string>(),
                 IsTrue = q.IsTrue,
-                TargetLanguage = targetLang ?? "C",
+                TargetLanguage = targetLang ?? "Python",
                 Rubric = q.Rubric
             };
 
-            // Explicit Coding Question Binding
-            if (targetType == "Coding")
+            // Explicit True or False Binding
+            if (targetType == "True or False")
             {
+                if (q.IsTrue.HasValue)
+                {
+                    qItem.IsTrue = q.IsTrue.Value;
+                }
+                else if (!string.IsNullOrWhiteSpace(correctAns))
+                {
+                    var ans = correctAns.Trim();
+                    if (ans.Equals("True", StringComparison.OrdinalIgnoreCase) || ans.Equals("T", StringComparison.OrdinalIgnoreCase))
+                        qItem.IsTrue = true;
+                    else if (ans.Equals("False", StringComparison.OrdinalIgnoreCase) || ans.Equals("F", StringComparison.OrdinalIgnoreCase))
+                        qItem.IsTrue = false;
+                }
+            }
+            // Explicit Identification Binding
+            else if (targetType == "Identification")
+            {
+                if (string.IsNullOrWhiteSpace(qItem.ExpectedAnswer) && !string.IsNullOrWhiteSpace(correctAns))
+                {
+                    qItem.ExpectedAnswer = correctAns.Trim();
+                }
+            }
+            // Explicit Coding Question Binding
+            else if (targetType == "Coding")
+            {
+                qItem.OptionA = null;
+                qItem.OptionB = null;
+                qItem.OptionC = null;
+                qItem.OptionD = null;
+                qItem.CorrectAnswer = null;
+
                 if (!string.IsNullOrWhiteSpace(q.StarterCode))
                     qItem.StarterCodeStub = q.StarterCode.Trim();
 
@@ -2337,7 +2361,7 @@ namespace ACPAMS.Views.Faculty
             }
 
             var sectionRegex = new System.Text.RegularExpressions.Regex(
-                @"^(?:SECTION:\s*|(?:Section\s+\d+:?|Part\s+\d+:?|\[.*?\])\s*)(.*)$",
+                @"^(?:SECTION\b[:\s]*|(?:(?:Section|Part)\s+(?:\d+|[IVXLCDM]+)\b[\s:—–\.\-]*|(?:[IVXLCDM]+)[\.\:—–\-]\s+|\[.*?\])\s*)(.*)$",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
             var questionHeaderRegex = new System.Text.RegularExpressions.Regex(
@@ -2361,12 +2385,16 @@ namespace ACPAMS.Views.Faculty
                 {
                     FlushQuestion();
                     var headerTitle = sectionMatch.Groups[1].Value.Trim();
+                    headerTitle = System.Text.RegularExpressions.Regex.Replace(headerTitle, @"^[—–\-\:\.\s]+", "").Trim();
                     if (string.IsNullOrEmpty(headerTitle)) headerTitle = trimmed;
 
                     var detectedType = GetProperTypeName(headerTitle);
+                    if (string.IsNullOrEmpty(detectedType) || detectedType == "Identification")
+                        detectedType = GetProperTypeName(trimmed);
+
                     currentSection = new ExamSection
                     {
-                        Name = headerTitle,
+                        Name = trimmed,
                         Type = !string.IsNullOrEmpty(detectedType) ? detectedType : "Identification",
                         Instructions = string.Empty,
                         IsActive = false
@@ -2639,16 +2667,33 @@ namespace ACPAMS.Views.Faculty
                     continue;
                 }
 
+                // If a new numbered question appears (e.g. "1.", "2.") and we aren't in enumeration or code blocks
+                if (numItemMatch.Success && !isCurrentEnumeration && codingState != "startercode" && codingState != "testcases" && codingState != "rubric")
+                {
+                    FlushQuestion();
+                    EnsureSection();
+                    var sType = currentSection != null ? currentSection.Type : "Identification";
+                    currentQuestion = new QuestionItem
+                    {
+                        Prompt = numItemMatch.Groups[2].Value.Trim(),
+                        Type = sType != "Identification" ? sType : string.Empty,
+                        Points = sType == "Multiple Choice" ? 2 : (sType == "Coding" ? 15 : (sType == "Enumeration" ? 4 : (sType == "True or False" ? 1 : 5))),
+                        TargetLanguage = sType == "Coding" ? "Python" : string.Empty
+                    };
+                    continue;
+                }
+
                 // If options already accumulated and new line appears
                 if (mcOptions.Count >= 2)
                 {
                     FlushQuestion();
                     EnsureSection();
+                    var sType = currentSection != null ? currentSection.Type : "Identification";
                     currentQuestion = new QuestionItem
                     {
                         Prompt = numItemMatch.Success ? numItemMatch.Groups[2].Value.Trim() : trimmed,
-                        Type = currentSection != null && currentSection.Type != "Identification" ? currentSection.Type : string.Empty,
-                        Points = 5
+                        Type = sType != "Identification" ? sType : string.Empty,
+                        Points = sType == "Multiple Choice" ? 2 : 5
                     };
                     continue;
                 }
@@ -2674,8 +2719,40 @@ namespace ACPAMS.Views.Faculty
 
             FlushQuestion();
 
-            // Sections already strictly match document sections
-            return sections;
+            // Enforce homogeneous sections: split any section containing multiple question types
+            var finalSections = new List<ExamSection>();
+            foreach (var sec in sections)
+            {
+                if (sec.Questions.Count == 0) continue;
+
+                var groups = sec.Questions.GroupBy(q => !string.IsNullOrEmpty(q.Type) ? q.Type : sec.Type).ToList();
+                if (groups.Count <= 1)
+                {
+                    if (groups.Count == 1 && groups[0].Key != sec.Type && !string.IsNullOrEmpty(groups[0].Key))
+                        sec.Type = groups[0].Key;
+                    finalSections.Add(sec);
+                }
+                else
+                {
+                    foreach (var g in groups)
+                    {
+                        var splitSec = new ExamSection
+                        {
+                            Name = $"{sec.Name} ({g.Key})",
+                            Type = g.Key,
+                            Instructions = sec.Instructions,
+                            IsActive = false,
+                            Questions = g.ToList()
+                        };
+                        int qOrder = 0;
+                        foreach (var q in splitSec.Questions)
+                            q.Order = qOrder++;
+                        finalSections.Add(splitSec);
+                    }
+                }
+            }
+
+            return finalSections;
         }
 
         private string DetectQuestionType(QuestionItem question, Dictionary<string, string> mcOptions)

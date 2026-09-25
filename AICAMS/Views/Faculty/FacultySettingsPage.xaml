@@ -507,11 +507,15 @@
                                       Height="38"
                                       Margin="0,0,0,16"
                                       FontSize="13"
-                                      VerticalContentAlignment="Center">
+                                      VerticalContentAlignment="Center"
+                                      TextSearch.TextPath="Content"
+                                      SelectedValuePath="Content">
                                 <ComboBoxItem Content="gemini-3.5-flash"/>
-                                <ComboBoxItem Content="gemini-2.5-flash"/>
-                                <ComboBoxItem Content="gemini-2.5-flash-lite"/>
-                                <ComboBoxItem Content="gemini-flash-latest"/>
+                                <ComboBoxItem Content="gemini-3.6-flash"/>
+                                <ComboBoxItem Content="gemini-3.1-flash-lite"/>
+                                <ComboBoxItem Content="gemini-2.0-flash"/>
+                                <ComboBoxItem Content="gemini-1.5-flash"/>
+                                <ComboBoxItem Content="gemini-1.5-pro"/>
                                 <ComboBoxItem Content="gemini-2.5-pro"/>
                             </ComboBox>
 

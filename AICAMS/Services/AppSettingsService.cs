@@ -123,6 +123,12 @@ namespace ACPAMS.Services
             {
                 if (gemini["Model"] != null)
                     GeminiModel = NormalizeModelName(gemini["Model"]!.ToString());
+                if (gemini["ApiKey"] != null && !string.IsNullOrWhiteSpace(gemini["ApiKey"]!.ToString()))
+                {
+                    string fileKey = gemini["ApiKey"]!.ToString().Trim();
+                    if (App.Configuration != null)
+                        App.Configuration["Gemini:ApiKey"] = fileKey;
+                }
             }
         }
 
@@ -133,18 +139,33 @@ namespace ACPAMS.Services
             if (string.IsNullOrWhiteSpace(model))
                 return "gemini-3.5-flash";
 
-            string cleanModelName = model.Trim();
-            while (cleanModelName.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
+            string clean = model.Trim();
+
+            // Strip WPF ComboBoxItem wrapper if present (e.g. "System.Windows.Controls.ComboBoxItem: gemini-2.0-flash")
+            if (clean.StartsWith("System.Windows.Controls", StringComparison.OrdinalIgnoreCase))
             {
-                cleanModelName = cleanModelName.Substring("models/".Length).TrimStart('/');
+                int colonIdx = clean.IndexOf(':');
+                if (colonIdx >= 0 && colonIdx < clean.Length - 1)
+                {
+                    clean = clean.Substring(colonIdx + 1).Trim();
+                }
             }
 
-            if (cleanModelName.Equals("gemini 3.5 flash", StringComparison.OrdinalIgnoreCase))
+            // Strip leading "models/" if present
+            while (clean.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
             {
-                cleanModelName = "gemini-3.5-flash";
+                clean = clean.Substring("models/".Length).TrimStart('/');
             }
 
-            return string.IsNullOrWhiteSpace(cleanModelName) ? "gemini-3.5-flash" : cleanModelName;
+            // Strip trailing action colon if present (e.g. ":generateContent")
+            int actionColonIdx = clean.IndexOf(':');
+            if (actionColonIdx >= 0)
+            {
+                clean = clean.Substring(0, actionColonIdx).Trim();
+            }
+
+            clean = clean.Trim();
+            return string.IsNullOrWhiteSpace(clean) ? "gemini-3.5-flash" : clean;
         }
 
         public static string SanitizeModelName(string? model) => NormalizeModelName(model);
@@ -174,8 +195,15 @@ namespace ACPAMS.Services
                 // Key corrupted or unreadable with current user scope
             }
 
+            string envKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(envKey))
+                return envKey.Trim();
+
             return App.Configuration?["Gemini:ApiKey"] ?? string.Empty;
         }
+
+        public static Task<string> GetGeminiApiKeyAsync() => Task.FromResult(GetGeminiApiKey());
+        public static Task<string> GetActiveGeminiModelAsync() => Task.FromResult(GetGeminiModel());
 
         public static void SaveGeminiApiKey(string plainKey)
         {
@@ -195,10 +223,25 @@ namespace ACPAMS.Services
 
         public static string GetGeminiModel()
         {
+            try
+            {
+                if (File.Exists(UserSettingsFilePath))
+                {
+                    var json = JsonNode.Parse(File.ReadAllText(UserSettingsFilePath)) as JsonObject;
+                    if (json?["Gemini"] is JsonObject gemini && gemini["Model"] != null)
+                    {
+                        var m = gemini["Model"]!.ToString();
+                        if (!string.IsNullOrWhiteSpace(m))
+                            return NormalizeModelName(m);
+                    }
+                }
+            }
+            catch { }
+
             if (!string.IsNullOrWhiteSpace(GeminiModel))
                 return NormalizeModelName(GeminiModel);
 
-            return NormalizeModelName(App.Configuration?["Gemini:Model"]);
+            return NormalizeModelName(App.Configuration?["Gemini:Model"] ?? "gemini-3.5-flash");
         }
 
         public static void SaveGeminiModel(string model)
@@ -225,41 +268,122 @@ namespace ACPAMS.Services
             }
         }
 
+        public static async Task<List<string>> GetAvailableModelsAsync(string apiKey, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey))
+                return new List<string>();
+
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models?key={apiKey.Trim()}";
+            try
+            {
+                using var response = await _httpClient.GetAsync(url, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                    return new List<string>();
+
+                string json = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = JsonDocument.Parse(json);
+                var models = new List<string>();
+
+                if (doc.RootElement.TryGetProperty("models", out var modelsArray))
+                {
+                    foreach (var model in modelsArray.EnumerateArray())
+                    {
+                        bool supportsGenerate = false;
+                        if (model.TryGetProperty("supportedGenerationMethods", out var methods))
+                        {
+                            foreach (var method in methods.EnumerateArray())
+                            {
+                                if (string.Equals(method.GetString(), "generateContent", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    supportsGenerate = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!supportsGenerate) continue;
+
+                        if (model.TryGetProperty("name", out var nameProp))
+                        {
+                            string modelName = nameProp.GetString()?.Replace("models/", "") ?? "";
+                            if (string.IsNullOrWhiteSpace(modelName))
+                                continue;
+
+                            // Filter out non-text, TTS, speech, audio, image, embedding, and local/slow gemma models
+                            if (modelName.Contains("-tts", StringComparison.OrdinalIgnoreCase) ||
+                                modelName.Contains("-speech", StringComparison.OrdinalIgnoreCase) ||
+                                modelName.Contains("audio", StringComparison.OrdinalIgnoreCase) ||
+                                modelName.Contains("imagen", StringComparison.OrdinalIgnoreCase) ||
+                                modelName.Contains("embedding", StringComparison.OrdinalIgnoreCase) ||
+                                modelName.Contains("aqa", StringComparison.OrdinalIgnoreCase) ||
+                                modelName.Contains("gemma", StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            // If outputModalities is present, ensure TEXT is supported
+                            if (model.TryGetProperty("outputModalities", out var outModalities))
+                            {
+                                bool hasTextModality = false;
+                                foreach (var mod in outModalities.EnumerateArray())
+                                {
+                                    if (string.Equals(mod.GetString(), "TEXT", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        hasTextModality = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasTextModality) continue;
+                            }
+
+                            models.Add(modelName);
+                        }
+                    }
+                }
+
+                return models;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to retrieve available Gemini models: {ex.Message}");
+                return new List<string>();
+            }
+        }
+
         public static async Task<(bool Success, string Message)> TestGeminiConnectionAsync(string apiKey, string? model = null)
         {
             if (string.IsNullOrWhiteSpace(apiKey))
                 return (false, "Please provide an API key to test.");
 
             string activeModel = NormalizeModelName(!string.IsNullOrWhiteSpace(model) ? model : GetGeminiModel());
+            string requestUri = $"https://generativelanguage.googleapis.com/v1beta/models/{activeModel}?key={apiKey.Trim()}";
+
+            System.Diagnostics.Debug.WriteLine($"Testing Gemini Model: {activeModel} | Request URI: {requestUri}");
+            Console.WriteLine($"Testing Gemini Model: {activeModel} | Request URI: {requestUri}");
 
             try
             {
-                string url = $"https://generativelanguage.googleapis.com/v1beta/models/{activeModel}:generateContent?key={apiKey.Trim()}";
-                var payload = new
-                {
-                    contents = new[]
-                    {
-                        new { parts = new[] { new { text = "ping" } } }
-                    }
-                };
+                using var response = await _httpClient.GetAsync(requestUri);
+                string responseBody = await response.Content.ReadAsStringAsync();
 
-                using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                using var response = await _httpClient.PostAsync(url, content);
+                System.Diagnostics.Debug.WriteLine($"Gemini Response [{(int)response.StatusCode}]: {responseBody}");
+                Console.WriteLine($"Gemini Response [{(int)response.StatusCode}]: {responseBody}");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return (true, $"Connection successful! Model '{activeModel}' verified.");
+                    return (true, $"Connection successful! Model '{activeModel}' verified (200 OK).");
                 }
 
-                // Fallback: check if API key is valid via models list endpoint
-                using var listResponse = await _httpClient.GetAsync($"https://generativelanguage.googleapis.com/v1beta/models?key={apiKey.Trim()}");
-                if (listResponse.IsSuccessStatusCode)
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    return (true, $"API key is valid, but '{activeModel}' returned {response.StatusCode}. Try selecting another model.");
+                    var available = await GetAvailableModelsAsync(apiKey);
+                    string hint = available.Count > 0
+                        ? $" Available in your project: {string.Join(", ", available)}"
+                        : string.Empty;
+                    return (false, $"Model '{activeModel}' not found (404).{hint}");
                 }
 
-                string errorBody = await response.Content.ReadAsStringAsync();
-                return (false, $"Gemini API error ({(int)response.StatusCode} {response.ReasonPhrase}): {errorBody}");
+                return (false, $"Gemini API error ({(int)response.StatusCode} {response.ReasonPhrase}): {responseBody}");
             }
             catch (Exception ex)
             {

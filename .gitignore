@@ -37,3 +37,4 @@ AICAMS/Tools/
 
 # ── Standalone build and publish artifacts ─────────────────────────
 publish/
+*.zip

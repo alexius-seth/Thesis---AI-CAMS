@@ -271,9 +271,85 @@ namespace ACPAMS.Views.Faculty
 
         private void LoadGeminiModel()
         {
-            GeminiModelBox.Text = AppSettingsService.GetGeminiModel();
+            var activeModel = AppSettingsService.GetGeminiModel();
+            string target = !string.IsNullOrWhiteSpace(activeModel) ? activeModel : "gemini-3.5-flash";
+            GeminiModelBox.Text = target;
+            foreach (var item in GeminiModelBox.Items)
+            {
+                if (item is ComboBoxItem cbi && string.Equals(cbi.Content?.ToString(), target, StringComparison.OrdinalIgnoreCase))
+                {
+                    GeminiModelBox.SelectedItem = cbi;
+                    break;
+                }
+            }
             string key = AppSettingsService.GetGeminiApiKey();
             GeminiApiKeyBox.Password = !string.IsNullOrEmpty(key) ? MASKED_KEY_PLACEHOLDER : string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                _ = PopulateDiscoveredModelsAsync(key, target);
+            }
+        }
+
+        private async Task PopulateDiscoveredModelsAsync(string key, string? preferredModel = null)
+        {
+            if (string.IsNullOrWhiteSpace(key) || key == MASKED_KEY_PLACEHOLDER)
+            {
+                key = AppSettingsService.GetGeminiApiKey();
+            }
+
+            if (string.IsNullOrWhiteSpace(key)) return;
+
+            try
+            {
+                var available = await AppSettingsService.GetAvailableModelsAsync(key);
+                if (available != null && available.Count > 0)
+                {
+                    string target = !string.IsNullOrWhiteSpace(preferredModel)
+                        ? preferredModel
+                        : GetSelectedGeminiModel();
+
+                    GeminiModelBox.Items.Clear();
+                    ComboBoxItem? matchedItem = null;
+
+                    foreach (var m in available)
+                    {
+                        var cbi = new ComboBoxItem { Content = m };
+                        GeminiModelBox.Items.Add(cbi);
+                        if (matchedItem == null && string.Equals(m, target, StringComparison.OrdinalIgnoreCase))
+                        {
+                            matchedItem = cbi;
+                        }
+                    }
+
+                    if (matchedItem != null)
+                    {
+                        GeminiModelBox.SelectedItem = matchedItem;
+                        GeminiModelBox.Text = matchedItem.Content.ToString();
+                    }
+                    else if (GeminiModelBox.Items.Count > 0)
+                    {
+                        GeminiModelBox.SelectedIndex = 0;
+                        if (GeminiModelBox.SelectedItem is ComboBoxItem first && first.Content != null)
+                            GeminiModelBox.Text = first.Content.ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Model discovery error: {ex.Message}");
+            }
+        }
+
+        private string GetSelectedGeminiModel()
+        {
+            if (GeminiModelBox.SelectedItem is ComboBoxItem cbi && cbi.Content != null)
+                return cbi.Content.ToString()!.Trim();
+            if (GeminiModelBox.SelectedValue is string sv && !string.IsNullOrWhiteSpace(sv))
+                return sv.Trim();
+            if (GeminiModelBox.SelectedItem is string str && !string.IsNullOrWhiteSpace(str))
+                return str.Trim();
+            return GeminiModelBox.Text?.Trim() ?? string.Empty;
         }
 
         private void GeminiApiKeyBox_GotFocus(object sender, RoutedEventArgs e)
@@ -290,6 +366,10 @@ namespace ACPAMS.Views.Faculty
             {
                 GeminiApiKeyBox.Password = MASKED_KEY_PLACEHOLDER;
             }
+            else if (!string.IsNullOrWhiteSpace(GeminiApiKeyBox.Password) && GeminiApiKeyBox.Password != MASKED_KEY_PLACEHOLDER)
+            {
+                _ = PopulateDiscoveredModelsAsync(GeminiApiKeyBox.Password.Trim());
+            }
         }
 
         private async void TestGemini_Click(object sender, RoutedEventArgs e)
@@ -300,7 +380,7 @@ namespace ACPAMS.Views.Faculty
                 key = AppSettingsService.GetGeminiApiKey();
             }
 
-            string model = GeminiModelBox.Text?.Trim() ?? string.Empty;
+            string model = GetSelectedGeminiModel();
             if (string.IsNullOrWhiteSpace(key))
             {
                 ShowAlert(GeminiAlertBanner, GeminiAlertText, "Please enter an API key to test the connection.", false);
@@ -314,6 +394,9 @@ namespace ACPAMS.Views.Faculty
             {
                 var (success, message) = await AppSettingsService.TestGeminiConnectionAsync(key, model);
                 ShowAlert(GeminiAlertBanner, GeminiAlertText, message, success);
+
+                // Populate and sync available models on test
+                await PopulateDiscoveredModelsAsync(key, model);
             }
             finally
             {
@@ -324,7 +407,7 @@ namespace ACPAMS.Views.Faculty
 
         private async void SaveModel_Click(object sender, RoutedEventArgs e)
         {
-            string model = GeminiModelBox.Text?.Trim() ?? string.Empty;
+            string model = GetSelectedGeminiModel();
             string key = GeminiApiKeyBox.Password.Trim();
 
             if (string.IsNullOrWhiteSpace(model))
