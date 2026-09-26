@@ -246,7 +246,7 @@ namespace ACPAMS.Services
                         ProgrammingLanguage = q.ProgrammingLanguage,
                         StarterCode = q.StarterCode,
                         Points = (decimal)q.Points,
-                        SectionName = sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General",
+                        SectionName = !string.IsNullOrWhiteSpace(section.Name) ? section.Name : (sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General"),
                         OrderIndex = orderIndex++,
                         GradingMethod = rubricData.ContainsKey(q.Id) ? "manual" : "objective",
                         RequiresRubric = rubricData.ContainsKey(q.Id)

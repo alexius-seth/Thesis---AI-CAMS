@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +10,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using ACPAMS.Services;
 using ACPAMS.Models;
+using ACPAMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -16,7 +19,10 @@ namespace ACPAMS.Views.Faculty
 {
     public partial class CreateExamPage : UserControl
     {
-        private List<ExamSection> _sections = new List<ExamSection>();
+        private ObservableCollection<ExamSection> _sections = new ObservableCollection<ExamSection>();
+        public ObservableCollection<ExamSection> Sections => _sections;
+        public ICommand MoveSectionUpCommand { get; }
+        public ICommand MoveSectionDownCommand { get; }
         private ExamSection _selectedSection;
         private string _selectedQuestionType = string.Empty;
         private string _taskCategory = "Examination";
@@ -35,15 +41,41 @@ namespace ACPAMS.Views.Faculty
         private int? _editingTimeLimitMinutes;
         private bool? _editingRandomizeQuestions;
 
-        public class ExamSection
+        public class ExamSection : INotifyPropertyChanged
         {
+            private string _name = string.Empty;
             public string Id { get; set; } = Guid.NewGuid().ToString();
-            public string Name { get; set; }
-            public string Type { get; set; }
-            public string Instructions { get; set; }
+
+            public string Name
+            {
+                get => _name;
+                set
+                {
+                    if (_name != value)
+                    {
+                        _name = value;
+                        OnPropertyChanged(nameof(Name));
+                        OnPropertyChanged(nameof(SectionTitle));
+                    }
+                }
+            }
+
+            public string SectionTitle
+            {
+                get => Name;
+                set => Name = value;
+            }
+
+            public int OrderIndex { get; set; }
+            public string Type { get; set; } = string.Empty;
+            public string Instructions { get; set; } = string.Empty;
             public int QuestionCount => Questions.Count;
             public bool IsActive { get; set; }
             public List<QuestionItem> Questions { get; set; } = new List<QuestionItem>();
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            protected void OnPropertyChanged(string propertyName) =>
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public class TestCaseItem
@@ -111,9 +143,19 @@ namespace ACPAMS.Views.Faculty
         public CreateExamPage(string category)
         {
             _taskCategory = category;
+
+            MoveSectionUpCommand = new RelayCommand(
+                execute: param => { if (param is ExamSection s) MoveSectionUp(s); },
+                canExecute: param => param is ExamSection s && _sections.IndexOf(s) > 0
+            );
+            MoveSectionDownCommand = new RelayCommand(
+                execute: param => { if (param is ExamSection s) MoveSectionDown(s); },
+                canExecute: param => param is ExamSection s && _sections.IndexOf(s) >= 0 && _sections.IndexOf(s) < _sections.Count - 1
+            );
+
             InitializeComponent();
 
-            _sections = new List<ExamSection>();
+            _sections = new ObservableCollection<ExamSection>();
             _selectedSection = null;
             _selectedQuestionType = string.Empty;
 
@@ -122,6 +164,38 @@ namespace ACPAMS.Views.Faculty
             UpdateActiveSectionHeader();
             ResetAllTypeButtons();
             UpdateHeaderWithCategory();
+        }
+
+        public void MoveSectionUp(ExamSection section)
+        {
+            if (section == null) return;
+            int index = _sections.IndexOf(section);
+            if (index > 0)
+            {
+                _sections.Move(index, index - 1);
+                UpdateSectionOrderIndices();
+                UpdateSectionList();
+            }
+        }
+
+        public void MoveSectionDown(ExamSection section)
+        {
+            if (section == null) return;
+            int index = _sections.IndexOf(section);
+            if (index >= 0 && index < _sections.Count - 1)
+            {
+                _sections.Move(index, index + 1);
+                UpdateSectionOrderIndices();
+                UpdateSectionList();
+            }
+        }
+
+        private void UpdateSectionOrderIndices()
+        {
+            for (int i = 0; i < _sections.Count; i++)
+            {
+                _sections[i].OrderIndex = i + 1;
+            }
         }
 
         // Constructor for editing existing exam
@@ -162,6 +236,7 @@ namespace ACPAMS.Views.Faculty
 
                 var grouped = exam.Questions
                     .GroupBy(q => string.IsNullOrWhiteSpace(q.SectionName) ? "General" : q.SectionName)
+                    .OrderBy(g => g.Min(q => q.OrderIndex ?? 0))
                     .ToList();
 
                 foreach (var g in grouped)
@@ -305,6 +380,7 @@ namespace ACPAMS.Views.Faculty
             var headerText = FindName("ActiveSectionHeader") as TextBlock;
             var totalDisplay = FindName("TotalQuestionsDisplay") as TextBlock;
             var typeDisplay = FindName("ActiveTypeDisplay") as TextBlock;
+            var renameBtn = FindName("RenameActiveSectionBtn") as Button;
 
             if (_selectedSection != null)
             {
@@ -314,6 +390,8 @@ namespace ACPAMS.Views.Faculty
                     totalDisplay.Text = $"Total: {_selectedSection.Questions.Sum(q => q.Points)} pts";
                 if (typeDisplay != null)
                     typeDisplay.Text = _selectedSection.Type;
+                if (renameBtn != null)
+                    renameBtn.Visibility = Visibility.Visible;
             }
             else
             {
@@ -323,7 +401,86 @@ namespace ACPAMS.Views.Faculty
                     totalDisplay.Text = "Total: 0 pts";
                 if (typeDisplay != null)
                     typeDisplay.Text = "—";
+                if (renameBtn != null)
+                    renameBtn.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void ActiveSectionHeader_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2 && _selectedSection != null)
+            {
+                StartRenameActiveSection();
+            }
+        }
+
+        private void RenameActiveSectionBtn_Click(object sender, RoutedEventArgs e)
+        {
+            StartRenameActiveSection();
+        }
+
+        private void StartRenameActiveSection()
+        {
+            if (_selectedSection == null) return;
+            var headerText = FindName("ActiveSectionHeader") as TextBlock;
+            var editBox = FindName("ActiveSectionHeaderEdit") as TextBox;
+            var editBorder = FindName("ActiveSectionHeaderEditBorder") as Border;
+            var renameBtn = FindName("RenameActiveSectionBtn") as Button;
+
+            if (editBox != null && headerText != null && editBorder != null)
+            {
+                editBox.Text = _selectedSection.Name;
+                headerText.Visibility = Visibility.Collapsed;
+                if (renameBtn != null) renameBtn.Visibility = Visibility.Collapsed;
+                editBorder.Visibility = Visibility.Visible;
+                editBox.Focus();
+                editBox.SelectAll();
+            }
+        }
+
+        private void CommitRenameActiveSection()
+        {
+            var headerText = FindName("ActiveSectionHeader") as TextBlock;
+            var editBox = FindName("ActiveSectionHeaderEdit") as TextBox;
+            var editBorder = FindName("ActiveSectionHeaderEditBorder") as Border;
+            var renameBtn = FindName("RenameActiveSectionBtn") as Button;
+
+            if (editBorder != null && editBorder.Visibility == Visibility.Visible)
+            {
+                if (_selectedSection != null && editBox != null && !string.IsNullOrWhiteSpace(editBox.Text))
+                {
+                    _selectedSection.Name = editBox.Text.Trim();
+                }
+                editBorder.Visibility = Visibility.Collapsed;
+                if (headerText != null) headerText.Visibility = Visibility.Visible;
+                if (renameBtn != null && _selectedSection != null) renameBtn.Visibility = Visibility.Visible;
+                UpdateActiveSectionHeader();
+                UpdateSectionList();
+            }
+        }
+
+        private void ActiveSectionHeaderEdit_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                CommitRenameActiveSection();
+            }
+            else if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                var headerText = FindName("ActiveSectionHeader") as TextBlock;
+                var editBorder = FindName("ActiveSectionHeaderEditBorder") as Border;
+                var renameBtn = FindName("RenameActiveSectionBtn") as Button;
+                if (editBorder != null) editBorder.Visibility = Visibility.Collapsed;
+                if (headerText != null) headerText.Visibility = Visibility.Visible;
+                if (renameBtn != null && _selectedSection != null) renameBtn.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void ActiveSectionHeaderEdit_LostFocus(object sender, RoutedEventArgs e)
+        {
+            CommitRenameActiveSection();
         }
 
         private string GetProperTypeName(string type)
@@ -441,7 +598,7 @@ namespace ACPAMS.Views.Faculty
                             IsTrue = q.IsTrue,
                             ProgrammingLanguage = q.ProgrammingLanguage,
                             StarterCode = q.StarterCode,
-                            SectionId = q.SectionId,
+                            SectionId = string.IsNullOrEmpty(q.SectionId) ? s.Id : q.SectionId,
                             ExpectedAnswers = q.ExpectedAnswers
                         }).ToList()
                     }).ToList();
@@ -619,8 +776,11 @@ namespace ACPAMS.Views.Faculty
 
             container.Children.Clear();
 
-            foreach (var section in _sections)
+            for (int i = 0; i < _sections.Count; i++)
             {
+                var section = _sections[i];
+                section.OrderIndex = i + 1;
+
                 var button = new Button
                 {
                     Style = (Style)FindResource("Btn.SectionItem"),
@@ -653,9 +813,76 @@ namespace ACPAMS.Views.Faculty
                     Text = section.Name,
                     FontSize = 12,
                     FontWeight = FontWeights.SemiBold,
-                    Foreground = (Brush)FindResource("Text.Primary")
+                    Foreground = (Brush)FindResource("Text.Primary"),
+                    ToolTip = "Double-click to rename",
+                    Cursor = Cursors.Hand
                 };
+
+                var renameBox = new TextBox
+                {
+                    Text = section.Name,
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = (Brush)FindResource("Text.Primary"),
+                    Background = Brushes.White,
+                    BorderBrush = (Brush)FindResource("Accent.Primary"),
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(4, 1, 4, 1),
+                    Visibility = Visibility.Collapsed
+                };
+
+                nameText.PreviewMouseLeftButtonDown += (s, e) =>
+                {
+                    if (e.ClickCount == 2)
+                    {
+                        e.Handled = true;
+                        nameText.Visibility = Visibility.Collapsed;
+                        renameBox.Visibility = Visibility.Visible;
+                        renameBox.Text = section.Name;
+                        renameBox.Focus();
+                        renameBox.SelectAll();
+                    }
+                };
+
+                void CommitInlineRename()
+                {
+                    if (renameBox.Visibility == Visibility.Visible)
+                    {
+                        string newName = renameBox.Text.Trim();
+                        if (!string.IsNullOrWhiteSpace(newName))
+                        {
+                            section.Name = newName;
+                        }
+                        nameText.Text = section.Name;
+                        renameBox.Visibility = Visibility.Collapsed;
+                        nameText.Visibility = Visibility.Visible;
+                        UpdateActiveSectionHeader();
+                    }
+                }
+
+                renameBox.PreviewMouseLeftButtonDown += (s, e) => e.Handled = false;
+                renameBox.PreviewMouseLeftButtonUp += (s, e) => e.Handled = true;
+
+                renameBox.KeyDown += (s, e) =>
+                {
+                    if (e.Key == Key.Enter)
+                    {
+                        e.Handled = true;
+                        CommitInlineRename();
+                    }
+                    else if (e.Key == Key.Escape)
+                    {
+                        e.Handled = true;
+                        renameBox.Text = section.Name;
+                        renameBox.Visibility = Visibility.Collapsed;
+                        nameText.Visibility = Visibility.Visible;
+                    }
+                };
+
+                renameBox.LostFocus += (s, e) => CommitInlineRename();
+
                 infoStack.Children.Add(nameText);
+                infoStack.Children.Add(renameBox);
 
                 var typeText = new TextBlock
                 {
@@ -673,6 +900,96 @@ namespace ACPAMS.Views.Faculty
                     VerticalAlignment = VerticalAlignment.Center
                 };
                 Grid.SetColumn(rightStack, 2);
+
+                // Move Up Button
+                var moveUpBtn = new Button
+                {
+                    Background = Brushes.Transparent,
+                    BorderThickness = new System.Windows.Thickness(0),
+                    Padding = new System.Windows.Thickness(3, 2, 3, 2),
+                    Cursor = Cursors.Hand,
+                    ToolTip = "Move section up",
+                    Tag = section,
+                    Opacity = 0.5,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Visibility = i > 0 ? Visibility.Visible : Visibility.Collapsed,
+                    Content = new TextBlock
+                    {
+                        Text = "\uE74A",
+                        FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("Text.Muted")
+                    }
+                };
+                moveUpBtn.MouseEnter += (s, e) => { moveUpBtn.Opacity = 1.0; };
+                moveUpBtn.MouseLeave += (s, e) => { moveUpBtn.Opacity = 0.5; };
+                moveUpBtn.Click += (s, e) =>
+                {
+                    e.Handled = true;
+                    MoveSectionUp(section);
+                };
+                rightStack.Children.Add(moveUpBtn);
+
+                // Move Down Button
+                var moveDownBtn = new Button
+                {
+                    Background = Brushes.Transparent,
+                    BorderThickness = new System.Windows.Thickness(0),
+                    Padding = new System.Windows.Thickness(3, 2, 3, 2),
+                    Cursor = Cursors.Hand,
+                    ToolTip = "Move section down",
+                    Tag = section,
+                    Opacity = 0.5,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Visibility = i < _sections.Count - 1 ? Visibility.Visible : Visibility.Collapsed,
+                    Content = new TextBlock
+                    {
+                        Text = "\uE74B",
+                        FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("Text.Muted")
+                    }
+                };
+                moveDownBtn.MouseEnter += (s, e) => { moveDownBtn.Opacity = 1.0; };
+                moveDownBtn.MouseLeave += (s, e) => { moveDownBtn.Opacity = 0.5; };
+                moveDownBtn.Click += (s, e) =>
+                {
+                    e.Handled = true;
+                    MoveSectionDown(section);
+                };
+                rightStack.Children.Add(moveDownBtn);
+
+                // Rename Button
+                var renameBtn = new Button
+                {
+                    Background = Brushes.Transparent,
+                    BorderThickness = new System.Windows.Thickness(0),
+                    Padding = new System.Windows.Thickness(3, 2, 3, 2),
+                    Cursor = Cursors.Hand,
+                    ToolTip = $"Rename {section.Name}",
+                    Tag = section,
+                    Opacity = 0.5,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Content = new TextBlock
+                    {
+                        Text = "\uE70F",
+                        FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("Text.Muted")
+                    }
+                };
+                renameBtn.MouseEnter += (s, e) => { renameBtn.Opacity = 1.0; };
+                renameBtn.MouseLeave += (s, e) => { renameBtn.Opacity = 0.5; };
+                renameBtn.Click += (s, e) =>
+                {
+                    e.Handled = true;
+                    nameText.Visibility = Visibility.Collapsed;
+                    renameBox.Visibility = Visibility.Visible;
+                    renameBox.Text = section.Name;
+                    renameBox.Focus();
+                    renameBox.SelectAll();
+                };
+                rightStack.Children.Add(renameBtn);
 
                 var badge = new Border
                 {

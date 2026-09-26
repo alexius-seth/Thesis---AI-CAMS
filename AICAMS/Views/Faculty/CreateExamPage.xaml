@@ -575,25 +575,14 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <StackPanel Margin="0,0,0,16">
+                <Border Margin="18,16,18,6">
                     <TextBlock x:Name="CreateExamManagerLabel"
-                               Style="{StaticResource T.SectionLabel}" Margin="0,0,0,10"/>
-                    <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Height="36">
-                        <TextBox x:Name="ExamNameBox"
-                 Background="Transparent"
-                 BorderThickness="0"
-                 Foreground="#1A202C"
-                 Padding="12,8"
-                 FontSize="13"
-                 FontWeight="SemiBold"
-                 VerticalContentAlignment="Center"
-                 AcceptsReturn="False"/>
-                    </Border>
-                </StackPanel>
+                               Style="{StaticResource T.SectionLabel}"/>
+                </Border>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <Border Margin="18,14,18,6">
+                        <Border Margin="18,8,18,6">
                             <TextBlock Text="SECTIONS" Style="{StaticResource T.SectionLabel}"/>
                         </Border>
 
@@ -757,10 +746,46 @@
                                            Foreground="{StaticResource Accent.Primary}"/>
                             </Border>
                         </StackPanel>
-                        <TextBlock x:Name="ActiveSectionHeader"
-                                   Text="No section selected"
-                                   FontSize="18" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Text.Primary}"/>
+                        <Grid Margin="0,2,0,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="ActiveSectionHeader"
+                                           Text="No section selected"
+                                           FontSize="18" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Text.Primary}"
+                                           ToolTip="Double-click to rename"
+                                           Cursor="Hand"
+                                           MouseDown="ActiveSectionHeader_MouseDown"/>
+                                <Button x:Name="RenameActiveSectionBtn"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="6,2"
+                                        Margin="6,0,0,0"
+                                        Cursor="Hand"
+                                        ToolTip="Rename section"
+                                        Click="RenameActiveSectionBtn_Click"
+                                        Visibility="Collapsed">
+                                    <TextBlock Text="&#xE70F;"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="12"
+                                               Foreground="{StaticResource Text.Muted}"/>
+                                </Button>
+                            </StackPanel>
+                            <Border x:Name="ActiveSectionHeaderEditBorder"
+                                    Background="White"
+                                    BorderBrush="{StaticResource Accent.Primary}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Visibility="Collapsed">
+                                <TextBox x:Name="ActiveSectionHeaderEdit"
+                                         FontSize="16" FontWeight="SemiBold"
+                                         Foreground="{StaticResource Text.Primary}"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Padding="6,3"
+                                         KeyDown="ActiveSectionHeaderEdit_KeyDown"
+                                         LostFocus="ActiveSectionHeaderEdit_LostFocus"/>
+                            </Border>
+                        </Grid>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <Border Background="{StaticResource Accent.PrimaryBg}"
