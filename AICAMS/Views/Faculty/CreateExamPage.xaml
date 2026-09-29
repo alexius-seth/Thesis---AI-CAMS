@@ -1,4 +1,5 @@
 <UserControl x:Class="ACPAMS.Views.Faculty.CreateExamPage"
+        x:Name="RootPage"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:ACPAMS.Views.Faculty.Controls"
@@ -6,6 +7,7 @@
         FontFamily="Segoe UI">
 
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
         <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
         <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
         <SolidColorBrush x:Key="Bg.Canvas"        Color="#F8FAFC"/>
@@ -603,7 +605,7 @@
                        VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
-                                <Button x:Name="ImportTxtBtn" Click="ImportFromTxt_Click" Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left" Margin="0,6,0,0">
+                                <Button x:Name="ImportTxtBtn" Command="{Binding ImportFileCommand, ElementName=RootPage}" Click="ImportFromTxt_Click" Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left" Margin="0,6,0,0">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                        Foreground="{StaticResource Accent.Primary}"
@@ -907,6 +909,51 @@
                             </Button.Template>
                         </Button>
                     </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- MODAL OVERLAY: FILE IMPORT PROGRESS -->
+        <Grid x:Name="ImportProgressOverlay"
+              Grid.Column="0" Grid.ColumnSpan="4"
+              Background="#80000000"
+              Visibility="{Binding IsImporting, ElementName=RootPage, Converter={StaticResource BoolToVisConverter}}"
+              Panel.ZIndex="200"
+              IsHitTestVisible="True"
+              PreviewMouseDown="ImportProgressOverlay_PreviewMouseDown">
+            <Border Background="{StaticResource Bg.Surface}"
+                    BorderBrush="{StaticResource Border.Medium}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="32,28"
+                    Width="400"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.25"/>
+                </Border.Effect>
+                <StackPanel HorizontalAlignment="Center">
+                    <Border Width="48" Height="48" CornerRadius="24"
+                            Background="{StaticResource Accent.PrimaryBg}"
+                            HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="20" Foreground="{StaticResource Accent.Primary}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Importing Data..."
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource Text.Primary}"
+                               HorizontalAlignment="Center" Margin="0,0,0,14"/>
+                    <ProgressBar IsIndeterminate="True"
+                                 Height="6" Width="300"
+                                 BorderThickness="0"
+                                 Background="{StaticResource Border.Subtle}"
+                                 Foreground="{StaticResource Accent.Primary}"
+                                 Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding ImportStatusMessage, ElementName=RootPage}"
+                               FontSize="13" Foreground="{StaticResource Text.Secondary}"
+                               HorizontalAlignment="Center" TextAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="320"/>
                 </StackPanel>
             </Border>
         </Grid>

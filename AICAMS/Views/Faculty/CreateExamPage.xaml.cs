@@ -17,8 +17,42 @@ using System.Threading.Tasks;
 
 namespace ACPAMS.Views.Faculty
 {
-    public partial class CreateExamPage : UserControl
+    public partial class CreateExamPage : UserControl, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        private bool _isImporting;
+        public bool IsImporting
+        {
+            get => _isImporting;
+            set
+            {
+                if (_isImporting != value)
+                {
+                    _isImporting = value;
+                    OnPropertyChanged();
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+
+        private string _importStatusMessage = "Preparing...";
+        public string ImportStatusMessage
+        {
+            get => _importStatusMessage;
+            set
+            {
+                if (_importStatusMessage != value)
+                {
+                    _importStatusMessage = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ICommand ImportFileCommand { get; }
         private ObservableCollection<ExamSection> _sections = new ObservableCollection<ExamSection>();
         public ObservableCollection<ExamSection> Sections => _sections;
         public ICommand MoveSectionUpCommand { get; }
@@ -151,6 +185,10 @@ namespace ACPAMS.Views.Faculty
             MoveSectionDownCommand = new RelayCommand(
                 execute: param => { if (param is ExamSection s) MoveSectionDown(s); },
                 canExecute: param => param is ExamSection s && _sections.IndexOf(s) >= 0 && _sections.IndexOf(s) < _sections.Count - 1
+            );
+            ImportFileCommand = new RelayCommand(
+                execute: async param => await ExecuteImportFileAsync(param as string),
+                canExecute: _ => !IsImporting
             );
 
             InitializeComponent();
@@ -2237,90 +2275,136 @@ namespace ACPAMS.Views.Faculty
         // questions — nothing is saved to the database and nothing is
         // published. The imported draft just appears on this page for
         // the instructor to review, edit, and Publish when ready.
+        private void ImportProgressOverlay_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        // ─── Import exam questions from a .txt file ──────────────────
+        // Populates _sections asynchronously with real-time modal progress feedback.
         private async void ImportFromTxt_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            await ExecuteImportFileAsync();
+        }
+
+        public async Task ExecuteImportFileAsync(string? filePath = null)
+        {
+            if (IsImporting) return;
+
+            if (string.IsNullOrEmpty(filePath))
             {
-                Filter = "Text files (*.txt)|*.txt",
-                Title = "Import Exam Questions from Text File"
-            };
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Text files (*.txt)|*.txt",
+                    Title = "Import Exam Questions from Text File"
+                };
 
-            if (dialog.ShowDialog() != true) return;
+                if (dialog.ShowDialog() != true) return;
+                filePath = dialog.FileName;
+            }
 
-            var importBtn = sender as Button;
-            if (importBtn != null) importBtn.IsEnabled = false;
+            IsImporting = true;
+            ImportStatusMessage = "Validating file...";
+
+            var progress = new Progress<string>(msg => ImportStatusMessage = msg);
 
             try
             {
-                ToastNotification.Show("Reading file with AI...", Application.Current.MainWindow, 3, false);
-
-                var rawText = await System.IO.File.ReadAllTextAsync(dialog.FileName);
-                List<ExamSection> importedSections;
-
-                try
-                {
-                    var aiSections = await new GeminiExamImportService().ParseExamTextAsync(rawText);
-                    importedSections = aiSections.SelectMany(ConvertImportedSection).ToList();
-                }
-                catch (Exception aiEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[ExamImport] AI import failed: {aiEx}");
-                    Console.WriteLine($"[ExamImport] AI import failed: {aiEx}");
-
-                    MessageBox.Show(
-                        $"AI Import Failed:\n\n{aiEx.Message}\n\nPlease check your AI Settings or wait a few moments before trying again.",
-                        "AI Import Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (importedSections.Count == 0)
-                {
-                    ToastNotification.Show("No valid sections or questions were found in that file.",
-                        Application.Current.MainWindow, 4, true);
-                    return;
-                }
-
-                // Clear existing sections before populating imported sections
-                _sections.Clear();
-                _rubricData.Clear();
-
-                foreach (var section in importedSections)
-                {
-                    foreach (var q in section.Questions)
-                        q.SectionId = section.Id;
-
-                    _sections.Add(section);
-                }
-
-                foreach (var s in _sections)
-                    s.IsActive = false;
-
-                var firstImported = _sections.First();
-                firstImported.IsActive = true;
-                _selectedSection = firstImported;
-
-                SelectTypeButton(firstImported.Type);
-
-                UpdateSectionList();
-                UpdateQuestionsDisplay();
-                UpdateActiveSectionHeader();
-
-                int totalQuestions = importedSections.Sum(s => s.Questions.Count);
-                ToastNotification.Show(
-                    $"Successfully imported {importedSections.Count} section(s) and {totalQuestions} question(s) via Gemini.",
-                    Application.Current.MainWindow);
+                await ImportFileInternalAsync(filePath, progress);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to import file:\n\n{ex.Message}", "Import Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"[ExamImport] Import failed: {ex}");
+                MessageBox.Show(
+                    $"Failed to import file:\n\n{ex.Message}\n\nPlease check your file or AI settings and try again.",
+                    "Import Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
             finally
             {
-                if (importBtn != null) importBtn.IsEnabled = true;
+                IsImporting = false;
             }
+        }
+
+        private async Task ImportFileInternalAsync(string filePath, IProgress<string> progress)
+        {
+            // Phase 1: Validate file
+            progress.Report("Validating file...");
+            await Task.Run(() =>
+            {
+                if (!System.IO.File.Exists(filePath))
+                    throw new System.IO.FileNotFoundException("The specified file does not exist.", filePath);
+
+                var fileInfo = new System.IO.FileInfo(filePath);
+                if (fileInfo.Length == 0)
+                    throw new InvalidOperationException("The selected file is empty.");
+            });
+
+            // Phase 2: Read text content
+            progress.Report("Reading text content...");
+            string rawText = await Task.Run(() => System.IO.File.ReadAllText(filePath));
+            if (string.IsNullOrWhiteSpace(rawText))
+                throw new InvalidOperationException("The selected file contains no readable text.");
+
+            // Phase 3: Parsing records
+            progress.Report("Parsing records with AI...");
+            List<ExamSection> importedSections;
+            try
+            {
+                var geminiService = new GeminiExamImportService();
+                var aiSections = await Task.Run(async () => await geminiService.ParseExamTextAsync(rawText));
+
+                // Phase 4: Process exam structure
+                progress.Report("Processing exam structure...");
+                importedSections = await Task.Run(() => aiSections.SelectMany(ConvertImportedSection).ToList());
+            }
+            catch (Exception aiEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ExamImport] AI import failed: {aiEx.Message}. Attempting local parser fallback...");
+                progress.Report("AI unavailable, falling back to local parser...");
+                importedSections = await Task.Run(() => ParseExamTxtFile(filePath));
+                if (importedSections == null || importedSections.Count == 0)
+                    throw new InvalidOperationException($"AI Import failed ({aiEx.Message}) and local parser found no valid sections.", aiEx);
+            }
+
+            if (importedSections.Count == 0)
+                throw new InvalidOperationException("No valid sections or questions were found in that file.");
+
+            // Phase 5: Applying to draft
+            progress.Report("Applying sections to exam draft...");
+            _sections.Clear();
+            _rubricData.Clear();
+
+            for (int i = 0; i < importedSections.Count; i++)
+            {
+                var section = importedSections[i];
+                section.OrderIndex = i + 1;
+                foreach (var q in section.Questions)
+                    q.SectionId = section.Id;
+
+                _sections.Add(section);
+            }
+
+            foreach (var s in _sections)
+                s.IsActive = false;
+
+            var firstImported = _sections.First();
+            firstImported.IsActive = true;
+            _selectedSection = firstImported;
+
+            SelectTypeButton(firstImported.Type);
+
+            UpdateSectionList();
+            UpdateQuestionsDisplay();
+            UpdateActiveSectionHeader();
+
+            progress.Report("Completed");
+
+            int totalQuestions = importedSections.Sum(s => s.Questions.Count);
+            ToastNotification.Show(
+                $"Successfully imported {importedSections.Count} section(s) and {totalQuestions} question(s).",
+                Application.Current.MainWindow);
         }
 
         private string DetermineQuestionType(ImportedQuestionDto q, string? sectionType)
