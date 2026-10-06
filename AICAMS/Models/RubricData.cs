@@ -7,6 +7,7 @@ namespace ACPAMS.Models
         public string Description { get; set; } = string.Empty;
         public string AiInstructions { get; set; } = string.Empty;
         public int TotalWeight { get; set; }
+        public string Scope { get; set; } = "Question";
         public List<RubricCriteriaData> Criteria { get; set; } = new();
 
         /// <summary>Full path to the rubric reference PDF attached in AIRubricModal,

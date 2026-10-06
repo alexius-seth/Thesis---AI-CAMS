@@ -634,6 +634,8 @@ namespace ACPAMS.Services
                 result.Add(new ActiveStudentDto
                 {
                     AttemptId = attempt.AttemptId,
+                    StudentUserId = attempt.Student?.UserId ?? Guid.Empty,
+                    ExamId = attempt.ExamId ?? Guid.Empty,
                     StudentName = attempt.Student != null
                         ? $"{attempt.Student.FirstName} {attempt.Student.LastName}"
                         : "Unknown Student",
@@ -698,6 +700,47 @@ namespace ACPAMS.Services
             return log;
         }
 
+        // ─── Issue Kiosk Warning ─────────────────────────────────────────
+        public async Task<AppNotification> IssueKioskWarningAsync(Guid studentUserId, Guid examId, string message)
+        {
+            using var context = new AppDbContext();
+
+            var notification = new AppNotification
+            {
+                NotificationId = Guid.NewGuid(),
+                RecipientUserId = studentUserId,
+                Category = "KioskWarning",
+                Severity = "Warning",
+                Title = "PROCTOR WARNING",
+                Message = message,
+                CreatedAt = DateTime.UtcNow,
+                IsRead = false,
+                TargetRoute = "KioskExam",
+                TargetEntityId = examId.ToString()
+            };
+
+            context.Notifications.Add(notification);
+            await context.SaveChangesAsync();
+
+            return notification;
+        }
+
+        public async Task<AppNotification?> IssueKioskWarningForAttemptAsync(Guid attemptId, string message)
+        {
+            using var context = new AppDbContext();
+            var attempt = await context.StudentExamAttempts
+                .Include(a => a.Student)
+                .FirstOrDefaultAsync(a => a.AttemptId == attemptId);
+
+            if (attempt?.Student == null || !attempt.ExamId.HasValue)
+                return null;
+
+            // Log warning into audit history as well
+            await IssueWarningAsync(attemptId, "kiosk_warning", message, SessionManager.CurrentUser?.UserId);
+
+            return await IssueKioskWarningAsync(attempt.Student.UserId, attempt.ExamId.Value, message);
+        }
+
         // ─── Get Statistics ────────────────────────────────────────────
         public async Task<MonitoringStatsDto> GetStatisticsAsync(Guid? examId = null)
         {
@@ -755,6 +798,8 @@ namespace ACPAMS.Services
         public class ActiveStudentDto
         {
             public Guid AttemptId { get; set; }
+            public Guid StudentUserId { get; set; }
+            public Guid ExamId { get; set; }
             public string StudentName { get; set; } = string.Empty;
             public string StudentInitials { get; set; } = string.Empty;
             public string DeviceName { get; set; } = string.Empty;

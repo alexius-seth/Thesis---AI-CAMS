@@ -1,8 +1,12 @@
+using ACPAMS.Data;
 using ACPAMS.Models;
 using ACPAMS.Services;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -20,6 +24,11 @@ namespace ACPAMS.Views.Student
         private DispatcherTimer _timer = new();
         private int _remainingSeconds = 0;
         private readonly HashSet<int> _answeredIndices = new();
+
+        // ── Kiosk Proctor Warning Polling ─────────────────────────────────
+        private DispatcherTimer? _warningPollTimer;
+        private bool _isPollingWarnings = false;
+        private DateTime _sessionStartTime = DateTime.UtcNow;
 
         // ── Monitoring ───────────────────────────────────────────────────
         private MonitoringService? _monitoring;
@@ -65,6 +74,7 @@ namespace ACPAMS.Views.Student
             SetupKeyboardHook();
             SetupClipboardInterception();
             SetupWindowFocusMonitoring();
+            StartWarningPolling();
         }
 
         private void OnPageUnloaded(object sender, RoutedEventArgs e)
@@ -181,6 +191,8 @@ namespace ACPAMS.Views.Student
 
         private void StopMonitoring()
         {
+            StopWarningPolling();
+
             if (_monitoring != null)
             {
                 _monitoring.Stop();
@@ -193,6 +205,99 @@ namespace ACPAMS.Views.Student
                 NativeMethods.UnhookWindowsHookEx(_keyboardHookHandle);
                 _keyboardHookHandle = nint.Zero;
             }
+        }
+
+        // ── KIOSK PROCTOR WARNINGS ────────────────────────────────────────
+        private void StartWarningPolling()
+        {
+            _sessionStartTime = DateTime.UtcNow.AddMinutes(-2);
+            _warningPollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
+            _warningPollTimer.Tick += async (s, e) => await PollKioskWarningsAsync();
+            _warningPollTimer.Start();
+        }
+
+        private void StopWarningPolling()
+        {
+            if (_warningPollTimer != null)
+            {
+                _warningPollTimer.Stop();
+                _warningPollTimer = null;
+            }
+        }
+
+        private async Task PollKioskWarningsAsync()
+        {
+            if (_isPollingWarnings) return;
+            _isPollingWarnings = true;
+
+            try
+            {
+                var currentUserId = SessionManager.CurrentUser?.UserId;
+                if (!currentUserId.HasValue) return;
+
+                var examIdStr = SessionManager.CurrentExam?.ExamId.ToString();
+
+                var unreadWarnings = await Task.Run(async () =>
+                {
+                    using var context = new AppDbContext();
+                    var query = context.Notifications
+                        .Where(n => n.RecipientUserId == currentUserId.Value
+                                    && n.Category == "KioskWarning"
+                                    && !n.IsRead
+                                    && n.CreatedAt >= _sessionStartTime);
+
+                    if (!string.IsNullOrEmpty(examIdStr))
+                    {
+                        query = query.Where(n => n.TargetEntityId == null || n.TargetEntityId == examIdStr);
+                    }
+
+                    var list = await query.OrderBy(n => n.CreatedAt).ToListAsync();
+                    if (list.Count > 0)
+                    {
+                        foreach (var item in list)
+                        {
+                            item.IsRead = true;
+                        }
+                        await context.SaveChangesAsync();
+                    }
+                    return list;
+                });
+
+                if (unreadWarnings.Count > 0)
+                {
+                    var latest = unreadWarnings.Last();
+                    DisplayKioskWarning(latest.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[KioskWarningPoll] Polling error: {ex.Message}");
+            }
+            finally
+            {
+                _isPollingWarnings = false;
+            }
+        }
+
+        private void DisplayKioskWarning(string message)
+        {
+            KioskWarningMessageText.Text = !string.IsNullOrWhiteSpace(message)
+                ? message
+                : "Proctor warning: Return to and focus on your exam immediately.";
+            KioskWarningOverlay.Visibility = Visibility.Visible;
+
+            ShowAlert("PROCTOR WARNING", message);
+
+            try
+            {
+                System.Media.SystemSounds.Exclamation.Play();
+            }
+            catch { }
+        }
+
+        private void AcknowledgeWarning_Click(object sender, RoutedEventArgs e)
+        {
+            KioskWarningOverlay.Visibility = Visibility.Collapsed;
         }
 
         // ── KEYBOARD HOOK (Alt+Tab interception) ─────────────────────────
@@ -421,6 +526,16 @@ namespace ACPAMS.Views.Student
 
                     btn.Click += async (s, e) =>
                     {
+                        if (index == _currentIndex) return;
+                        if (CheckAndPromptPrivacyWarning(async () =>
+                        {
+                            await SaveCurrentAnswer();
+                            LoadQuestion(index);
+                        }))
+                        {
+                            return;
+                        }
+
                         await SaveCurrentAnswer();
                         LoadQuestion(index);
                     };
@@ -558,11 +673,28 @@ namespace ACPAMS.Views.Student
 
         private async void NextBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (CheckAndPromptPrivacyWarning(async () =>
+            {
+                await SaveCurrentAnswer();
+                LoadQuestion(_currentIndex + 1);
+            }))
+            {
+                return;
+            }
+
             await SaveCurrentAnswer();
             LoadQuestion(_currentIndex + 1);
         }
 
         private async void SubmitBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (CheckAndPromptPrivacyWarning(async () => await ProcessSubmitConfirmationAsync()))
+                return;
+
+            await ProcessSubmitConfirmationAsync();
+        }
+
+        private async Task ProcessSubmitConfirmationAsync()
         {
             var result = MessageBox.Show(
                 "Are you sure you want to submit your exam?\n\nThis action cannot be undone.",
@@ -570,6 +702,52 @@ namespace ACPAMS.Views.Student
 
             if (result != MessageBoxResult.Yes) return;
             await SubmitExamAsync();
+        }
+
+        // ── PRE-SUBMISSION PRIVACY CHECK ──────────────────────────────────
+        private Func<Task>? _pendingPrivacyAction;
+
+        private string? GetCurrentAnswerText()
+        {
+            if (ExamCanvasHost.Content is not UserControl canvas) return null;
+
+            if (canvas is Canvas.TextInputCanvas tc)
+                return tc.GetAnswer();
+            if (canvas is Canvas.EnumerationCanvas ec)
+                return ec.GetAnswer();
+            if (canvas is Canvas.CodingCanvas cc)
+                return cc.GetSourceCode();
+
+            return null;
+        }
+
+        private bool CheckAndPromptPrivacyWarning(Func<Task> onProceedAction)
+        {
+            string? currentAnswer = GetCurrentAnswerText();
+            if (TextSanitizer.ContainsPii(currentAnswer))
+            {
+                _pendingPrivacyAction = onProceedAction;
+                PrivacyWarningOverlay.Visibility = Visibility.Visible;
+                return true;
+            }
+            return false;
+        }
+
+        private void PrivacyReviewBtn_Click(object sender, RoutedEventArgs e)
+        {
+            PrivacyWarningOverlay.Visibility = Visibility.Collapsed;
+            _pendingPrivacyAction = null;
+        }
+
+        private async void PrivacyProceedBtn_Click(object sender, RoutedEventArgs e)
+        {
+            PrivacyWarningOverlay.Visibility = Visibility.Collapsed;
+            var action = _pendingPrivacyAction;
+            _pendingPrivacyAction = null;
+            if (action != null)
+            {
+                await action();
+            }
         }
 
         private void AlertDismiss_Click(object sender, RoutedEventArgs e)

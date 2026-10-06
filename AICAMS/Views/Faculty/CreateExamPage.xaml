@@ -22,10 +22,13 @@
         <SolidColorBrush x:Key="AI.Text"          Color="#5B21B6"/>
         <SolidColorBrush x:Key="AI.Bg"            Color="#F5F3FF"/>
         <SolidColorBrush x:Key="AI.Border"        Color="#7C3AED"/>
+        <SolidColorBrush x:Key="AI.HeaderBg"      Color="#EDE9FE"/>
         <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
         <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
         <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
         <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Status.Danger"    Color="#DC2626"/>
+        <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEE2E2"/>
         <SolidColorBrush x:Key="QType.Identification" Color="#64748B"/>
         <SolidColorBrush x:Key="QType.MultipleChoice" Color="#1976D2"/>
         <SolidColorBrush x:Key="QType.TrueOrFalse"    Color="#0F766E"/>

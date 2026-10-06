@@ -182,6 +182,14 @@ namespace ACPAMS.Services
                   "that criterion's justification."
                 : "";
 
+            string referenceAnswerBlock = !string.IsNullOrWhiteSpace(request.ReferenceAnswer)
+                ? $$"""
+
+                    REFERENCE / EXPECTED ANSWER (Use as authoritative answer key / baseline for evaluating accuracy and coverage):
+                    {{request.ReferenceAnswer}}
+                    """
+                : "";
+
             string instructorInstructionsBlock = !string.IsNullOrWhiteSpace(request.InstructorInstructions)
                 ? $$"""
 
@@ -191,6 +199,8 @@ namespace ACPAMS.Services
                     """
                 : "";
 
+            string sanitizedAnswer = TextSanitizer.SanitizeStudentInput(request.StudentAnswerText);
+
             return $$"""
                 You are grading ONE student's submission for a single exam question, using ONLY the rubric matrix below
                 plus the instructor's grading instructions. Do not invent criteria, tiers, or scoring rules that are not
@@ -199,6 +209,7 @@ namespace ACPAMS.Services
 
                 QUESTION:
                 {{request.QuestionText}}
+                {{referenceAnswerBlock}}
 
                 RUBRIC MATRIX (JSON):
                 {{rubricJson}}
@@ -206,7 +217,7 @@ namespace ACPAMS.Services
                 {{attachmentInstruction}}
 
                 {{submissionLabel}}
-                {{request.StudentAnswerText}}
+                {{sanitizedAnswer}}
 
                 INSTRUCTIONS:
                 1. Follow the instructor's grading instructions above (if any) as the guiding intent behind how strictly
@@ -281,6 +292,7 @@ namespace ACPAMS.Services
         public string StudentAnswerText { get; set; } = string.Empty;
         public bool IsCode { get; set; }
         public string? ProgrammingLanguage { get; set; }
+        public string? ReferenceAnswer { get; set; }
         public List<RubricCriterionDto> Criteria { get; set; } = new();
 
         /// <summary>The faculty's free-text "Grading Instructions / AI Prompt" field

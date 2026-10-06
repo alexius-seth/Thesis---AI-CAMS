@@ -46,12 +46,21 @@ namespace ACPAMS.Data
         public DbSet<AppNotification> Notifications { get; set; }
 
         // ── Connection ──────────────────────────────────────
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            string connStr = App.Configuration?.GetConnectionString("DefaultConnection")
-                ?? "Server=(localdb)\\mssqllocaldb;Database=aicams;Trusted_Connection=True;TrustServerCertificate=True;";
+            if (!optionsBuilder.IsConfigured)
+            {
+                string? connectionString = App.Configuration?.GetConnectionString("DefaultConnection");
 
-            options.UseSqlServer(connStr);
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    optionsBuilder.UseSqlServer(connectionString);
+                }
+                else
+                {
+                    optionsBuilder.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=aicamsdb;Trusted_Connection=True;TrustServerCertificate=True;");
+                }
+            }
         }
 
         // ── Model Configuration ─────────────────────────────

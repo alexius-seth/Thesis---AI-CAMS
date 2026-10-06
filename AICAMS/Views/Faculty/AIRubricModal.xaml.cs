@@ -23,6 +23,7 @@ namespace ACPAMS.Views.Faculty
         public ObservableCollection<TierColumn> TierColumns { get; set; }
         public string FilePath { get; set; }
 
+        public string RubricTitle { get; set; } = "AI Rubric Configuration";
         public string QuestionTitle { get; set; } = "Test II — Coding (Java)";
         public string SectionName { get; set; } = "Test II";
         public string QuestionId { get; set; } = string.Empty;
@@ -73,16 +74,27 @@ namespace ACPAMS.Views.Faculty
 
             BuildMatrix();
 
-            this.Loaded += (s, e) => ResetScopeButtons();
+            this.Loaded += (s, e) =>
+            {
+                if (string.IsNullOrEmpty(RubricScope))
+                {
+                    ResetScopeButtons();
+                }
+            };
         }
 
         public RubricData GetRubricData()
         {
+            int totalWeight = TierColumns.Sum(t => t.Points) * Math.Max(1, Rows.Count);
+            if (totalWeight <= 0) totalWeight = 100;
+
             var result = new RubricData
             {
-                Description = "AI Rubric Configuration",
+                Description = string.IsNullOrWhiteSpace(RubricTitle) ? "AI Rubric Configuration" : RubricTitle,
                 AiInstructions = AIInstructions,
-                TotalWeight = 100,
+                TotalWeight = totalWeight,
+                Scope = string.IsNullOrWhiteSpace(RubricScope) ? "Question" : RubricScope,
+                AttachmentFilePath = FilePath,
                 Criteria = new List<RubricCriteriaData>()
             };
 
@@ -92,26 +104,22 @@ namespace ACPAMS.Views.Faculty
                 {
                     Name = row.Criteria,
                     Description = row.Criteria,
-                    MaxScore = TierColumns.Sum(t => t.Points),
-                    WeightPercentage = 100m / Rows.Count,
+                    MaxScore = TierColumns.Count > 0 ? TierColumns.Max(t => t.Points) : 0,
+                    WeightPercentage = Rows.Count > 0 ? (100m / Rows.Count) : 0,
                     Levels = new List<RubricLevelData>()
                 };
 
                 foreach (var tier in TierColumns)
                 {
-                    string levelValue = tier.Name switch
-                    {
-                        "Excellent" => row.Excellent,
-                        "Good" => row.Good,
-                        "Poor" => row.Poor,
-                        _ => string.Empty
-                    };
+                    string levelValue = GetCellValue(row, tier.Name);
 
                     criteria.Levels.Add(new RubricLevelData
                     {
                         Name = tier.Name,
+                        Points = tier.Points,
                         ScorePercentage = tier.Points,
-                        Descriptor = levelValue
+                        Descriptor = levelValue,
+                        Description = levelValue
                     });
                 }
 
@@ -119,6 +127,108 @@ namespace ACPAMS.Views.Faculty
             }
 
             return result;
+        }
+
+        public void LoadExistingRubric(RubricData data, string? scope = null)
+        {
+            if (data == null) return;
+
+            if (!string.IsNullOrWhiteSpace(data.Description))
+            {
+                RubricTitle = data.Description;
+            }
+
+            AIInstructions = data.AiInstructions ?? string.Empty;
+            if (AIPromptTextBox != null)
+            {
+                AIPromptTextBox.Text = AIInstructions;
+            }
+
+            string targetScope = !string.IsNullOrWhiteSpace(scope) ? scope : (!string.IsNullOrWhiteSpace(data.Scope) ? data.Scope : "Question");
+            RubricScope = targetScope;
+
+            if (SingleQuestionScopeBtn != null && EntireSectionScopeBtn != null)
+            {
+                if (targetScope.IndexOf("Section", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    EntireSectionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle.Active");
+                    SingleQuestionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle");
+                    UpdateScopeDot(EntireSectionScopeBtn, true);
+                    UpdateScopeDot(SingleQuestionScopeBtn, false);
+                    RubricScope = "Section";
+                }
+                else
+                {
+                    SingleQuestionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle.Active");
+                    EntireSectionScopeBtn.Style = (Style)FindResource("Btn.ScopeToggle");
+                    UpdateScopeDot(SingleQuestionScopeBtn, true);
+                    UpdateScopeDot(EntireSectionScopeBtn, false);
+                    RubricScope = "Question";
+                }
+            }
+
+            // Restore defined matrix columns/tiers
+            TierColumns.Clear();
+            if (data.Criteria != null && data.Criteria.Count > 0)
+            {
+                var allLevels = data.Criteria
+                    .SelectMany(c => c.Levels ?? Enumerable.Empty<RubricLevelData>())
+                    .GroupBy(l => l.Name)
+                    .Select(g => new
+                    {
+                        Name = g.Key,
+                        Points = (int)Math.Round(g.First().Points > 0 ? g.First().Points : g.First().ScorePercentage)
+                    })
+                    .ToList();
+
+                if (allLevels.Count > 0)
+                {
+                    foreach (var lvl in allLevels)
+                    {
+                        TierColumns.Add(new TierColumn
+                        {
+                            Name = lvl.Name,
+                            Points = lvl.Points,
+                            Color = "#64748B"
+                        });
+                    }
+                    SortTiersByPoints();
+                }
+            }
+
+            // Restore criteria rows and cell descriptions
+            Rows.Clear();
+            if (data.Criteria != null && data.Criteria.Count > 0)
+            {
+                foreach (var crit in data.Criteria)
+                {
+                    var row = new RubricRow
+                    {
+                        Criteria = !string.IsNullOrWhiteSpace(crit.Name) ? crit.Name : crit.Description
+                    };
+                    if (crit.Levels != null)
+                    {
+                        foreach (var lvl in crit.Levels)
+                        {
+                            string desc = !string.IsNullOrEmpty(lvl.Descriptor) ? lvl.Descriptor : lvl.Description;
+                            SetCellValue(row, lvl.Name, desc);
+                        }
+                    }
+                    Rows.Add(row);
+                }
+            }
+
+            // Restore attached reference file
+            FilePath = data.AttachmentFilePath;
+            UpdateFileChip(FilePath);
+
+            // Change primary button text to "Update Rubric"
+            if (SaveBtnText != null)
+            {
+                SaveBtnText.Text = "Update Rubric";
+            }
+
+            BuildMatrix();
         }
 
         private void OnRowsChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -423,17 +533,19 @@ namespace ACPAMS.Views.Faculty
 
         private string GetCellValue(RubricRow row, string tierName)
         {
-            if (tierName == "Excellent") return row.Excellent;
-            if (tierName == "Good") return row.Good;
-            if (tierName == "Poor") return row.Poor;
-            return "";
+            if (row.Cells.TryGetValue(tierName, out var val)) return val;
+            if (string.Equals(tierName, "Excellent", StringComparison.OrdinalIgnoreCase)) return row.Excellent ?? string.Empty;
+            if (string.Equals(tierName, "Good", StringComparison.OrdinalIgnoreCase)) return row.Good ?? string.Empty;
+            if (string.Equals(tierName, "Poor", StringComparison.OrdinalIgnoreCase)) return row.Poor ?? string.Empty;
+            return string.Empty;
         }
 
         private void SetCellValue(RubricRow row, string tierName, string value)
         {
-            if (tierName == "Excellent") row.Excellent = value;
-            else if (tierName == "Good") row.Good = value;
-            else if (tierName == "Poor") row.Poor = value;
+            row.Cells[tierName] = value;
+            if (string.Equals(tierName, "Excellent", StringComparison.OrdinalIgnoreCase)) row.Excellent = value;
+            else if (string.Equals(tierName, "Good", StringComparison.OrdinalIgnoreCase)) row.Good = value;
+            else if (string.Equals(tierName, "Poor", StringComparison.OrdinalIgnoreCase)) row.Poor = value;
         }
 
         private void UpdateTotalScore()
@@ -658,10 +770,11 @@ namespace ACPAMS.Views.Faculty
 
         public class RubricRow
         {
-            public string Criteria { get; set; }
-            public string Excellent { get; set; }
-            public string Good { get; set; }
-            public string Poor { get; set; }
+            public string Criteria { get; set; } = string.Empty;
+            public string Excellent { get; set; } = string.Empty;
+            public string Good { get; set; } = string.Empty;
+            public string Poor { get; set; } = string.Empty;
+            public System.Collections.Generic.Dictionary<string, string> Cells { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         }
 
         public class TierColumn

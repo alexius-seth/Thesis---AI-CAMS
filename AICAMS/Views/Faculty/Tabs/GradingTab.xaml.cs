@@ -52,6 +52,15 @@ namespace ACPAMS.Views.Faculty.Tabs
             set { _finalized = value; OnPropertyChanged(); }
         }
 
+        public decimal CurrentAttemptTotalScore => CurrentQuestions.Sum(q => q.ObtainedPoints ?? 0);
+        public decimal CurrentAttemptMaxScore => CurrentQuestions.Sum(q => q.MaxPoints);
+
+        public void RecalculateCurrentAttemptTotals()
+        {
+            OnPropertyChanged(nameof(CurrentAttemptTotalScore));
+            OnPropertyChanged(nameof(CurrentAttemptMaxScore));
+        }
+
         private AttemptQueueItemVM _selectedAttempt;
 
         // Guards LoadAsync/LoadQuestionsAsync against overlapping calls.
@@ -238,13 +247,16 @@ namespace ACPAMS.Views.Faculty.Tabs
                     QuestionText = q.QuestionText,
                     QuestionType = q.QuestionType,
                     StudentAnswerText = q.StudentAnswerText,
+                    ExpectedAnswer = q.ExpectedAnswer,
+                    MatchStatus = q.MatchStatus ?? string.Empty,
                     MaxPoints = q.MaxPoints,
-                    ObtainedPoints = q.ObtainedPoints,
                     GradedBy = q.GradedBy,
                     AiOverallFeedback = q.AiOverallFeedback,
                     AiGradingFailed = q.AiGradingFailed,
                     AiGradingError = q.AiGradingError
                 };
+                vm.InitializePoints(q.ObtainedPoints);
+                vm.OnScoreChangedAction = () => RecalculateCurrentAttemptTotals();
 
                 foreach (var criterion in q.AiCriteriaBreakdown)
                 {
@@ -259,6 +271,8 @@ namespace ACPAMS.Views.Faculty.Tabs
 
                 CurrentQuestions.Add(vm);
             }
+
+            RecalculateCurrentAttemptTotals();
         }
 
         // Called by MainWindow.ShowPage on every navigation to this page.
@@ -299,6 +313,8 @@ namespace ACPAMS.Views.Faculty.Tabs
                 QuestionText = q.QuestionText,
                 QuestionType = q.QuestionType,
                 StudentAnswerText = q.StudentAnswerText,
+                ExpectedAnswer = q.ExpectedAnswer,
+                MatchStatus = q.MatchStatus,
                 MaxPoints = q.MaxPoints,
                 ObtainedPoints = q.ObtainedPoints
             }).ToList();

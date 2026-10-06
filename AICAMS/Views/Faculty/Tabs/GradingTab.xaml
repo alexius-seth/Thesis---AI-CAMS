@@ -494,17 +494,114 @@
                                                        Style="{StaticResource T.Body}"
                                                        Margin="0,0,0,10"/>
 
-                                            <!-- Student's answer -->
-                                            <TextBlock Text="STUDENT ANSWER"
-                                                       Style="{StaticResource T.SectionLabel}"
-                                                       Margin="0,0,0,4"/>
-                                            <Border Background="{StaticResource Bg.Surface}"
-                                                    BorderBrush="{StaticResource Border.Medium}"
-                                                    BorderThickness="1" CornerRadius="4"
-                                                    Padding="10,8" Margin="0,0,0,10">
-                                                <TextBlock Text="{Binding StudentAnswerText}"
-                                                           Style="{StaticResource T.Body}"/>
-                                            </Border>
+                                            <!-- Reference answer accordion for Essay & Coding -->
+                                            <Expander Header="View Reference Answer / Key Points"
+                                                      Foreground="{StaticResource Text.Secondary}"
+                                                      FontWeight="SemiBold" FontSize="12"
+                                                      Margin="0,0,0,10"
+                                                      IsExpanded="False"
+                                                      Visibility="{Binding HasExpectedAnswer, Converter={StaticResource BoolToVis}}">
+                                                <Border Background="{StaticResource Bg.Surface}"
+                                                        BorderBrush="{StaticResource Border.Subtle}"
+                                                        BorderThickness="1" CornerRadius="4"
+                                                        Padding="12,10" Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding ExpectedAnswer}"
+                                                               FontFamily="{Binding ReferenceFontFamily}"
+                                                               Style="{StaticResource T.Body}"/>
+                                                </Border>
+                                            </Expander>
+
+                                            <!-- Student Answer / Responses -->
+                                            <!-- Subjective (Essay / Coding) display -->
+                                            <StackPanel Visibility="{Binding IsSubjective, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10">
+                                                <TextBlock Text="STUDENT ANSWER"
+                                                           Style="{StaticResource T.SectionLabel}"
+                                                           Margin="0,0,0,4"/>
+                                                <Border Background="{StaticResource Bg.Surface}"
+                                                        BorderBrush="{StaticResource Border.Medium}"
+                                                        BorderThickness="1" CornerRadius="4"
+                                                        Padding="10,8">
+                                                    <TextBlock Text="{Binding StudentAnswerText}"
+                                                               FontFamily="{Binding ReferenceFontFamily}"
+                                                               Style="{StaticResource T.Body}"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Objective (MCQ, True/False, Identification, Enumeration) display -->
+                                            <Grid Visibility="{Binding IsObjective, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="14"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Left: Student response + Match status badge -->
+                                                <StackPanel Grid.Column="0">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                        <TextBlock Text="STUDENT RESPONSE"
+                                                                   Style="{StaticResource T.SectionLabel}"
+                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <Border CornerRadius="8" Padding="6,1" VerticalAlignment="Center"
+                                                                Visibility="{Binding HasMatchStatus, Converter={StaticResource BoolToVis}}">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="{StaticResource Status.DangerBg}"/>
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource Status.Danger}"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsMatchCorrect}" Value="True">
+                                                                            <Setter Property="Background" Value="{StaticResource Status.SuccessBg}"/>
+                                                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Success}"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding IsMatchFuzzy}" Value="True">
+                                                                            <Setter Property="Background" Value="{StaticResource Status.WarningBg}"/>
+                                                                            <Setter Property="BorderBrush" Value="{StaticResource Status.Warning}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock Text="{Binding MatchStatus}" FontSize="10" FontWeight="Bold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{StaticResource Status.Danger}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsMatchCorrect}" Value="True">
+                                                                                <Setter Property="Foreground" Value="{StaticResource Status.Success}"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsMatchFuzzy}" Value="True">
+                                                                                <Setter Property="Foreground" Value="{StaticResource Status.Warning}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <Border Background="{StaticResource Bg.Surface}"
+                                                            BorderBrush="{StaticResource Border.Medium}"
+                                                            BorderThickness="1" CornerRadius="4"
+                                                            Padding="10,8">
+                                                        <TextBlock Text="{Binding StudentAnswerText}"
+                                                                   Style="{StaticResource T.Body}"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Right: Expected correct answer -->
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="EXPECTED CORRECT ANSWER"
+                                                               Style="{StaticResource T.SectionLabel}"
+                                                               Foreground="{StaticResource Status.Success}"
+                                                               Margin="0,0,0,4"/>
+                                                    <Border Background="{StaticResource Bg.Surface}"
+                                                            BorderBrush="{StaticResource Status.Success}"
+                                                            BorderThickness="1" CornerRadius="4"
+                                                            Padding="10,8">
+                                                        <TextBlock Text="{Binding ExpectedAnswer}"
+                                                                   FontWeight="SemiBold"
+                                                                   Style="{StaticResource T.Body}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Grid>
 
                                             <!-- AI grading failed — shown instead of a score, not silently blank -->
                                             <Border Background="{StaticResource Status.DangerBg}"
@@ -624,17 +721,26 @@
                                             </Border>
 
                                             <!-- Editable points -->
-                                            <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock Text="POINTS"
                                                            Style="{StaticResource T.SectionLabel}"
                                                            VerticalAlignment="Center"
                                                            Margin="0,0,10,0"/>
                                                 <TextBox Style="{StaticResource Input.Points}"
-                                                         Text="{Binding ObtainedPoints, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}"/>
-                                                <TextBlock VerticalAlignment="Center" Margin="6,0,0,0"
+                                                         Text="{Binding ScoreInputText, UpdateSourceTrigger=PropertyChanged}"/>
+                                                <TextBlock VerticalAlignment="Center" Margin="6,0,12,0"
                                                            FontSize="13" Foreground="{StaticResource Text.Secondary}">
-                                                    <Run Text="/"/><Run Text="{Binding MaxPoints}"/>
+                                                    <Run Text="/ "/><Run Text="{Binding MaxPoints, StringFormat='{}{0:0.##}'}"/>
                                                 </TextBlock>
+                                                <Border Background="{StaticResource Status.WarningBg}"
+                                                        BorderBrush="{StaticResource Status.Warning}"
+                                                        BorderThickness="1" CornerRadius="10"
+                                                        Padding="7,2" VerticalAlignment="Center"
+                                                        Visibility="{Binding IsOverridden, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="Manually Adjusted"
+                                                               FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Status.Warning}"/>
+                                                </Border>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -643,25 +749,33 @@
                         </ItemsControl>
                     </ScrollViewer>
 
-                    <!-- Save footer -->
+                    <!-- Save footer with live running total score -->
                     <Border Grid.Row="1"
                             Background="{StaticResource Bg.Surface}"
                             BorderBrush="{StaticResource Border.Subtle}"
                             BorderThickness="0,1,0,0"
                             Padding="24,16">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Style="{StaticResource Btn.Outlined}"
-                                    Content="Save Grades"
-                                    Click="SaveGrades_Click"
-                                    Margin="0,0,10,0"/>
-                            <!-- Distinct from Save: this locks in EVERY fully-graded
-                                 attempt for the whole exam, not just the one currently
-                                 open. An explicit action taken after reviewing — never
-                                 triggered automatically from anywhere else. -->
-                            <Button Style="{StaticResource Btn.Primary}"
-                                    Content="Finalize Grades"
-                                    Click="FinalizeGrades_Click"/>
-                        </StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                <TextBlock Text="Total Score: " FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Text.Secondary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding CurrentAttemptTotalScore, StringFormat='{}{0:0.##}'}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource Accent.Primary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding CurrentAttemptMaxScore, StringFormat=' / {0:0.##} pts'}" FontSize="13" Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource Btn.Outlined}"
+                                        Content="Save Grades"
+                                        Click="SaveGrades_Click"
+                                        Margin="0,0,10,0"/>
+                                <!-- Distinct from Save: this locks in EVERY fully-graded
+                                     attempt for the whole exam, not just the one currently
+                                     open. An explicit action taken after reviewing — never
+                                     triggered automatically from anywhere else. -->
+                                <Button Style="{StaticResource Btn.Primary}"
+                                        Content="Finalize Grades"
+                                        Click="FinalizeGrades_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                 </Grid>

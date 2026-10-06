@@ -31,6 +31,34 @@ namespace ACPAMS.Services
         {
             using var context = new AppDbContext();
 
+            // In-place update: clean up any existing rubric for this question so records are not duplicated
+            var existingRubrics = await context.Rubrics
+                .Where(r => r.QuestionId == questionId)
+                .ToListAsync();
+
+            if (existingRubrics.Count > 0)
+            {
+                var existingRubricIds = existingRubrics.Select(r => r.RubricId).ToList();
+                var oldAttachments = await context.Attachments
+                    .Where(a => a.EntityType == "Rubric" && a.EntityId.HasValue && existingRubricIds.Contains(a.EntityId.Value))
+                    .ToListAsync();
+                context.Attachments.RemoveRange(oldAttachments);
+
+                var oldCriteria = await context.RubricCriteria
+                    .Where(c => c.RubricId.HasValue && existingRubricIds.Contains(c.RubricId.Value))
+                    .ToListAsync();
+                var oldCriteriaIds = oldCriteria.Select(c => c.CriteriaId).ToList();
+
+                var oldLevels = await context.RubricLevels
+                    .Where(l => l.CriteriaId.HasValue && oldCriteriaIds.Contains(l.CriteriaId.Value))
+                    .ToListAsync();
+
+                context.RubricLevels.RemoveRange(oldLevels);
+                context.RubricCriteria.RemoveRange(oldCriteria);
+                context.Rubrics.RemoveRange(existingRubrics);
+                await context.SaveChangesAsync();
+            }
+
             var rubric = new Rubric
             {
                 RubricId = Guid.NewGuid(),

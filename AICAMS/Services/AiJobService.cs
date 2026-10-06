@@ -212,16 +212,18 @@ namespace ACPAMS.Services
                     $"No rubric found for question {question.QuestionId} — cannot AI-grade without one.");
 
             bool isCode = question.QuestionType == "coding";
+            string rawAnswer = isCode ? (answer.SourceCode ?? string.Empty) : (answer.AnswerText ?? string.Empty);
 
             var request = new RubricGradingRequest
             {
                 QuestionText = question.Text,
-                StudentAnswerText = isCode ? (answer.SourceCode ?? string.Empty) : (answer.AnswerText ?? string.Empty),
+                StudentAnswerText = TextSanitizer.SanitizeStudentInput(rawAnswer),
                 IsCode = isCode,
                 ProgrammingLanguage = question.ProgrammingLanguage,
                 Criteria = rubric.Criteria,
                 InstructorInstructions = rubric.InstructorInstructions,
-                AttachmentPdfPath = rubric.AttachmentPath
+                AttachmentPdfPath = rubric.AttachmentPath,
+                ReferenceAnswer = question.CorrectAnswer
             };
 
             var gradingService = new GeminiRubricGradingService();

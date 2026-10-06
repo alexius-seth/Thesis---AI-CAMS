@@ -16,6 +16,98 @@ namespace ACPAMS.Views.Faculty.Tabs
         public string StudentAnswerText { get; set; }
         public decimal MaxPoints { get; set; }         // questions.points (assumes this column exists; else default 10)
 
+        public string? ExpectedAnswer { get; set; }
+        public bool HasExpectedAnswer => !string.IsNullOrWhiteSpace(ExpectedAnswer);
+
+        public bool IsSubjective => QuestionType != null &&
+            (QuestionType.StartsWith("Essay", StringComparison.OrdinalIgnoreCase) ||
+             QuestionType.StartsWith("Coding", StringComparison.OrdinalIgnoreCase));
+
+        public bool IsObjective => !IsSubjective;
+
+        public string ReferenceFontFamily =>
+            QuestionType != null && QuestionType.StartsWith("Coding", StringComparison.OrdinalIgnoreCase)
+                ? "Consolas"
+                : "Segoe UI";
+
+        private string _matchStatus = string.Empty;
+        public string MatchStatus
+        {
+            get => _matchStatus;
+            set
+            {
+                if (_matchStatus == value) return;
+                _matchStatus = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasMatchStatus));
+                OnPropertyChanged(nameof(IsMatchCorrect));
+                OnPropertyChanged(nameof(IsMatchFuzzy));
+                OnPropertyChanged(nameof(IsMatchIncorrect));
+            }
+        }
+
+        public bool HasMatchStatus => !string.IsNullOrWhiteSpace(MatchStatus);
+        public bool IsMatchCorrect => string.Equals(MatchStatus, "Correct", StringComparison.OrdinalIgnoreCase);
+        public bool IsMatchFuzzy => string.Equals(MatchStatus, "Fuzzy / Near Match", StringComparison.OrdinalIgnoreCase);
+        public bool IsMatchIncorrect => string.Equals(MatchStatus, "Incorrect", StringComparison.OrdinalIgnoreCase);
+
+        private decimal? _originalPoints;
+        private bool _isOverridden;
+        public bool IsOverridden
+        {
+            get => _isOverridden;
+            set
+            {
+                if (_isOverridden == value) return;
+                _isOverridden = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Action? OnScoreChangedAction { get; set; }
+
+        public void InitializePoints(decimal? points)
+        {
+            _originalPoints = points;
+            _obtainedPoints = points;
+            _scoreInputText = points?.ToString("0.##") ?? string.Empty;
+            _isOverridden = false;
+        }
+
+        private string _scoreInputText = string.Empty;
+        public string ScoreInputText
+        {
+            get => _scoreInputText;
+            set
+            {
+                if (_scoreInputText == value) return;
+                _scoreInputText = value;
+                OnPropertyChanged();
+
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    _obtainedPoints = null;
+                    if (_originalPoints != null) IsOverridden = true;
+                }
+                else if (decimal.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal parsed) ||
+                         decimal.TryParse(value, out parsed))
+                {
+                    if (parsed < 0) parsed = 0;
+                    if (parsed > MaxPoints) parsed = MaxPoints;
+
+                    _obtainedPoints = parsed;
+                    if (_originalPoints == null || _originalPoints.Value != parsed)
+                    {
+                        IsOverridden = true;
+                    }
+                }
+
+                OnPropertyChanged(nameof(ObtainedPoints));
+                OnPropertyChanged(nameof(IsGraded));
+                OnScoreChangedAction?.Invoke();
+            }
+        }
+
         private decimal? _obtainedPoints;
         public decimal? ObtainedPoints
         {
@@ -24,8 +116,11 @@ namespace ACPAMS.Views.Faculty.Tabs
             {
                 if (_obtainedPoints == value) return;
                 _obtainedPoints = value;
+                _scoreInputText = value?.ToString("0.##") ?? string.Empty;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(ScoreInputText));
                 OnPropertyChanged(nameof(IsGraded));
+                OnScoreChangedAction?.Invoke();
             }
         }
 

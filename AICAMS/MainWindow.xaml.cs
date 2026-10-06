@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using ACPAMS.Views.Faculty;
 using ACPAMS.Views.Faculty.Tabs;
 
@@ -259,6 +260,31 @@ namespace ACPAMS
         }
 
         // ─── Dynamic Window Mode Management ──────────────────────────
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+
+            // Emergency testing bypass: Ctrl + Shift + F12
+            if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.F12)
+            {
+                this.Topmost = false;
+                this.WindowState = WindowState.Minimized;
+            }
+        }
+
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            base.OnPreviewKeyDown(e);
+
+            // Emergency testing bypass: Ctrl + Shift + F12
+            if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.F12)
+            {
+                this.Topmost = false;
+                this.WindowState = WindowState.Minimized;
+                e.Handled = true;
+            }
+        }
 
         public void SetStandardMaximized()
         {

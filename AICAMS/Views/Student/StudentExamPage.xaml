@@ -319,15 +319,32 @@
                     BorderThickness="0,0,1,0">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
+                    <!-- VISUAL PRIVACY GUIDANCE CALLOUT -->
+                    <Border Grid.Row="0"
+                            Background="#EFF6FF"
+                            BorderBrush="#BFDBFE"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,9">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#2563EB" Margin="0,0,8,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Privacy Notice: Do not write your name, student number, or personal details in your answer or code comments. Submissions are graded anonymously."
+                                       FontSize="11" Foreground="#1E40AF" VerticalAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Canvas host -->
-                    <ContentControl Grid.Row="0" x:Name="ExamCanvasHost"/>
+                    <ContentControl Grid.Row="1" x:Name="ExamCanvasHost"/>
 
                     <!-- Previous / Next bar -->
-                    <Border Grid.Row="1"
+                    <Border Grid.Row="2"
                             Background="{StaticResource Bg.Surface}"
                             BorderBrush="{StaticResource Border.Subtle}"
                             BorderThickness="0,1,0,0" Padding="24,12">
@@ -502,6 +519,146 @@
                 </ScrollViewer>
             </Border>
 
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════
+             KIOSK PROCTOR WARNING MODAL OVERLAY
+        ═══════════════════════════════════════════ -->
+        <Grid x:Name="KioskWarningOverlay"
+              Grid.RowSpan="2"
+              Panel.ZIndex="2500"
+              Background="#D9000000"
+              Visibility="Collapsed">
+            <Border Background="#FFFFFF"
+                    BorderBrush="{StaticResource Status.Danger}"
+                    BorderThickness="2"
+                    CornerRadius="12"
+                    MaxWidth="540"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Padding="32"
+                    Margin="24">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="6" Opacity="0.5"/>
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Warning Header -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,18">
+                        <Border Background="{StaticResource Status.DangerBg}" CornerRadius="24" Width="48" Height="48" Margin="0,0,14,0">
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="24"
+                                       Foreground="{StaticResource Status.Danger}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="PROCTOR WARNING" FontSize="18" FontWeight="Bold" Foreground="{StaticResource Status.Danger}"/>
+                            <TextBlock Text="Live Exam Integrity Notification" FontSize="12" Foreground="{StaticResource Text.Secondary}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Warning Message Box -->
+                    <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1.5" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                        <TextBlock x:Name="KioskWarningMessageText"
+                                   Text="Tab switching detected. Return to the exam immediately."
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Status.Danger}"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   LineHeight="20"/>
+                    </Border>
+
+                    <TextBlock Text="This warning was dispatched live by your proctor and recorded in the audit log. Failure to comply may lead to disciplinary action or exam termination."
+                               FontSize="11" Foreground="{StaticResource Text.Muted}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,24"/>
+
+                    <!-- Acknowledge Button -->
+                    <Button x:Name="AcknowledgeWarningBtn"
+                            Background="{StaticResource Status.Danger}"
+                            Foreground="White"
+                            FontWeight="Bold"
+                            FontSize="13"
+                            Padding="24,12"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            HorizontalAlignment="Center"
+                            Click="AcknowledgeWarning_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="I Understand — Return to Exam" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════
+             PRIVACY WARNING PRE-SUBMISSION MODAL OVERLAY
+        ═══════════════════════════════════════════ -->
+        <Grid x:Name="PrivacyWarningOverlay"
+              Grid.RowSpan="2"
+              Panel.ZIndex="2400"
+              Background="#D9000000"
+              Visibility="Collapsed">
+            <Border Background="#FFFFFF"
+                    BorderBrush="#F59E0B"
+                    BorderThickness="2"
+                    CornerRadius="12"
+                    MaxWidth="540"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Padding="30"
+                    Margin="24">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="25" ShadowDepth="4" Opacity="0.4"/>
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Warning Header -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Background="#FEF3C7" CornerRadius="20" Width="42" Height="42" Margin="0,0,12,0">
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="20"
+                                       Foreground="#D97706" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Potential Personal Information Detected" FontSize="15" FontWeight="Bold" Foreground="#1E293B"/>
+                            <TextBlock Text="Anonymous Grading Verification" FontSize="11" Foreground="#64748B"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Message Body -->
+                    <Border Background="#FFFBEB" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,20">
+                        <TextBlock Text="Potential personal information detected (such as a name, student ID, or email). Please confirm that your response does not contain personal identifiers before proceeding."
+                                   FontSize="12" Foreground="#92400E" TextWrapping="Wrap" LineHeight="18"/>
+                    </Border>
+
+                    <!-- Buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="PrivacyReviewBtn"
+                                Style="{StaticResource Btn.NavArrow}"
+                                Content="Review Answer"
+                                Padding="16,8"
+                                Margin="0,0,10,0"
+                                Click="PrivacyReviewBtn_Click"/>
+                        <Button x:Name="PrivacyProceedBtn"
+                                Background="#D97706"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                FontSize="12"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Cursor="Hand"
+                                Click="PrivacyProceedBtn_Click">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                            <TextBlock Text="Proceed Anyway"/>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </UserControl>

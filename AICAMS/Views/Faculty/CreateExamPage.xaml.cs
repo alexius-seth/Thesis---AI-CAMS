@@ -1443,6 +1443,33 @@ namespace ACPAMS.Views.Faculty
                             VerticalAlignment = VerticalAlignment.Center
                         });
                         bodyStack.Children.Add(wordLimitPanel);
+
+                        var refLabelEssay = new TextBlock
+                        {
+                            Text = "Expected Key Points / Reference Answer (Optional context for AI grading)",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 10, 0, 4)
+                        };
+                        bodyStack.Children.Add(refLabelEssay);
+
+                        var refBoxEssay = new TextBox
+                        {
+                            Style = (Style)FindResource("Input.Text"),
+                            MinHeight = 60,
+                            AcceptsReturn = true,
+                            TextWrapping = TextWrapping.Wrap,
+                            Text = q.CorrectAnswer ?? string.Empty,
+                            Tag = q
+                        };
+                        refBoxEssay.TextChanged += (s, e) =>
+                        {
+                            if (refBoxEssay.Tag is QuestionItem qi)
+                            {
+                                qi.CorrectAnswer = refBoxEssay.Text;
+                            }
+                        };
+                        bodyStack.Children.Add(refBoxEssay);
+
                         bodyStack.Children.Add(CreateAIRubricSection(q));
                         break;
 
@@ -1670,6 +1697,33 @@ namespace ACPAMS.Views.Faculty
                             }
                             bodyStack.Children.Add(tcPanel);
                         }
+
+                        var refLabelCoding = new TextBlock
+                        {
+                            Text = "Expected Key Points / Reference Solution (Optional context for AI grading)",
+                            Style = (Style)FindResource("T.FieldLabel"),
+                            Margin = new System.Windows.Thickness(0, 10, 0, 4)
+                        };
+                        bodyStack.Children.Add(refLabelCoding);
+
+                        var refBoxCoding = new TextBox
+                        {
+                            Style = (Style)FindResource("Input.Text"),
+                            FontFamily = new FontFamily("Consolas"),
+                            MinHeight = 65,
+                            AcceptsReturn = true,
+                            TextWrapping = TextWrapping.Wrap,
+                            Text = q.CorrectAnswer ?? string.Empty,
+                            Tag = q
+                        };
+                        refBoxCoding.TextChanged += (s, e) =>
+                        {
+                            if (refBoxCoding.Tag is QuestionItem qi)
+                            {
+                                qi.CorrectAnswer = refBoxCoding.Text;
+                            }
+                        };
+                        bodyStack.Children.Add(refBoxCoding);
 
                         bodyStack.Children.Add(CreateAIRubricSection(q));
                         break;
@@ -2175,99 +2229,319 @@ namespace ACPAMS.Views.Faculty
         {
             var border = new Border
             {
-                Background = (Brush)FindResource("AI.Bg"),
-                BorderBrush = (Brush)FindResource("AI.Border"),
                 BorderThickness = new System.Windows.Thickness(1),
                 CornerRadius = new CornerRadius(6),
                 Padding = new System.Windows.Thickness(14, 12, 14, 12),
                 Margin = new System.Windows.Thickness(0, 16, 0, 0)
             };
 
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var leftStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetColumn(leftStack, 0);
-            var titleStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 3) };
-            titleStack.Children.Add(new TextBlock
-            {
-                Text = "🤖",
-                FontSize = 13,
-                Foreground = (Brush)FindResource("AI.Border"),
-                Margin = new System.Windows.Thickness(0, 0, 6, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            titleStack.Children.Add(new TextBlock
-            {
-                Text = "AI Auto-Grading Configuration",
-                FontSize = 12,
-                FontWeight = FontWeights.Bold,
-                Foreground = (Brush)FindResource("AI.Text")
-            });
-            leftStack.Children.Add(titleStack);
-            leftStack.Children.Add(new TextBlock
-            {
-                Text = "Set rubric criteria the AI uses to evaluate and score this question.",
-                FontSize = 11,
-                Foreground = (Brush)FindResource("AI.Text"),
-                TextWrapping = TextWrapping.Wrap
-            });
-
-            var btn = new Button
-            {
-                Style = (Style)FindResource("Btn.AIRubric"),
-                VerticalAlignment = VerticalAlignment.Center,
-                Tag = question
-            };
-            var btnStack = new StackPanel { Orientation = Orientation.Horizontal };
-            btnStack.Children.Add(new TextBlock
-            {
-                Text = "➕",
-                FontSize = 11,
-                Foreground = (Brush)FindResource("AI.Border"),
-                Margin = new System.Windows.Thickness(0, 0, 5, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            btnStack.Children.Add(new TextBlock
-            {
-                Text = "Configure AI Rubric",
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            btn.Content = btnStack;
-
-            btn.Click += (s, e) =>
-            {
-                var button = s as Button;
-                if (button == null) return;
-
-                var q = button.Tag as QuestionItem;
-                if (q == null) return;
-
-                var rubricModal = new AIRubricModal { Owner = Application.Current.MainWindow };
-                rubricModal.QuestionTitle = q.Text ?? "Question";
-                rubricModal.QuestionId = q.Id;
-
-                if (rubricModal.ShowDialog() == true)
-                {
-                    var rubricData = rubricModal.GetRubricData();
-
-                    // FIX: rubricModal.FilePath (the attached reference PDF) was
-                    // never being read here before — it was silently discarded
-                    // the moment the modal closed. Now it travels with the rest
-                    // of the rubric data so ExamService/RubricService can save it.
-                    rubricData.AttachmentFilePath = rubricModal.FilePath;
-
-                    _rubricData[q.Id] = rubricData;
-
-                    ToastNotification.Show("Rubric saved successfully!", Application.Current.MainWindow);
-                }
-            };
-            Grid.SetColumn(btn, 1);
-            grid.Children.Add(btn);
-
-            border.Child = grid;
+            PopulateAIRubricContent(border, question);
             return border;
+        }
+
+        private void PopulateAIRubricContent(Border border, QuestionItem question)
+        {
+            border.Child = null;
+
+            bool isAttached = _rubricData.TryGetValue(question.Id, out var existingRubric) && existingRubric != null;
+
+            if (!isAttached)
+            {
+                border.Background = (Brush)FindResource("AI.Bg");
+                border.BorderBrush = (Brush)FindResource("AI.Border");
+
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var leftStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                Grid.SetColumn(leftStack, 0);
+                var titleStack = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 3) };
+                titleStack.Children.Add(new TextBlock
+                {
+                    Text = "🤖",
+                    FontSize = 13,
+                    Foreground = (Brush)FindResource("AI.Border"),
+                    Margin = new System.Windows.Thickness(0, 0, 6, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                titleStack.Children.Add(new TextBlock
+                {
+                    Text = "AI Auto-Grading Configuration",
+                    FontSize = 12,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)FindResource("AI.Text")
+                });
+                leftStack.Children.Add(titleStack);
+                leftStack.Children.Add(new TextBlock
+                {
+                    Text = "Set rubric criteria the AI uses to evaluate and score this question.",
+                    FontSize = 11,
+                    Foreground = (Brush)FindResource("AI.Text"),
+                    TextWrapping = TextWrapping.Wrap
+                });
+
+                var btn = new Button
+                {
+                    Style = (Style)FindResource("Btn.AIRubric"),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Tag = question
+                };
+                var btnStack = new StackPanel { Orientation = Orientation.Horizontal };
+                btnStack.Children.Add(new TextBlock
+                {
+                    Text = "➕",
+                    FontSize = 11,
+                    Foreground = (Brush)FindResource("AI.Border"),
+                    Margin = new System.Windows.Thickness(0, 0, 5, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                btnStack.Children.Add(new TextBlock
+                {
+                    Text = "Configure AI Rubric",
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                btn.Content = btnStack;
+
+                btn.Click += (s, e) =>
+                {
+                    var rubricModal = new AIRubricModal { Owner = Application.Current.MainWindow };
+                    rubricModal.QuestionTitle = question.Text ?? "Question";
+                    rubricModal.QuestionId = question.Id;
+
+                    if (rubricModal.ShowDialog() == true)
+                    {
+                        var rubricData = rubricModal.GetRubricData();
+                        rubricData.AttachmentFilePath = rubricModal.FilePath;
+                        rubricData.Scope = rubricModal.RubricScope;
+
+                        if (string.Equals(rubricData.Scope, "Section", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var targetSection = _sections.FirstOrDefault(sec => sec.Questions.Any(qu => qu.Id == question.Id));
+                            if (targetSection != null)
+                            {
+                                foreach (var sq in targetSection.Questions.Where(qu => qu.Type == "Essay" || qu.Type == "Coding"))
+                                {
+                                    _rubricData[sq.Id] = rubricData;
+                                }
+                            }
+                            UpdateQuestionsDisplay();
+                        }
+                        else
+                        {
+                            _rubricData[question.Id] = rubricData;
+                            PopulateAIRubricContent(border, question);
+                        }
+
+                        ToastNotification.Show("Rubric saved successfully!", Application.Current.MainWindow);
+                    }
+                };
+                Grid.SetColumn(btn, 1);
+                grid.Children.Add(leftStack);
+                grid.Children.Add(btn);
+
+                border.Child = grid;
+            }
+            else
+            {
+                border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F5F3FF"));
+                border.BorderBrush = (Brush)FindResource("AI.Border");
+
+                var grid = new Grid();
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var leftStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                Grid.SetColumn(leftStack, 0);
+
+                var badgePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new System.Windows.Thickness(0, 0, 0, 4) };
+
+                string rubricTitle = string.IsNullOrWhiteSpace(existingRubric!.Description) ? "Rubric Configuration" : existingRubric.Description;
+                int totalPts = existingRubric.TotalWeight > 0 ? existingRubric.TotalWeight : question.Points;
+
+                var titlePill = new Border
+                {
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDE9FE")),
+                    BorderBrush = (Brush)FindResource("AI.Border"),
+                    BorderThickness = new System.Windows.Thickness(1),
+                    CornerRadius = new CornerRadius(12),
+                    Padding = new System.Windows.Thickness(10, 3, 10, 3),
+                    Margin = new System.Windows.Thickness(0, 0, 8, 0)
+                };
+                var pillText = new TextBlock
+                {
+                    Text = $"📋 Rubric: {rubricTitle} ({totalPts} pts)",
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)FindResource("AI.Text"),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                titlePill.Child = pillText;
+                badgePanel.Children.Add(titlePill);
+
+                bool isSectionScope = string.Equals(existingRubric.Scope, "Section", StringComparison.OrdinalIgnoreCase);
+                var scopePill = new Border
+                {
+                    Background = isSectionScope ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DBEAFE")) : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E2E8F0")),
+                    BorderBrush = isSectionScope ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B82F6")) : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8")),
+                    BorderThickness = new System.Windows.Thickness(1),
+                    CornerRadius = new CornerRadius(12),
+                    Padding = new System.Windows.Thickness(8, 3, 8, 3)
+                };
+                var scopeText = new TextBlock
+                {
+                    Text = isSectionScope ? "[Entire Section]" : "[Question Only]",
+                    FontSize = 11,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = isSectionScope ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1D4ED8")) : (Brush)FindResource("Text.Secondary"),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                scopePill.Child = scopeText;
+                badgePanel.Children.Add(scopePill);
+
+                leftStack.Children.Add(badgePanel);
+
+                int critCount = existingRubric.Criteria?.Count ?? 0;
+                string attachInfo = !string.IsNullOrEmpty(existingRubric.AttachmentFilePath) ? " · 📎 Reference file attached" : "";
+                var descBlock = new TextBlock
+                {
+                    Text = $"Active AI auto-grading · {critCount} criteria configured{attachInfo}",
+                    FontSize = 11,
+                    Foreground = (Brush)FindResource("AI.Text")
+                };
+                leftStack.Children.Add(descBlock);
+
+                var rightStack = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+                Grid.SetColumn(rightStack, 1);
+
+                var editBtn = new Button
+                {
+                    Style = (Style)FindResource("Btn.Outlined"),
+                    Margin = new System.Windows.Thickness(0, 0, 6, 0),
+                    Padding = new System.Windows.Thickness(10, 6, 10, 6),
+                    Cursor = Cursors.Hand
+                };
+                var editStack = new StackPanel { Orientation = Orientation.Horizontal };
+                editStack.Children.Add(new TextBlock
+                {
+                    Text = "✎",
+                    FontSize = 12,
+                    Foreground = (Brush)FindResource("Accent.Primary"),
+                    Margin = new System.Windows.Thickness(0, 0, 5, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                editStack.Children.Add(new TextBlock
+                {
+                    Text = "Edit Rubric",
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = (Brush)FindResource("Accent.Primary"),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                editBtn.Content = editStack;
+
+                editBtn.Click += (s, e) =>
+                {
+                    var rubricModal = new AIRubricModal { Owner = Application.Current.MainWindow };
+                    rubricModal.QuestionTitle = question.Text ?? "Question";
+                    rubricModal.QuestionId = question.Id;
+                    rubricModal.LoadExistingRubric(existingRubric, existingRubric.Scope);
+
+                    if (rubricModal.ShowDialog() == true)
+                    {
+                        var updated = rubricModal.GetRubricData();
+                        updated.AttachmentFilePath = rubricModal.FilePath;
+                        updated.Scope = rubricModal.RubricScope;
+
+                        if (string.Equals(updated.Scope, "Section", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var targetSection = _sections.FirstOrDefault(sec => sec.Questions.Any(qu => qu.Id == question.Id));
+                            if (targetSection != null)
+                            {
+                                foreach (var sq in targetSection.Questions.Where(qu => qu.Type == "Essay" || qu.Type == "Coding"))
+                                {
+                                    _rubricData[sq.Id] = updated;
+                                }
+                            }
+                            UpdateQuestionsDisplay();
+                        }
+                        else
+                        {
+                            _rubricData[question.Id] = updated;
+                            PopulateAIRubricContent(border, question);
+                        }
+
+                        ToastNotification.Show("Rubric updated successfully!", Application.Current.MainWindow);
+                    }
+                };
+
+                var dangerBrush = TryFindResource("Status.Danger") as Brush ?? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DC2626"));
+                var removeBtn = new Button
+                {
+                    Style = (Style)FindResource("Btn.Ghost"),
+                    Padding = new System.Windows.Thickness(8, 6, 8, 6),
+                    Cursor = Cursors.Hand,
+                    ToolTip = "Remove and detach rubric"
+                };
+                var removeStack = new StackPanel { Orientation = Orientation.Horizontal };
+                removeStack.Children.Add(new TextBlock
+                {
+                    Text = "🗑",
+                    FontSize = 12,
+                    Foreground = dangerBrush,
+                    Margin = new System.Windows.Thickness(0, 0, 4, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                removeStack.Children.Add(new TextBlock
+                {
+                    Text = "Remove",
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = dangerBrush,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                removeBtn.Content = removeStack;
+
+                removeBtn.Click += (s, e) =>
+                {
+                    var confirm = MessageBox.Show(
+                        "Are you sure you want to remove and detach this AI rubric?",
+                        "Confirm Detach Rubric",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (confirm == MessageBoxResult.Yes)
+                    {
+                        if (isSectionScope)
+                        {
+                            var targetSection = _sections.FirstOrDefault(sec => sec.Questions.Any(qu => qu.Id == question.Id));
+                            if (targetSection != null)
+                            {
+                                foreach (var sq in targetSection.Questions.Where(qu => qu.Type == "Essay" || qu.Type == "Coding"))
+                                {
+                                    _rubricData.Remove(sq.Id);
+                                }
+                            }
+                            UpdateQuestionsDisplay();
+                        }
+                        else
+                        {
+                            _rubricData.Remove(question.Id);
+                            PopulateAIRubricContent(border, question);
+                        }
+
+                        ToastNotification.Show("Rubric detached.", Application.Current.MainWindow);
+                    }
+                };
+
+                rightStack.Children.Add(editBtn);
+                rightStack.Children.Add(removeBtn);
+
+                grid.Children.Add(leftStack);
+                grid.Children.Add(rightStack);
+
+                border.Child = grid;
+            }
         }
 
         // ─── Import exam questions from a .txt file ──────────────────

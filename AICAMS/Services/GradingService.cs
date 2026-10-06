@@ -83,7 +83,8 @@ namespace ACPAMS.Services
             using var context = new AppDbContext();
 
             var questions = await context.Questions
-                .Where(q => q.ExamId == examId && (q.QuestionType == "essay" || q.QuestionType == "coding"))
+                .Include(q => q.Options)
+                .Where(q => q.ExamId == examId)
                 .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
 
@@ -142,18 +143,55 @@ namespace ACPAMS.Services
                     ? failedJobs.FirstOrDefault(j => j.AnswerId == ans.AnswerId)
                     : null;
 
+                string qType = q.QuestionType switch
+                {
+                    "multiple_choice" => "Multiple Choice",
+                    "true_false" => "True/False",
+                    "identification" => "Identification",
+                    "enumeration" => "Enumeration",
+                    "coding" => $"Coding ({q.ProgrammingLanguage ?? "N/A"})",
+                    "essay" => "Essay",
+                    _ => q.QuestionType
+                };
+
+                string studentAnswer = q.QuestionType == "coding"
+                    ? (ans?.SourceCode ?? (ans?.AnswerText ?? "(no submission)"))
+                    : (ans?.AnswerText ?? "(no submission)");
+
+                string expectedAnswer = q.CorrectAnswer ?? string.Empty;
+                if (q.QuestionType == "multiple_choice" && !string.IsNullOrEmpty(q.CorrectAnswer))
+                {
+                    expectedAnswer = AutoCheckerService.FormatOptionDisplay(q.CorrectAnswer, q.Options);
+                }
+
+                bool isObjective = q.QuestionType != "essay" && q.QuestionType != "coding";
+                string matchStatus = string.Empty;
+                if (isObjective)
+                {
+                    if (ans?.ObtainedPoints.HasValue == true && ans.ObtainedPoints.Value > 0 && ans.ObtainedPoints.Value == (q.Points ?? 0))
+                    {
+                        matchStatus = "Correct";
+                    }
+                    else if (AutoCheckerService.IsAnswerCorrect(ans?.AnswerText, q))
+                    {
+                        matchStatus = "Correct";
+                    }
+                    else
+                    {
+                        matchStatus = DetermineMatchStatus(ans?.AnswerText, q.CorrectAnswer, qType);
+                    }
+                }
+
                 result.Add(new GradingQuestionDto
                 {
                     AnswerId = ans?.AnswerId ?? Guid.Empty,
                     QuestionId = q.QuestionId,
                     QuestionNumber = number++,
                     QuestionText = q.Text,
-                    QuestionType = q.QuestionType == "coding"
-                        ? $"Coding ({q.ProgrammingLanguage ?? "N/A"})"
-                        : "Essay",
-                    StudentAnswerText = q.QuestionType == "coding"
-                        ? (ans?.SourceCode ?? "(no submission)")
-                        : (ans?.AnswerText ?? "(no submission)"),
+                    QuestionType = qType,
+                    StudentAnswerText = studentAnswer,
+                    ExpectedAnswer = expectedAnswer,
+                    MatchStatus = matchStatus,
                     MaxPoints = q.Points ?? 0,
                     ObtainedPoints = ans?.ObtainedPoints,
                     GradedBy = ans?.GradedBy,
@@ -167,6 +205,62 @@ namespace ACPAMS.Services
             return result;
         }
 
+        private static int ComputeLevenshteinDistance(string s, string t)
+        {
+            if (string.IsNullOrEmpty(s)) return t?.Length ?? 0;
+            if (string.IsNullOrEmpty(t)) return s.Length;
+
+            int n = s.Length;
+            int m = t.Length;
+            int[,] d = new int[n + 1, m + 1];
+
+            for (int i = 0; i <= n; d[i, 0] = i++) { }
+            for (int j = 0; j <= m; d[0, j] = j++) { }
+
+            for (int i = 1; i <= n; i++)
+            {
+                for (int j = 1; j <= m; j++)
+                {
+                    int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+                    d[i, j] = Math.Min(
+                        Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                        d[i - 1, j - 1] + cost);
+                }
+            }
+            return d[n, m];
+        }
+
+        private static string DetermineMatchStatus(string? studentText, string? expectedText, string questionType)
+        {
+            if (string.IsNullOrWhiteSpace(studentText) || studentText.Trim().Equals("(no submission)", StringComparison.OrdinalIgnoreCase))
+                return "Incorrect";
+            if (string.IsNullOrWhiteSpace(expectedText))
+                return "Incorrect";
+
+            var s = studentText.Trim();
+            var e = expectedText.Trim();
+
+            if (string.Equals(s, e, StringComparison.OrdinalIgnoreCase))
+                return "Correct";
+
+            var eParts = e.Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
+            if (eParts.Count > 1)
+            {
+                var sParts = s.Split(new[] { ',', ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
+                int matched = sParts.Count(sp => eParts.Any(ep => string.Equals(sp, ep, StringComparison.OrdinalIgnoreCase) || ep.IndexOf(sp, StringComparison.OrdinalIgnoreCase) >= 0));
+                if (matched >= eParts.Count) return "Correct";
+                if (matched > 0) return "Fuzzy / Near Match";
+            }
+
+            if (s.IndexOf(e, StringComparison.OrdinalIgnoreCase) >= 0 || e.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0)
+                return "Fuzzy / Near Match";
+
+            if (ComputeLevenshteinDistance(s.ToLowerInvariant(), e.ToLowerInvariant()) <= 2)
+                return "Fuzzy / Near Match";
+
+            return "Incorrect";
+        }
+
         // ── Persist grades for one attempt, then recompute the final score if fully graded ──
         public async Task SaveGradesAsync(Guid attemptId, List<GradingQuestionDto> questions)
         {
@@ -174,15 +268,31 @@ namespace ACPAMS.Services
 
             foreach (var q in questions)
             {
-                if (q.AnswerId == Guid.Empty) continue;
+                StudentAnswer? answer = null;
+                if (q.AnswerId != Guid.Empty)
+                {
+                    answer = await context.StudentAnswers.FindAsync(q.AnswerId);
+                }
 
-                var answer = await context.StudentAnswers.FindAsync(q.AnswerId);
-                if (answer == null) continue;
+                if (answer == null && q.QuestionId != Guid.Empty && q.ObtainedPoints.HasValue)
+                {
+                    answer = new StudentAnswer
+                    {
+                        AnswerId = Guid.NewGuid(),
+                        AttemptId = attemptId,
+                        QuestionId = q.QuestionId,
+                        AnswerText = string.Empty
+                    };
+                    context.StudentAnswers.Add(answer);
+                }
 
-                answer.ObtainedPoints = q.ObtainedPoints;
-                answer.GradedBy = "instructor";
-                answer.GradedAt = DateTime.Now;
-                answer.IsManualGrade = true;
+                if (answer != null)
+                {
+                    answer.ObtainedPoints = q.ObtainedPoints;
+                    answer.GradedBy = "instructor";
+                    answer.GradedAt = DateTime.Now;
+                    answer.IsManualGrade = true;
+                }
             }
 
             await context.SaveChangesAsync();
@@ -238,6 +348,8 @@ namespace ACPAMS.Services
         public string QuestionText { get; set; } = string.Empty;
         public string QuestionType { get; set; } = string.Empty;
         public string StudentAnswerText { get; set; } = string.Empty;
+        public string? ExpectedAnswer { get; set; }
+        public string? MatchStatus { get; set; }
         public decimal MaxPoints { get; set; }
         public decimal? ObtainedPoints { get; set; }
 

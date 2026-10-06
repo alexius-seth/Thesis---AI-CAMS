@@ -849,7 +849,8 @@
                                                FontFamily="Segoe MDL2 Assets" FontSize="13"
                                                Foreground="White"
                                                Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Save &amp; Attach Rubric"
+                                    <TextBlock x:Name="SaveBtnText"
+                                               Text="Save &amp; Attach Rubric"
                                                VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>

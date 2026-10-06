@@ -285,50 +285,101 @@ namespace ACPAMS.Views.Faculty.Tabs
             }
         }
 
-        private async void IssueWarningFromInvestigation_Click(object sender, RoutedEventArgs e)
+        private void IssueWarningFromInvestigation_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedAttemptId.HasValue)
-            {
-                await IssueWarningAsync(_selectedAttemptId.Value);
-            }
-            else
+            if (!_selectedAttemptId.HasValue)
             {
                 MessageBox.Show("Please select a student first.", "No Student Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var student = ActiveStudents.FirstOrDefault(s => s.AttemptId == _selectedAttemptId.Value);
+            WarningTargetStudentText.Text = $"Target: {student?.StudentName ?? "Selected Student"} (Station: {student?.DeviceName ?? "N/A"})";
+            WarningPresetComboBox.SelectedIndex = 0;
+            WarningMessageTextBox.Text = "Tab switching detected. Return to the exam immediately.";
+            IssueWarningModalOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void WarningPresetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (WarningPresetComboBox.SelectedItem is ComboBoxItem item && WarningMessageTextBox != null)
+            {
+                var content = item.Content?.ToString() ?? "";
+                if (content != "Custom message...")
+                {
+                    WarningMessageTextBox.Text = content;
+                }
             }
         }
 
-        private async Task IssueWarningAsync(Guid attemptId)
+        private void CancelWarningModal_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("Issue a warning to this student?", "Issue Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            IssueWarningModalOverlay.Visibility = Visibility.Collapsed;
+        }
 
-            if (result == MessageBoxResult.Yes)
+        private async void ConfirmSendKioskWarning_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedAttemptId.HasValue)
             {
-                try
-                {
-                    using var context = new AppDbContext();
-                    var monitoringService = new MonitoringService(Dispatcher);
+                IssueWarningModalOverlay.Visibility = Visibility.Collapsed;
+                return;
+            }
 
-                    await monitoringService.IssueWarningAsync(
-                        attemptId,
-                        "behavioral",
-                        "Instructor issued a warning for suspicious behavior",
-                        SessionManager.CurrentUser?.UserId
-                    );
+            var message = WarningMessageTextBox.Text?.Trim();
+            if (string.IsNullOrEmpty(message))
+            {
+                MessageBox.Show("Please enter a warning message.", "Message Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                    var student = ActiveStudents.FirstOrDefault(s => s.AttemptId == attemptId);
-                    ToastNotification.Show(
-                        $"⚠️ Warning issued to {student?.StudentName ?? "student"}",
-                        Application.Current.MainWindow,
-                        3,
-                        true
-                    );
+            try
+            {
+                SendKioskWarningBtn.IsEnabled = false;
+                var monitoringService = new MonitoringService(Dispatcher);
+                await monitoringService.IssueKioskWarningForAttemptAsync(_selectedAttemptId.Value, message);
 
-                    await RefreshDataAsync();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to issue warning: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                IssueWarningModalOverlay.Visibility = Visibility.Collapsed;
+
+                var student = ActiveStudents.FirstOrDefault(s => s.AttemptId == _selectedAttemptId.Value);
+                ToastNotification.Show(
+                    $"⚠️ Warning sent to {student?.StudentName ?? "student"}",
+                    Application.Current.MainWindow,
+                    3,
+                    true
+                );
+
+                await RefreshDataAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to send kiosk warning: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SendKioskWarningBtn.IsEnabled = true;
+            }
+        }
+
+        public async Task IssueWarningAsync(Guid attemptId, string message = "Instructor issued a warning for suspicious behavior")
+        {
+            try
+            {
+                var monitoringService = new MonitoringService(Dispatcher);
+                await monitoringService.IssueKioskWarningForAttemptAsync(attemptId, message);
+
+                var student = ActiveStudents.FirstOrDefault(s => s.AttemptId == attemptId);
+                ToastNotification.Show(
+                    $"⚠️ Warning issued to {student?.StudentName ?? "student"}",
+                    Application.Current.MainWindow,
+                    3,
+                    true
+                );
+
+                await RefreshDataAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to issue warning: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

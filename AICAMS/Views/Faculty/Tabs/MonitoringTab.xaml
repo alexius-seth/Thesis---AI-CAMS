@@ -289,7 +289,8 @@
     <!-- ═══════════════════════════════════════════
          PAGE BODY
     ═══════════════════════════════════════════ -->
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32,24,32,40">
 
             <!-- ─────────────────────────────────────────
@@ -831,5 +832,81 @@
 
         </StackPanel>
     </ScrollViewer>
+
+    <!-- ═══════════════════════════════════════════
+         KIOSK WARNING MODAL OVERLAY
+    ═══════════════════════════════════════════ -->
+    <Grid x:Name="IssueWarningModalOverlay"
+          Visibility="Collapsed"
+          Background="#80000000"
+          Panel.ZIndex="1000">
+        <Border Background="{StaticResource Bg.Surface}"
+                BorderBrush="{StaticResource Border.Subtle}"
+                BorderThickness="1"
+                CornerRadius="12"
+                MaxWidth="520"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Padding="28"
+                Margin="24">
+            <Border.Effect>
+                <DropShadowEffect Color="#000000" BlurRadius="25" ShadowDepth="4" Opacity="0.3"/>
+            </Border.Effect>
+            <StackPanel>
+                <!-- Header -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <Border Background="{StaticResource Status.DangerBg}" CornerRadius="20" Width="40" Height="40" Margin="0,0,12,0">
+                        <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                   Foreground="{StaticResource Status.Danger}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Dispatch Proctor Warning" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text.Primary}"/>
+                        <TextBlock x:Name="WarningTargetStudentText" Text="Target: Student Name" FontSize="12" Foreground="{StaticResource Text.Secondary}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="Preset Warning Reason:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                <ComboBox x:Name="WarningPresetComboBox"
+                          Margin="0,0,0,14"
+                          Padding="10,8"
+                          SelectedIndex="0"
+                          SelectionChanged="WarningPresetComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Tab switching detected. Return to the exam immediately."/>
+                    <ComboBoxItem Content="Suspicious head/eye movement detected. Keep eyes on your screen."/>
+                    <ComboBoxItem Content="Multiple faces detected in camera feed. Unauthorized assistance is prohibited."/>
+                    <ComboBoxItem Content="No face detected in camera feed. Please position yourself in front of the camera."/>
+                    <ComboBoxItem Content="Clipboard copy/paste attempt blocked. Unauthorized content sharing."/>
+                    <ComboBoxItem Content="Custom message..."/>
+                </ComboBox>
+
+                <TextBlock Text="Warning Message (sent to student's screen):" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                <TextBox x:Name="WarningMessageTextBox"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         Height="75"
+                         VerticalScrollBarVisibility="Auto"
+                         Padding="10,8"
+                         FontSize="12"
+                         BorderBrush="{StaticResource Border.Medium}"
+                         Text="Tab switching detected. Return to the exam immediately."
+                         Margin="0,0,0,20"/>
+
+                <!-- Action Buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource Btn.Outlined}"
+                            Content="Cancel"
+                            Width="90"
+                            Margin="0,0,10,0"
+                            Click="CancelWarningModal_Click"/>
+                    <Button x:Name="SendKioskWarningBtn"
+                            Style="{StaticResource Btn.Danger}"
+                            Content="Dispatch Warning"
+                            Padding="16,8"
+                            Click="ConfirmSendKioskWarning_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Grid>
 
 </UserControl>
