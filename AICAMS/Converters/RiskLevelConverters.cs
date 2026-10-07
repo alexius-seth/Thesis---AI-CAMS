@@ -118,4 +118,53 @@ namespace ACPAMS.Converters
             return Binding.DoNothing;
         }
     }
+
+    public class CheatingScoreToBrushConverter : IValueConverter
+    {
+        private static readonly SolidColorBrush LowBrush = new(Color.FromRgb(0x10, 0xB9, 0x81));    // #10B981 (Green)
+        private static readonly SolidColorBrush MediumBrush = new(Color.FromRgb(0xF5, 0x9E, 0x0B)); // #F59E0B (Amber)
+        private static readonly SolidColorBrush HighBrush = new(Color.FromRgb(0xEF, 0x44, 0x44));   // #EF4444 (Red)
+
+        static CheatingScoreToBrushConverter()
+        {
+            LowBrush.Freeze();
+            MediumBrush.Freeze();
+            HighBrush.Freeze();
+        }
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double score = 0;
+            if (value is double d) score = d;
+            else if (value is float f) score = f;
+            else if (value is int i) score = i;
+            else if (value is decimal dec) score = (double)dec;
+            else if (value != null && double.TryParse(value.ToString(), out double parsed)) score = parsed;
+
+            if (score < 30.0) return LowBrush;
+            if (score < 70.0) return MediumBrush;
+            return HighBrush;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
+    }
+
+    public class CheatingScoreToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double score = 0;
+            if (value is double d) score = d;
+            else if (value is float f) score = f;
+            else if (value is int i) score = i;
+            else if (value is decimal dec) score = (double)dec;
+            else if (value != null && double.TryParse(value.ToString(), out double parsed)) score = parsed;
+
+            if (score < 30.0) return Color.FromRgb(0x10, 0xB9, 0x81);
+            if (score < 70.0) return Color.FromRgb(0xF5, 0x9E, 0x0B);
+            return Color.FromRgb(0xEF, 0x44, 0x44);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
+    }
 }

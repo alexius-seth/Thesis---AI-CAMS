@@ -24,6 +24,7 @@
         <SolidColorBrush x:Key="AI.Border"        Color="#7C3AED"/>
         <SolidColorBrush x:Key="Chart.Blue"       Color="#1976D2"/>
         <SolidColorBrush x:Key="Chart.BgBlue"     Color="#DBEAFE"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
         <Style x:Key="T.SectionLabel" TargetType="TextBlock">
             <Setter Property="FontSize"   Value="11"/>
@@ -222,11 +223,23 @@
                                         <TextBlock Grid.Column="0" Text="{Binding QuestionType}"
                                                    FontSize="12" Foreground="{StaticResource Text.Secondary}"
                                                    VerticalAlignment="Center"/>
-                                        <Border Grid.Column="1" Height="8" CornerRadius="4"
-                                                Background="{StaticResource Chart.BgBlue}" VerticalAlignment="Center">
-                                            <Border HorizontalAlignment="Left" Width="{Binding BarWidth}"
-                                                    Height="8" CornerRadius="4" Background="{StaticResource Chart.Blue}"/>
-                                        </Border>
+                                        <Grid Grid.Column="1" Height="8" Margin="0,4" VerticalAlignment="Center">
+                                            <!-- Full-width background track -->
+                                            <Border Background="#E2E8F0" CornerRadius="4" />
+                                            <!-- Proportional fill container -->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <!-- Filled portion: proportional to percentage -->
+                                                    <ColumnDefinition Width="{Binding FillStarWidth}" />
+                                                    <!-- Unfilled portion: proportional to remainder -->
+                                                    <ColumnDefinition Width="{Binding EmptyStarWidth}" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0"
+                                                        Background="#0284C7"
+                                                        CornerRadius="4"
+                                                        Visibility="{Binding HasProgress, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            </Grid>
+                                        </Grid>
                                         <TextBlock Grid.Column="2" Text="{Binding PercentText}"
                                                    FontSize="12" FontWeight="SemiBold"
                                                    Foreground="{StaticResource Chart.Blue}"

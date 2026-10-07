@@ -147,11 +147,7 @@ namespace ACPAMS.Services
 
             if (attempt?.Exam == null) return new List<StudentAnswerDetailDto>();
 
-            var questions = await context.Questions
-                .Include(q => q.Options)
-                .Where(q => q.ExamId == attempt.Exam.ExamId)
-                .OrderBy(q => q.OrderIndex)
-                .ToListAsync();
+            var questions = await new ExamService().GetQuestionsAsync(attempt.Exam.ExamId, attemptId);
 
             var objectiveTypes = new HashSet<string> { "multiple_choice", "true_false", "identification", "enumeration" };
 

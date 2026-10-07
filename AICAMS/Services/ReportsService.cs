@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ACPAMS.Data;
 using ACPAMS.Models;
 using Microsoft.EntityFrameworkCore;
@@ -133,32 +134,35 @@ namespace ACPAMS.Services
 
             var questions = await context.Questions
                 .Where(q => q.ExamId == examId)
+                .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
 
-            var sectionNames = questions
-                .Select(q => q.SectionName ?? "General")
-                .Distinct()
-                .ToList();
+            if (questions.Count == 0) return new List<SectionAverageDto>();
 
             var attempts = await context.StudentExamAttempts
                 .Include(a => a.Answers)
                 .Where(a => a.ExamId == examId && (a.Status == "submitted" || a.Status == "graded"))
                 .ToListAsync();
 
+            // Order sections canonically:
+            // 1. By explicit Part/Section number or Roman numeral (PART I, PART II, PART III, PART IV)
+            // 2. Or by earliest question OrderIndex in the exam
+            var sectionGroups = questions
+                .GroupBy(q => q.SectionName ?? "General")
+                .OrderBy(g => GetSectionSortKey(g.Key, g.Min(q => q.OrderIndex ?? int.MaxValue)))
+                .ToList();
+
             var result = new List<SectionAverageDto>();
 
-            foreach (var sectionName in sectionNames)
+            foreach (var group in sectionGroups)
             {
-                var sectionQuestionIds = questions
-                    .Where(q => (q.SectionName ?? "General") == sectionName)
-                    .Select(q => q.QuestionId)
-                    .ToHashSet();
+                var sectionName = group.Key;
+                var sectionQuestionIds = group.Select(q => q.QuestionId).ToHashSet();
+                decimal sectionMax = group.Sum(q => q.Points ?? 0);
 
-                decimal sectionMax = questions
-                    .Where(q => sectionQuestionIds.Contains(q.QuestionId))
-                    .Sum(q => q.Points ?? 0);
-
-                var studentPercents = new List<decimal>();
+                decimal totalEarned = 0m;
+                decimal totalMax = 0m;
+                int contributingAttempts = 0;
 
                 foreach (var attempt in attempts)
                 {
@@ -170,19 +174,64 @@ namespace ACPAMS.Services
                     if (!sectionAnswers.All(a => a.ObtainedPoints.HasValue)) continue; // section not fully scored for this student yet
                     if (sectionMax <= 0) continue;
 
-                    decimal earned = sectionAnswers.Sum(a => a.ObtainedPoints ?? 0);
-                    studentPercents.Add(earned / sectionMax * 100m);
+                    totalEarned += sectionAnswers.Sum(a => a.ObtainedPoints ?? 0);
+                    totalMax += sectionMax;
+                    contributingAttempts++;
+                }
+
+                decimal percent = 0m;
+                if (totalMax > 0m)
+                {
+                    percent = Math.Clamp((totalEarned / totalMax) * 100m, 0m, 100m);
                 }
 
                 result.Add(new SectionAverageDto
                 {
                     SectionName = sectionName,
-                    HasData = studentPercents.Count > 0,
-                    AveragePercent = studentPercents.Count > 0 ? Math.Round(studentPercents.Average(), 1) : 0
+                    HasData = contributingAttempts > 0,
+                    AveragePercent = contributingAttempts > 0 ? Math.Round(percent, 1) : 0m
                 });
             }
 
             return result;
+        }
+
+        private static (int PartRank, int OrderIndex, string Name) GetSectionSortKey(string sectionName, int minOrderIndex)
+        {
+            var m = Regex.Match(sectionName, @"(?:Part|Section)\s+([IVXLCDM\d]+)", RegexOptions.IgnoreCase);
+            if (m.Success)
+            {
+                string token = m.Groups[1].Value.ToUpperInvariant();
+                if (int.TryParse(token, out int num))
+                {
+                    return (num, minOrderIndex, sectionName);
+                }
+                int roman = RomanToInteger(token);
+                if (roman > 0)
+                {
+                    return (roman, minOrderIndex, sectionName);
+                }
+            }
+            return (int.MaxValue, minOrderIndex, sectionName);
+        }
+
+        private static int RomanToInteger(string roman)
+        {
+            var map = new Dictionary<char, int>
+            {
+                {'I', 1}, {'V', 5}, {'X', 10}, {'L', 50}, {'C', 100}, {'D', 500}, {'M', 1000}
+            };
+            int total = 0, prev = 0;
+            for (int i = roman.Length - 1; i >= 0; i--)
+            {
+                if (map.TryGetValue(roman[i], out int cur))
+                {
+                    if (cur < prev) total -= cur;
+                    else { total += cur; prev = cur; }
+                }
+                else return 0;
+            }
+            return total;
         }
 
         // ── For the exam-selector dropdown on ReportsTab's generic view ──

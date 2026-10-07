@@ -31,6 +31,7 @@
         <converters:RiskLevelToColorConverter x:Key="RiskLevelToColorConverter"/>
         <converters:InitialsConverter x:Key="InitialsConverter"/>
         <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+        <converters:CheatingScoreToBrushConverter x:Key="CheatingScoreToBrushConverter"/>
 
         <!-- TYPOGRAPHY -->
         <Style x:Key="T.SectionLabel" TargetType="TextBlock">
@@ -301,16 +302,18 @@
                 </Border>
 
                 <!-- Cheating Score -->
-                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16,14" BorderBrush="{StaticResource AI.Border}" BorderThickness="3,1,1,1">
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16,14" BorderBrush="{Binding Report.CheatingScore, Converter={StaticResource CheatingScoreToBrushConverter}}" BorderThickness="3,1,1,1">
                     <StackPanel>
                         <TextBlock Text="CHEATING SCORE" Style="{StaticResource T.SectionLabel}" Margin="0,0,0,4"/>
-                        <TextBlock Style="{StaticResource T.KpiNumber}" Foreground="{StaticResource AI.Text}">
+                        <TextBlock Style="{StaticResource T.KpiNumber}" Foreground="{Binding Report.CheatingScore, Converter={StaticResource CheatingScoreToBrushConverter}}">
                             <Run Text="{Binding Report.CheatingScore, StringFormat={}{0:F1}}"/><Run Text="%"/>
                         </TextBlock>
-                        <Border Height="4" CornerRadius="2" Background="{StaticResource AI.Bg}" Margin="0,6,0,0">
-                            <Border HorizontalAlignment="Left" Height="4" CornerRadius="2" Background="{StaticResource AI.Border}" 
-                                    Width="{Binding Report.CheatingScore, Converter={StaticResource PercentageToWidthConverter}}"/>
-                        </Border>
+                        <ProgressBar Height="7" Minimum="0" Maximum="100"
+                                     Value="{Binding Report.CheatingScore}"
+                                     Style="{StaticResource ModernProgressBar}"
+                                     Background="#E5E7EB"
+                                     Foreground="{Binding Report.CheatingScore, Converter={StaticResource CheatingScoreToBrushConverter}}"
+                                     Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
 

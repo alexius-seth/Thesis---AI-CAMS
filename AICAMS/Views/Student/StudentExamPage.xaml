@@ -386,13 +386,27 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="10,12,10,12">
 
-                        <!-- Webcam feed -->
-                        <Border Background="#0F172A" BorderBrush="#1E293B"
-        BorderThickness="1" CornerRadius="6"
-        Height="140" Margin="0,0,0,8">
+                        <Border x:Name="CameraHostBorder"
+                                ClipToBounds="True"
+                                Background="#0F172A" BorderBrush="#1E293B"
+                                BorderThickness="1" CornerRadius="6"
+                                Height="140" Margin="0,0,0,8"
+                                MouseWheel="CameraHost_MouseWheel"
+                                MouseDown="CameraHost_MouseDown"
+                                MouseMove="CameraHost_MouseMove"
+                                MouseUp="CameraHost_MouseUp">
                             <Grid>
                                 <!-- Live webcam feed -->
-                                <Image x:Name="WebcamFeed" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="LowQuality"/>
+                                <Image x:Name="WebcamFeed" Stretch="UniformToFill"
+                                       RenderTransformOrigin="0.5,0.5"
+                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                    <Image.RenderTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform x:Name="CameraScaleTransform" ScaleX="1.0" ScaleY="1.0"/>
+                                            <TranslateTransform x:Name="CameraTranslateTransform" X="0" Y="0"/>
+                                        </TransformGroup>
+                                    </Image.RenderTransform>
+                                </Image>
 
                                 <!-- Placeholder shown when webcam not active -->
                                 <StackPanel x:Name="WebcamPlaceholder" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -411,6 +425,23 @@
                                         <Ellipse Width="5" Height="5" Fill="White"
                          Margin="0,0,3,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="LIVE" FontSize="8" FontWeight="Bold" Foreground="White"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- Overlay Controls: Zoom HUD & Reset Button -->
+                                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="4" CornerRadius="4" Background="#80000000" Padding="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="-" Click="ZoomOut_Click" Width="20" Height="20" Margin="1"
+                                                Foreground="White" Background="#33FFFFFF" BorderThickness="0" Cursor="Hand" FontSize="10" Padding="0"/>
+                                        <TextBlock x:Name="ZoomPercentText" Text="100%"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="White"
+                                                   Margin="4,0"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="9"/>
+                                        <Button Content="+" Click="ZoomIn_Click" Width="20" Height="20" Margin="1"
+                                                Foreground="White" Background="#33FFFFFF" BorderThickness="0" Cursor="Hand" FontSize="10" Padding="0"/>
+                                        <Button Content="Reset" Click="ResetZoom_Click" Margin="2,1,1,1" Padding="4,1"
+                                                Foreground="White" Background="#33FFFFFF" BorderThickness="0" Cursor="Hand" FontSize="9"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>

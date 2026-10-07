@@ -154,6 +154,129 @@ namespace ACPAMS.Views.Student
             WebcamFeed.Source = frame;
         }
 
+        // ── Camera Zoom and Pan Controls ──────────────────────────────────
+        private double _cameraZoom = 1.0;
+        private double _panX = 0.0;
+        private double _panY = 0.0;
+        private Point? _lastCameraMousePos;
+        private bool _isCameraPanning;
+
+        private void UpdateCameraTransforms()
+        {
+            if (CameraScaleTransform != null)
+            {
+                CameraScaleTransform.ScaleX = _cameraZoom;
+                CameraScaleTransform.ScaleY = _cameraZoom;
+            }
+            if (CameraTranslateTransform != null)
+            {
+                CameraTranslateTransform.X = _panX;
+                CameraTranslateTransform.Y = _panY;
+            }
+            if (ZoomPercentText != null)
+            {
+                ZoomPercentText.Text = $"{Math.Round(_cameraZoom * 100):F0}%";
+            }
+        }
+
+        private void SetZoom(double zoom)
+        {
+            _cameraZoom = Math.Clamp(Math.Round(zoom, 2), 1.0, 4.0);
+            if (_cameraZoom <= 1.0)
+            {
+                _panX = 0;
+                _panY = 0;
+            }
+            ClampCameraPan();
+            UpdateCameraTransforms();
+        }
+
+        private void ClampCameraPan()
+        {
+            if (_cameraZoom <= 1.0)
+            {
+                _panX = 0;
+                _panY = 0;
+                return;
+            }
+
+            double width = CameraHostBorder?.ActualWidth > 0 ? CameraHostBorder.ActualWidth : 140;
+            double height = CameraHostBorder?.ActualHeight > 0 ? CameraHostBorder.ActualHeight : 140;
+
+            double maxPanX = ((_cameraZoom - 1.0) * width) / 2.0;
+            double maxPanY = ((_cameraZoom - 1.0) * height) / 2.0;
+
+            _panX = Math.Clamp(_panX, -maxPanX, maxPanX);
+            _panY = Math.Clamp(_panY, -maxPanY, maxPanY);
+        }
+
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            SetZoom(_cameraZoom + 0.25);
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            SetZoom(_cameraZoom - 0.25);
+        }
+
+        private void ResetZoom_Click(object sender, RoutedEventArgs e)
+        {
+            SetZoom(1.0);
+        }
+
+        private void CameraHost_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            e.Handled = true;
+            double delta = e.Delta > 0 ? 0.2 : -0.2;
+            SetZoom(_cameraZoom + delta);
+        }
+
+        private void CameraHost_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_cameraZoom > 1.0 && (e.LeftButton == MouseButtonState.Pressed || e.MiddleButton == MouseButtonState.Pressed))
+            {
+                if (sender is FrameworkElement host)
+                {
+                    _isCameraPanning = true;
+                    _lastCameraMousePos = e.GetPosition(host);
+                    host.CaptureMouse();
+                    host.Cursor = Cursors.SizeAll;
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void CameraHost_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isCameraPanning && _lastCameraMousePos.HasValue && sender is FrameworkElement host)
+            {
+                Point currentPos = e.GetPosition(host);
+                Vector diff = currentPos - _lastCameraMousePos.Value;
+
+                _panX += diff.X;
+                _panY += diff.Y;
+
+                ClampCameraPan();
+                UpdateCameraTransforms();
+
+                _lastCameraMousePos = currentPos;
+                e.Handled = true;
+            }
+        }
+
+        private void CameraHost_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_isCameraPanning && sender is FrameworkElement host)
+            {
+                _isCameraPanning = false;
+                _lastCameraMousePos = null;
+                host.ReleaseMouseCapture();
+                host.Cursor = Cursors.Arrow;
+                e.Handled = true;
+            }
+        }
+
         private void OnSuspiciousActivity(SuspiciousEventType type, string description)
         {
             // Only show alerts for these specific events

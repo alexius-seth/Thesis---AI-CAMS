@@ -85,10 +85,29 @@ namespace ACPAMS.Views.Faculty
                 Report.Status = attempt.Status ?? "in_progress";
                 Report.IsFinalized = attempt.Status == "graded";
 
-                // Calculate scores - convert decimal to double
+                // Load questions in the exact presentation order for this student attempt
+                var examService = new ExamService();
+                var questions = attempt.ExamId.HasValue
+                    ? await examService.GetQuestionsAsync(attempt.ExamId.Value, _attemptId)
+                    : new List<Question>();
+
                 var answers = attempt.Answers?.ToList() ?? new List<StudentAnswer>();
+
+                if (questions.Count == 0 && answers.Count > 0)
+                {
+                    // Fallback to questions recorded on answers if exam definition unavailable
+                    questions = answers
+                        .Where(a => a.Question != null)
+                        .Select(a => a.Question!)
+                        .OrderBy(q => q.OrderIndex)
+                        .ToList();
+                }
+
+                // Calculate scores - convert decimal to double
                 Report.TotalScore = (double)(answers.Sum(a => a.ObtainedPoints ?? 0));
-                Report.MaxPossibleScore = (double)(answers.Sum(a => a.Question?.Points ?? 0));
+                Report.MaxPossibleScore = questions.Count > 0
+                    ? (double)questions.Sum(q => q.Points ?? 0)
+                    : (double)(answers.Sum(a => a.Question?.Points ?? 0));
 
                 // Calculate percentage
                 if (Report.MaxPossibleScore > 0)
@@ -130,18 +149,24 @@ namespace ACPAMS.Views.Faculty
                     Severity = GetSeverity(f.Action ?? "")
                 }).ToList();
 
-                // Question answers
-                Report.QuestionAnswers = answers.Select((a, index) => new QuestionAnswerDto
+                // Question answers - ordered by the exact sequence presented to the student
+                Report.QuestionAnswers = questions.Select((q, index) =>
                 {
-                    Number = index + 1,
-                    Text = a.Question?.Text ?? "Unknown Question",
-                    Type = a.Question?.QuestionType ?? "Unknown",
-                    StudentAnswer = a.Question?.QuestionType == "multiple_choice"
-                        ? AutoCheckerService.FormatOptionDisplay(a.AnswerText, a.Question?.Options)
-                        : (a.AnswerText ?? a.SourceCode ?? "No answer provided"),
-                    ObtainedPoints = a.ObtainedPoints.HasValue ? (double)a.ObtainedPoints.Value : (double?)null,
-                    MaxPoints = a.Question?.Points.HasValue == true ? (double)a.Question.Points.Value : 0,
-                    Status = a.ObtainedPoints.HasValue ? "graded" : "pending"
+                    var a = answers.FirstOrDefault(ans => ans.QuestionId == q.QuestionId);
+                    return new QuestionAnswerDto
+                    {
+                        Number = index + 1,
+                        Text = q.Text ?? "Unknown Question",
+                        Type = q.QuestionType ?? "Unknown",
+                        StudentAnswer = a == null
+                            ? "No answer provided"
+                            : (q.QuestionType == "multiple_choice"
+                                ? AutoCheckerService.FormatOptionDisplay(a.AnswerText, q.Options)
+                                : (a.AnswerText ?? a.SourceCode ?? "No answer provided")),
+                        ObtainedPoints = a?.ObtainedPoints.HasValue == true ? (double)a.ObtainedPoints.Value : (double?)null,
+                        MaxPoints = q.Points.HasValue ? (double)q.Points.Value : 0,
+                        Status = a?.ObtainedPoints.HasValue == true ? "graded" : "pending"
+                    };
                 }).ToList();
 
                 // If we have no cheating score history, add some sample data

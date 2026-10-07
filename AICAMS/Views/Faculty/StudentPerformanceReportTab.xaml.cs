@@ -71,12 +71,10 @@ namespace ACPAMS.Views.Faculty
             }
             QuestionTypeEmptyHint.Visibility = Visibility.Collapsed;
 
-            const double maxBarWidth = 160;
-            QuestionTypeList.ItemsSource = types.ConvertAll(t => new
+            QuestionTypeList.ItemsSource = types.ConvertAll(t => new QuestionTypePerformanceItem
             {
-                t.QuestionType,
-                PercentText = $"{t.AveragePercent:0.#}%",
-                BarWidth = Math.Max(4, (double)t.AveragePercent / 100.0 * maxBarWidth)
+                QuestionType = t.QuestionType,
+                Percentage = (double)t.AveragePercent
             });
         }
 
@@ -217,5 +215,19 @@ namespace ACPAMS.Views.Faculty
                     break;
             }
         }
+    }
+
+    public class QuestionTypePerformanceItem
+    {
+        public string QuestionType { get; set; } = string.Empty;
+        public double Percentage { get; set; } // e.g., 87.5, 60.0, 0.0
+        public string PercentText => $"{Percentage:0.#}%";
+
+        // Ensure non-zero positive star values to avoid WPF layout exceptions
+        public GridLength FillStarWidth => new GridLength(Math.Max(0.0001, Math.Min(100.0, Percentage)), GridUnitType.Star);
+        public GridLength EmptyStarWidth => new GridLength(Math.Max(0.0001, 100.0 - Math.Min(100.0, Percentage)), GridUnitType.Star);
+
+        // Completely hide the indicator at 0% to prevent corner radius rendering artifacts
+        public bool HasProgress => Percentage > 0.0;
     }
 }

@@ -630,26 +630,27 @@
                                    Style="{StaticResource T.CardSubtitle}"
                                    Margin="0,0,0,16"/>
 
-                        <ItemsControl x:Name="SectionPerformanceList">
+                        <ItemsControl x:Name="SectionPerformanceList" Grid.IsSharedSizeScope="True">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="SectionTitleGroup"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="36"/>
+                                            <ColumnDefinition Width="42"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding SectionName}"
                                                    FontSize="11" Foreground="{StaticResource Text.Secondary}"
-                                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                        <Border Grid.Column="1" Height="6" CornerRadius="3"
-                                                Background="{StaticResource Chart.BgBlue}"
-                                                VerticalAlignment="Center">
-                                            <Border HorizontalAlignment="Left"
-                                                    Width="{Binding BarWidth}"
-                                                    Height="6" CornerRadius="3"
-                                                    Background="{StaticResource Chart.Blue}"/>
-                                        </Border>
+                                                   Margin="0,0,12,0" MaxWidth="170"
+                                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding SectionName}"
+                                                   VerticalAlignment="Center"/>
+                                        <ProgressBar Grid.Column="1" Height="6"
+                                                     Minimum="0" Maximum="100"
+                                                     Value="{Binding AveragePercent}"
+                                                     Style="{StaticResource ModernProgressBar}"
+                                                     Background="{StaticResource Chart.BgBlue}"
+                                                     Foreground="{StaticResource Chart.Blue}"
+                                                     VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding PercentText}"
                                                    FontSize="11" FontWeight="SemiBold"
                                                    Foreground="{StaticResource Chart.Blue}"

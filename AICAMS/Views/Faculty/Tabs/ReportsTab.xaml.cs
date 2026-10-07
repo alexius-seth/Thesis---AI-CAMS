@@ -246,16 +246,12 @@ namespace ACPAMS.Views.Faculty.Tabs
 
             SectionPerformanceEmptyHint.Visibility = Visibility.Collapsed;
 
-            // BarWidth is in pixels against the ItemsControl's ~200px available
-            // track width (Grid.Column="*" between the 70px label and 36px
-            // percent columns) — scaled directly off AveragePercent (0-100).
-            const double maxBarWidth = 200;
-
             SectionPerformanceList.ItemsSource = withData.Select(s => new SectionPerformanceRowVM
             {
                 SectionName = s.SectionName,
                 PercentText = $"{s.AveragePercent:0.#}%",
-                BarWidth = Math.Max(4, (double)s.AveragePercent / 100.0 * maxBarWidth)
+                AveragePercent = (double)s.AveragePercent,
+                BarWidth = (double)s.AveragePercent
             }).ToList();
         }
 
@@ -522,6 +518,7 @@ namespace ACPAMS.Views.Faculty.Tabs
     {
         public string SectionName { get; set; } = string.Empty;
         public string PercentText { get; set; } = string.Empty;
+        public double AveragePercent { get; set; }
         public double BarWidth { get; set; }
     }
 }

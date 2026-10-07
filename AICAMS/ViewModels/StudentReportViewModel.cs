@@ -54,6 +54,7 @@ namespace ACPAMS.ViewModels
     public class QuestionAnswerDto
     {
         public int Number { get; set; }
+        public int PresentedOrder => Number;
         public string Text { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
         public string StudentAnswer { get; set; } = string.Empty;

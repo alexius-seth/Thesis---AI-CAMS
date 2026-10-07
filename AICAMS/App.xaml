@@ -1,4 +1,4 @@
-﻿<Application x:Class="ACPAMS.App"
+<Application x:Class="ACPAMS.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ACPAMS"
@@ -11,6 +11,28 @@
             <converters:FlagSeverityToColorConverter x:Key="FlagSeverityToColorConverter"/>
             <converters:InitialsConverter x:Key="InitialsConverter"/>
             <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
+            <converters:CheatingScoreToBrushConverter x:Key="CheatingScoreToBrushConverter"/>
+            <converters:CheatingScoreToColorConverter x:Key="CheatingScoreToColorConverter"/>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+            <!-- Modern Progress Bar with track, rounded caps, and dynamic indicator fill -->
+            <Style x:Key="ModernProgressBar" TargetType="ProgressBar">
+                <Setter Property="Height" Value="6"/>
+                <Setter Property="Background" Value="#E5E7EB"/>
+                <Setter Property="Foreground" Value="#1976D2"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ProgressBar">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="3" ClipToBounds="True">
+                                <Grid x:Name="PART_Track">
+                                    <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" CornerRadius="3"/>
+                                </Grid>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
