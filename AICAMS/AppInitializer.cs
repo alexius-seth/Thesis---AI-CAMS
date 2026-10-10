@@ -71,6 +71,14 @@ namespace ACPAMS
                     )
                     BEGIN
                         ALTER TABLE audit_logs ADD dismissal_reason NVARCHAR(255) NULL;
+                    END
+
+                    IF EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('students') AND name = 'program' AND max_length < 200 AND max_length > 0
+                    )
+                    BEGIN
+                        ALTER TABLE students ALTER COLUMN program NVARCHAR(100) NULL;
                     END");
 
                 // Initialize default data

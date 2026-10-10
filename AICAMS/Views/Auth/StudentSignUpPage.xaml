@@ -209,8 +209,11 @@
                                   VerticalContentAlignment="Center"
                                   FontFamily="Segoe UI"
                                   FontSize="13">
-                            <ComboBoxItem Content="BS Computer Science"/>
-                            <ComboBoxItem Content="BS Information Technology"/>
+                            <ComboBoxItem Content="Bachelor of Science in Computer Science"/>
+                            <ComboBoxItem Content="Bachelor of Science in Information Technology"/>
+                            <ComboBoxItem Content="Bachelor of Library &amp; Information Science"/>
+                            <ComboBoxItem Content="Associate in Computer Science"/>
+                            <ComboBoxItem Content="Associate in Information Technology"/>
                         </ComboBox>
                     </Border>
 

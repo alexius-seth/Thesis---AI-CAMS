@@ -83,6 +83,7 @@ namespace ACPAMS.Data
             modelBuilder.Entity<Student>(entity =>
             {
                 entity.HasKey(e => e.StudentId);
+                entity.Property(e => e.Program).HasMaxLength(100);
                 entity.HasOne(e => e.User)
                       .WithOne(u => u.Student)
                       .HasForeignKey<Student>(e => e.UserId)

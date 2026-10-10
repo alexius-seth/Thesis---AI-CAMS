@@ -20,7 +20,7 @@ namespace ACPAMS.ViewModels
                 if (_isFlaggedForReview != value)
                 {
                     _isFlaggedForReview = value;
-                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsFlaggedForReview));
                     OnPropertyChanged(nameof(IsAnswered));
                     OnPropertyChanged(nameof(IsUnanswered));
                 }

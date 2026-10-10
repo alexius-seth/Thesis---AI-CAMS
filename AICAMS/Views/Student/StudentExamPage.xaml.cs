@@ -17,8 +17,14 @@ using System.Windows.Threading;
 
 namespace ACPAMS.Views.Student
 {
-    public partial class StudentExamPage : UserControl
+    public partial class StudentExamPage : UserControl, System.ComponentModel.INotifyPropertyChanged
     {
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+        }
+
         private readonly ExamService _examService;
         private List<Question> _questions = new();
         private List<ExamQuestionViewModel> _questionViewModels = new();
@@ -828,6 +834,8 @@ namespace ACPAMS.Views.Student
             if (index < 0 || index >= _questions.Count) return;
 
             _currentIndex = index;
+            OnPropertyChanged(nameof(CurrentQuestion));
+
             var question = _questions[index];
             var qVm = _questionViewModels.Count > index ? _questionViewModels[index] : null;
 
