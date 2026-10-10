@@ -277,16 +277,28 @@ namespace ACPAMS.Views.Faculty
                     .OrderBy(g => g.Min(q => q.OrderIndex ?? 0))
                     .ToList();
 
+                Dictionary<string, string>? instMap = null;
+                if (!string.IsNullOrWhiteSpace(exam.Instructions))
+                {
+                    try { instMap = JsonSerializer.Deserialize<Dictionary<string, string>>(exam.Instructions); } catch { }
+                }
+
                 foreach (var g in grouped)
                 {
                     var firstQ = g.FirstOrDefault();
                     var sectionType = firstQ != null ? GetProperTypeName(firstQ.QuestionType) : "Identification";
+                    string instructions = string.Empty;
+                    if (instMap != null && instMap.TryGetValue(g.Key, out var inst))
+                    {
+                        instructions = inst;
+                    }
+
                     var sec = new ExamSection
                     {
                         Id = Guid.NewGuid().ToString(),
                         Name = g.Key,
                         Type = sectionType,
-                        Instructions = string.Empty,
+                        Instructions = instructions,
                         IsActive = false,
                         Questions = new List<QuestionItem>()
                     };
@@ -3501,6 +3513,31 @@ namespace ACPAMS.Views.Faculty
         private void NavigateToDashboard(object sender, RoutedEventArgs e)
         {
             MainWindow.NavigateToDashboardStatic();
+        }
+
+        private void CancelExamCreation_Click(object sender, RoutedEventArgs e)
+        {
+            bool hasUnsavedChanges = _sections.Any(s => s.Questions.Count > 0 || !string.IsNullOrWhiteSpace(s.Name));
+            if (hasUnsavedChanges)
+            {
+                var result = MessageBox.Show(
+                    "Are you sure you want to cancel? Any unsaved changes to this exam will be lost.",
+                    "Cancel Exam Creation",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes) return;
+            }
+
+            _sections.Clear();
+            _rubricData.Clear();
+            _selectedSection = null!;
+            _editingExamId = null;
+            _editingExamName = null;
+            _editingCourseCode = null;
+            _editingTimeLimitMinutes = null;
+            _editingRandomizeQuestions = null;
+
+            MainWindow.NavigateToFacultyHomeStatic();
         }
 
         private void NavigateToCreateExam(object sender, RoutedEventArgs e)

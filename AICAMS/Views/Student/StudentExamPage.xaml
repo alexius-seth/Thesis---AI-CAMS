@@ -174,6 +174,71 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Review Toggle Button Style -->
+        <Style x:Key="Btn.ReviewToggle" TargetType="ToggleButton">
+            <Setter Property="FontSize"        Value="11"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="FontFamily"      Value="Segoe UI"/>
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="#64748B"/>
+            <Setter Property="BorderBrush"     Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"         Value="10,5"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="RootBorder" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="#F8FAFC"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="#FEF3C7"/>
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#F59E0B"/>
+                                <Setter Property="Foreground" Value="#B45309"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sidebar Palette Indicators Template -->
+        <DataTemplate x:Key="QuestionPaletteItemTemplate">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid Width="16" Height="16" Margin="0,0,8,0">
+                    <Ellipse x:Name="DotIndicator" Width="8" Height="8"
+                             Stroke="#94A3B8" StrokeThickness="1.5" Fill="Transparent"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="FlagIndicator" Text="⚑" FontSize="11" FontWeight="Bold"
+                               Foreground="#F59E0B" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="Collapsed"/>
+                </Grid>
+                <TextBlock Text="{Binding DisplayNumber, StringFormat={}Question {0}}" FontSize="12"
+                           Foreground="{StaticResource Text.Secondary}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsFlaggedForReview}" Value="True">
+                    <Setter TargetName="FlagIndicator" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="DotIndicator" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                        <Condition Binding="{Binding IsFlaggedForReview}" Value="False"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="DotIndicator" Property="Fill" Value="#10B981"/>
+                    <Setter TargetName="DotIndicator" Property="Stroke" Value="#10B981"/>
+                </MultiDataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
@@ -320,6 +385,8 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
@@ -340,11 +407,71 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- SECTION INSTRUCTIONS CALLOUT -->
+                    <Border x:Name="SectionInstructionsCard"
+                            Grid.Row="1"
+                            Background="#F8FAFC"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,8"
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#64748B" Margin="0,0,8,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="SectionInstructionsText"
+                                       FontStyle="Italic" FontSize="12" Foreground="#475569"
+                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- QUESTION HEADER & MARK FOR REVIEW BAR -->
+                    <Border Grid.Row="2"
+                            Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="0,0,0,1"
+                            Padding="20,10">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="{StaticResource Bg.Base}"
+                                        BorderBrush="#64748B"
+                                        BorderThickness="1" CornerRadius="4" Padding="8,3"
+                                        Margin="0,0,8,0">
+                                    <TextBlock x:Name="QuestionTypeBadge" Text="Question" FontSize="10" FontWeight="Bold"
+                                               Foreground="#64748B"/>
+                                </Border>
+                                <Border Background="{StaticResource Accent.PrimaryBg}"
+                                        BorderBrush="{StaticResource Accent.Primary}"
+                                        BorderThickness="1" CornerRadius="4" Padding="8,3"
+                                        Margin="0,0,10,0">
+                                    <TextBlock x:Name="QuestionPointsBadge" Text="1 pt" FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource Accent.Primary}"/>
+                                </Border>
+                                <TextBlock x:Name="QuestionIndexBadge" Text="Question 1 of 1"
+                                           FontSize="11" Foreground="{StaticResource Text.Muted}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <ToggleButton x:Name="MarkForReviewBtn"
+                                          HorizontalAlignment="Right"
+                                          VerticalAlignment="Center"
+                                          Style="{StaticResource Btn.ReviewToggle}"
+                                          IsChecked="{Binding CurrentQuestion.IsFlaggedForReview, Mode=TwoWay}"
+                                          Click="MarkForReviewBtn_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚑" Margin="0,0,6,0" VerticalAlignment="Center"
+                                               Foreground="#F59E0B" FontWeight="Bold" FontSize="12"/>
+                                    <TextBlock Text="Mark for Review" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ToggleButton>
+                        </Grid>
+                    </Border>
+
                     <!-- Canvas host -->
-                    <ContentControl Grid.Row="1" x:Name="ExamCanvasHost"/>
+                    <ContentControl Grid.Row="3" x:Name="ExamCanvasHost"/>
 
                     <!-- Previous / Next bar -->
-                    <Border Grid.Row="2"
+                    <Border Grid.Row="4"
                             Background="{StaticResource Bg.Surface}"
                             BorderBrush="{StaticResource Border.Subtle}"
                             BorderThickness="0,1,0,0" Padding="24,12">

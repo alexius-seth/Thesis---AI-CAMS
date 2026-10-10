@@ -54,7 +54,15 @@ namespace ACPAMS.Services
         private static int FRAME_THRESHOLD => AppSettingsService.NoFaceFrameThreshold;
         private static double YAW_THRESHOLD => AppSettingsService.HeadYawThreshold;
         private static double PITCH_THRESHOLD => AppSettingsService.HeadPitchThreshold;
-        private const double EAR_THRESHOLD = 0.20;
+        
+        // ── Adaptive Eye Gaze Calibration (Task 2) ─────────────────────────
+        private readonly List<double> _calibrationEarSamples = new();
+        private double _baselineOpenEar = 0.28;
+        private double _blinkThreshold = 0.18;
+        private bool _isEarCalibrated = false;
+        private int _marginalEarDropFrames = 0;
+        private const int HEAD_POSE_SUPPRESSION_MAX_FRAMES = 75; // 2.5 seconds at 30fps
+
         private const int GAZE_DIVERTED_THRESHOLD = 45;
         private int _gazeDivertedFrameCount = 0;
 
@@ -64,6 +72,15 @@ namespace ACPAMS.Services
         private static double SCORE_DECAY_RATE => AppSettingsService.ScoreDecayRate;
         private const double BASE_SCORE_INCREMENT = 0.5;
         private const double EXPONENT_BASE = 1.08;
+
+        // ── Clean Behavior & Risk Score (Task 3) ──────────────────────────
+        private DateTime _lastAnomalyTime = DateTime.UtcNow;
+        private DateTime _lastCleanDecayTime = DateTime.UtcNow;
+        public double CurrentRiskScore
+        {
+            get => _cheatingScore;
+            set => _cheatingScore = Math.Clamp(value, 0.0, MAX_SCORE);
+        }
 
         private static int WIGGLE_ROOM_FRAMES => AppSettingsService.WiggleRoomFrames;
         private int _lookingAwayFrameCount = 0;
@@ -269,8 +286,11 @@ namespace ACPAMS.Services
 
         private void UpdateCheatingScore(bool isLookingAway)
         {
+            var now = DateTime.UtcNow;
+
             if (isLookingAway)
             {
+                _lastAnomalyTime = now;
                 _lookingAtScreenFrameCount = 0;
                 _lookingAwayFrameCount++;
 
@@ -279,9 +299,8 @@ namespace ACPAMS.Services
                     _inPenaltyZone = true;
                     _penaltyFrameCount++;  // keeps accumulating even if briefly interrupted
 
-                    double increment = BASE_SCORE_INCREMENT *
-                        Math.Pow(EXPONENT_BASE, _penaltyFrameCount / 30.0);
-
+                    // Forgiving incremental score addition capped to prevent abrupt spikes
+                    double increment = Math.Min(BASE_SCORE_INCREMENT * Math.Pow(EXPONENT_BASE, _penaltyFrameCount / 30.0), 3.0);
                     _cheatingScore = Math.Min(_cheatingScore + increment, MAX_SCORE);
 
                     if (_cheatingScore >= 30 && _cheatingScore - increment < 30)
@@ -312,6 +331,13 @@ namespace ACPAMS.Services
                     if (_cheatingScore > 0)
                         _cheatingScore = Math.Max(0, _cheatingScore - SCORE_DECAY_RATE);
                 }
+
+                // Clean behavior decay: every 60 consecutive seconds without any anomaly, decrement CurrentRiskScore by 2 points (floor 0)
+                if ((now - _lastAnomalyTime).TotalSeconds >= 60 && (now - _lastCleanDecayTime).TotalSeconds >= 60)
+                {
+                    _cheatingScore = Math.Max(0.0, _cheatingScore - 2.0);
+                    _lastCleanDecayTime = now;
+                }
             }
 
             // Notify UI every 10 frames
@@ -327,6 +353,25 @@ namespace ACPAMS.Services
             int right = Math.Clamp(face.Right, left + 1, frame.Cols - 1);
             int bottom = Math.Clamp(face.Bottom, top + 1, frame.Rows - 1);
             var dlibRect = new DlibDotNet.Rectangle(left, top, right, bottom);
+
+            // Contrast Pre-processing: Apply CLAHE (clip limit 2.0) on the cropped eye region prior to landmark detection
+            int eyeRoiY = Math.Clamp(face.Top + (int)(face.Height * 0.18), 0, frame.Rows - 1);
+            int eyeRoiH = Math.Clamp((int)(face.Height * 0.38), 1, frame.Rows - eyeRoiY);
+            int eyeRoiX = Math.Clamp(face.Left, 0, frame.Cols - 1);
+            int eyeRoiW = Math.Clamp(face.Width, 1, frame.Cols - eyeRoiX);
+            var eyeRoiRect = new OpenCvSharp.Rect(eyeRoiX, eyeRoiY, eyeRoiW, eyeRoiH);
+
+            using (var eyeRoi = new Mat(frame, eyeRoiRect))
+            using (var clahe = Cv2.CreateCLAHE(2.0, new OpenCvSharp.Size(8, 8)))
+            {
+                Mat[] channels = Cv2.Split(eyeRoi);
+                for (int i = 0; i < channels.Length; i++)
+                {
+                    clahe.Apply(channels[i], channels[i]);
+                }
+                Cv2.Merge(channels, eyeRoi);
+                foreach (var ch in channels) ch.Dispose();
+            }
 
             int stride = (int)frame.Step();
             int size = frame.Rows * stride;
@@ -378,13 +423,48 @@ namespace ACPAMS.Services
 
             bool headTurned = (yaw > YAW_THRESHOLD || yaw < -YAW_THRESHOLD || pitch < -PITCH_THRESHOLD);
 
-            // 2. Eye Aspect Ratio (EAR)
+            // 2. Eye Aspect Ratio (EAR) & Dynamic Baseline Calibration
             double leftEar = CalculateEyeAspectRatio(shape, 36, 37, 38, 39, 40, 41);
             double rightEar = CalculateEyeAspectRatio(shape, 42, 43, 44, 45, 46, 47);
             double ear = (leftEar + rightEar) / 2.0;
-            bool eyesOpen = ear >= EAR_THRESHOLD;
 
-            // 3. Gaze Direction
+            if (!_isEarCalibrated)
+            {
+                _calibrationEarSamples.Add(ear);
+                if (_calibrationEarSamples.Count >= 100)
+                {
+                    var sorted = _calibrationEarSamples.OrderBy(x => x).ToList();
+                    _baselineOpenEar = sorted[sorted.Count / 2];
+                    _blinkThreshold = Math.Min(_baselineOpenEar * 0.65, 0.18);
+                    _isEarCalibrated = true;
+                }
+                else
+                {
+                    _blinkThreshold = 0.18;
+                }
+            }
+
+            bool eyesOpen = ear >= _blinkThreshold;
+
+            // 3. Head Pose Fallback: When straight forward (|Yaw| < 12° & |Pitch| < 12°),
+            // suppress gaze deviation alerts triggered solely by marginal EAR drops unless continuous for > 2.5s
+            bool isFacingForward = Math.Abs(yaw) < 12.0 && Math.Abs(pitch) < 12.0;
+            bool isMarginalEarDrop = !eyesOpen && (ear >= _blinkThreshold * 0.70);
+
+            if (isFacingForward && isMarginalEarDrop)
+            {
+                _marginalEarDropFrames++;
+                if (_marginalEarDropFrames <= HEAD_POSE_SUPPRESSION_MAX_FRAMES)
+                {
+                    eyesOpen = true; // Suppress false closure / squint alert
+                }
+            }
+            else
+            {
+                _marginalEarDropFrames = 0;
+            }
+
+            // 4. Gaze Direction
             string gazeDirection = eyesOpen
                 ? DetectGazeDirection(gray, shape, display)
                 : "Closed";
@@ -395,15 +475,22 @@ namespace ACPAMS.Services
                 GazeDirectionUpdated?.Invoke(gazeDirection);
             });
 
-            // 4. Gaze Diverted Alert
+            // 5. Gaze Diverted Alert
             bool gazeDiverted = eyesOpen && (gazeDirection == "Left" || gazeDirection == "Right");
             if (gazeDiverted)
             {
-                _gazeDivertedFrameCount++;
-                if (_gazeDivertedFrameCount == GAZE_DIVERTED_THRESHOLD)
+                if (isFacingForward && isMarginalEarDrop && _marginalEarDropFrames <= HEAD_POSE_SUPPRESSION_MAX_FRAMES)
                 {
-                    RaiseSuspiciousEvent(SuspiciousEventType.GazeDiverted,
-                        $"Gaze diverted ({gazeDirection}) away from screen.");
+                    _gazeDivertedFrameCount = 0;
+                }
+                else
+                {
+                    _gazeDivertedFrameCount++;
+                    if (_gazeDivertedFrameCount == GAZE_DIVERTED_THRESHOLD)
+                    {
+                        RaiseSuspiciousEvent(SuspiciousEventType.GazeDiverted,
+                            $"Gaze diverted ({gazeDirection}) away from screen.");
+                    }
                 }
             }
             else
@@ -510,12 +597,21 @@ namespace ACPAMS.Services
 
         private void RaiseSuspiciousEvent(SuspiciousEventType type, string description)
         {
+            _lastAnomalyTime = DateTime.UtcNow;
+
             if (_lastAlertTime.TryGetValue(type, out var lastTime))
             {
                 if ((DateTime.Now - lastTime).TotalSeconds < ALERT_COOLDOWN_SECONDS)
                     return;
             }
             _lastAlertTime[type] = DateTime.Now;
+
+            // Reduce individual transient gaze flag penalties to +3 to +5 points
+            if (type == SuspiciousEventType.GazeDiverted)
+            {
+                _cheatingScore = Math.Min(_cheatingScore + 4.0, MAX_SCORE);
+                _dispatcher.BeginInvoke(() => CheatingScoreUpdated?.Invoke(_cheatingScore));
+            }
 
             _dispatcher.BeginInvoke(() =>
             {
@@ -612,24 +708,28 @@ namespace ACPAMS.Services
 
             foreach (var attempt in attempts)
             {
-                // Get recent flags for this attempt (excluding head movement events)
+                // Get recent flags for this attempt (excluding head movement events and dismissed flags)
                 var recentFlags = await context.AuditLogs
                     .Where(l => l.EntityId == attempt.AttemptId.ToString()
                                 && l.EntityType == "StudentExamAttempt"
+                                && !l.IsDismissed
                                 && l.CreatedAt >= DateTime.Now.AddMinutes(-5)
                                 && !l.Action.Contains("HeadTurned")
                                 && !l.Action.Contains("HeadTilted"))
                     .ToListAsync();
 
-                // Get all flags count (excluding head movement events)
-                var totalFlags = await context.AuditLogs
-                    .CountAsync(l => l.EntityId == attempt.AttemptId.ToString()
-                                     && l.EntityType == "StudentExamAttempt"
-                                     && !l.Action.Contains("HeadTurned")
-                                     && !l.Action.Contains("HeadTilted"));
+                // Get all flags for this attempt (excluding head movement events and dismissed flags)
+                var allActiveLogs = await context.AuditLogs
+                    .Where(l => l.EntityId == attempt.AttemptId.ToString()
+                                && l.EntityType == "StudentExamAttempt"
+                                && !l.IsDismissed
+                                && !l.Action.Contains("HeadTurned")
+                                && !l.Action.Contains("HeadTilted"))
+                    .ToListAsync();
 
-                // Determine risk level
-                var riskLevel = GetRiskLevel(totalFlags, recentFlags);
+                var totalFlags = allActiveLogs.Count;
+                double riskScore = CalculateRiskScore(allActiveLogs, attempt.StartedAt);
+                var riskLevel = riskScore >= 100 ? "high" : GetRiskLevel(totalFlags, recentFlags);
 
                 result.Add(new ActiveStudentDto
                 {
@@ -646,6 +746,7 @@ namespace ACPAMS.Services
                     Status = attempt.Status ?? "in_progress",
                     StartedAt = attempt.StartedAt ?? DateTime.Now,
                     RiskLevel = riskLevel,
+                    RiskScore = riskScore,
                     FlagCount = totalFlags,
                     RecentFlags = recentFlags.Take(3).Select(l => new FlagDto
                     {
@@ -667,6 +768,7 @@ namespace ACPAMS.Services
             return await context.AuditLogs
                 .Include(l => l.User)
                 .Where(l => l.EntityType == "StudentExamAttempt"
+                            && !l.IsDismissed
                             && l.CreatedAt >= cutoff
                             && (l.Action.Contains("NoFaceDetected") ||
                                 l.Action.Contains("MultipleFaces") ||
@@ -762,6 +864,7 @@ namespace ACPAMS.Services
             var flagCount = await context.AuditLogs
                 .Where(l => l.EntityType == "StudentExamAttempt"
                             && (activeAttemptIds.Count > 0 ? activeAttemptIds.Contains(l.EntityId) : false)
+                            && !l.IsDismissed
                             && l.CreatedAt >= DateTime.Now.AddMinutes(-30)
                             && !l.Action.Contains("HeadTurned")
                             && !l.Action.Contains("HeadTilted"))
@@ -770,6 +873,7 @@ namespace ACPAMS.Services
             var highRiskCount = await context.AuditLogs
                 .Where(l => l.EntityType == "StudentExamAttempt"
                             && (activeAttemptIds.Count > 0 ? activeAttemptIds.Contains(l.EntityId) : false)
+                            && !l.IsDismissed
                             && (l.Action.Contains("NoFaceDetected") ||
                                 l.Action.Contains("AltTab") ||
                                 l.Action.Contains("WindowFocus"))
@@ -785,6 +889,37 @@ namespace ACPAMS.Services
         }
 
         // ─── Helper Methods ────────────────────────────────────────────
+        public static double CalculateRiskScore(IEnumerable<AuditLog> activeNonDismissedLogs, DateTime? startedAt = null)
+        {
+            double score = 0;
+            var logs = activeNonDismissedLogs.Where(l => !l.IsDismissed).ToList();
+
+            foreach (var log in logs)
+            {
+                string action = log.Action ?? "";
+                if (action.Contains("GazeDiverted")) score += 4.0;
+                else if (action.Contains("Clipboard")) score += 10.0;
+                else if (action.Contains("AltTab") || action.Contains("WindowFocus")) score += 15.0;
+                else if (action.Contains("NoFaceDetected")) score += 15.0;
+                else if (action.Contains("MultipleFaces")) score += 20.0;
+                else score += 5.0;
+            }
+
+            // Subtract decay credits for elapsed clean time if applicable
+            if (logs.Count > 0)
+            {
+                var latestLog = logs.Max(l => l.CreatedAt);
+                var cleanMinutes = Math.Max(0, (DateTime.Now - latestLog).TotalMinutes);
+                score = Math.Max(0, score - (Math.Floor(cleanMinutes) * 2.0));
+            }
+            else
+            {
+                score = 0;
+            }
+
+            return Math.Clamp(Math.Round(score, 1), 0.0, 100.0);
+        }
+
         private string GetRiskLevel(int totalFlags, List<AuditLog> recentFlags)
         {
             if (totalFlags >= 5 || recentFlags.Count >= 3)
@@ -808,10 +943,11 @@ namespace ACPAMS.Services
             public string Status { get; set; } = "in_progress";
             public DateTime StartedAt { get; set; }
             public string RiskLevel { get; set; } = "low";
+            public double RiskScore { get; set; } = 0.0;
+            public bool IsMaxRiskReached => RiskScore >= 100.0;
             public int FlagCount { get; set; }
             public bool IsSelected { get; set; } = false;
             public List<FlagDto> RecentFlags { get; set; } = new();
-
         }
 
         public class FlagDto

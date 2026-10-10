@@ -59,6 +59,9 @@ namespace ACPAMS.Models
         [Column("section_name")]
         public string? SectionName { get; set; }
 
+        [NotMapped]
+        public string? SectionInstructions { get; set; }
+
         // Navigation
         [ForeignKey("ExamId")]
         public Exam? Exam { get; set; }

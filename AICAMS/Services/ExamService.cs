@@ -1,6 +1,7 @@
 using ACPAMS.Data;
 using ACPAMS.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ACPAMS.Services
 {
@@ -12,9 +13,9 @@ namespace ACPAMS.Services
         public async Task<List<Question>> GetQuestionsAsync(Guid examId, Guid? attemptId = null)
         {
             using var context = new AppDbContext();
-            var randomize = await context.Exams
+            var examInfo = await context.Exams
                 .Where(e => e.ExamId == examId)
-                .Select(e => e.RandomizeQuestions)
+                .Select(e => new { e.RandomizeQuestions, e.Instructions })
                 .FirstOrDefaultAsync();
 
             var questions = await context.Questions
@@ -23,7 +24,36 @@ namespace ACPAMS.Services
                 .OrderBy(q => q.OrderIndex)
                 .ToListAsync();
 
-            if (randomize && attemptId.HasValue)
+            if (examInfo != null && !string.IsNullOrWhiteSpace(examInfo.Instructions))
+            {
+                try
+                {
+                    var map = JsonSerializer.Deserialize<Dictionary<string, string>>(examInfo.Instructions);
+                    if (map != null)
+                    {
+                        foreach (var q in questions)
+                        {
+                            if (!string.IsNullOrWhiteSpace(q.SectionName) && map.TryGetValue(q.SectionName, out var inst))
+                            {
+                                q.SectionInstructions = inst;
+                            }
+                            else if (map.TryGetValue("General", out var genInst))
+                            {
+                                q.SectionInstructions = genInst;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    foreach (var q in questions)
+                    {
+                        q.SectionInstructions = examInfo.Instructions;
+                    }
+                }
+            }
+
+            if (examInfo != null && examInfo.RandomizeQuestions && attemptId.HasValue)
             {
                 var rng = new Random(attemptId.Value.GetHashCode());
                 return questions.OrderBy(_ => rng.Next()).ToList();
@@ -145,6 +175,14 @@ namespace ACPAMS.Services
         {
             using var context = new AppDbContext();
 
+            var sectionInstructionsMap = sections
+                .Where(s => !string.IsNullOrWhiteSpace(s.Name) && !string.IsNullOrWhiteSpace(s.Instructions))
+                .GroupBy(s => s.Name)
+                .ToDictionary(g => g.Key, g => g.First().Instructions);
+            string? serializedInstructions = sectionInstructionsMap.Count > 0
+                ? JsonSerializer.Serialize(sectionInstructionsMap)
+                : null;
+
             Exam exam;
             if (existingExamId.HasValue)
             {
@@ -162,6 +200,7 @@ namespace ACPAMS.Services
                     exam.CourseCode = courseCode;
                     exam.DurationMinutes = timeLimitMinutes;
                     exam.RandomizeQuestions = randomizeQuestions;
+                    exam.Instructions = serializedInstructions;
 
                     if (exam.Questions != null && exam.Questions.Any())
                     {
@@ -180,7 +219,8 @@ namespace ACPAMS.Services
                         DurationMinutes = timeLimitMinutes,
                         Status = "active",
                         CreatedAt = DateTime.Now,
-                        RandomizeQuestions = randomizeQuestions
+                        RandomizeQuestions = randomizeQuestions,
+                        Instructions = serializedInstructions
                     };
                     context.Exams.Add(exam);
                 }
@@ -197,7 +237,8 @@ namespace ACPAMS.Services
                     DurationMinutes = timeLimitMinutes,
                     Status = "active",
                     CreatedAt = DateTime.Now,
-                    RandomizeQuestions = randomizeQuestions
+                    RandomizeQuestions = randomizeQuestions,
+                    Instructions = serializedInstructions
                 };
                 context.Exams.Add(exam);
             }
@@ -247,6 +288,7 @@ namespace ACPAMS.Services
                         StarterCode = q.StarterCode,
                         Points = (decimal)q.Points,
                         SectionName = !string.IsNullOrWhiteSpace(section.Name) ? section.Name : (sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General"),
+                        SectionInstructions = !string.IsNullOrWhiteSpace(section.Instructions) ? section.Instructions : null,
                         OrderIndex = orderIndex++,
                         GradingMethod = rubricData.ContainsKey(q.Id) ? "manual" : "objective",
                         RequiresRubric = rubricData.ContainsKey(q.Id)

@@ -40,6 +40,9 @@ namespace ACPAMS.Models
         [Column("total_score")]
         public decimal? TotalScore { get; set; }
 
+        [Column("extra_time_minutes")]
+        public int? ExtraTimeMinutes { get; set; } = 0;
+
         [MaxLength(45)]
         [Column("ip_address")]
         public string? IpAddress { get; set; }

@@ -4,80 +4,21 @@ using ACPAMS.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ACPAMS.Views.Faculty.Tabs
 {
-    public partial class MonitoringTab : UserControl, INotifyPropertyChanged
+    public partial class MonitoringTab : UserControl
     {
         private readonly AppDbContext _context;
         private readonly DispatcherTimer _refreshTimer;
         private Guid? _currentExamId;
         private Guid? _selectedAttemptId;
-        private MonitoringService? _activeMonitoring;
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string? propName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
-
-        // Digital Zoom and Pan State
-        private System.Windows.Media.Imaging.BitmapSource? _videoFeedSource;
-        private double _zoomLevel = 1.0;
-        private double _panOffsetX = 0.0;
-        private double _panOffsetY = 0.0;
-        private Point? _lastMousePos;
-        private bool _isPanning;
-
-        public System.Windows.Media.Imaging.BitmapSource? VideoFeedSource
-        {
-            get => _videoFeedSource;
-            set { _videoFeedSource = value; OnPropertyChanged(); }
-        }
-
-        public double ZoomLevel
-        {
-            get => _zoomLevel;
-            set
-            {
-                var clamped = Math.Clamp(value, 1.0, 4.0);
-                if (Math.Abs(_zoomLevel - clamped) > 0.001)
-                {
-                    _zoomLevel = Math.Round(clamped, 2);
-                    if (_zoomLevel <= 1.0)
-                    {
-                        PanOffsetX = 0;
-                        PanOffsetY = 0;
-                    }
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(ZoomPercentageText));
-                }
-            }
-        }
-
-        public double PanOffsetX
-        {
-            get => _panOffsetX;
-            set { _panOffsetX = value; OnPropertyChanged(); }
-        }
-
-        public double PanOffsetY
-        {
-            get => _panOffsetY;
-            set { _panOffsetY = value; OnPropertyChanged(); }
-        }
-
-        public string ZoomPercentageText => $"{Math.Round(ZoomLevel * 100):F0}%";
-
-        public ICommand ZoomInCommand { get; }
-        public ICommand ZoomOutCommand { get; }
-        public ICommand ResetZoomCommand { get; }
+        private readonly HashSet<Guid> _notifiedCriticalStudents = new();
 
         // UI-bound collections
         public List<MonitoringService.ActiveStudentDto> ActiveStudents { get; set; } = new();
@@ -95,10 +36,6 @@ namespace ACPAMS.Views.Faculty.Tabs
             _context = new AppDbContext();
             _currentExamId = examId;
 
-            ZoomInCommand = new SimpleRelayCommand(() => ZoomLevel += 0.25);
-            ZoomOutCommand = new SimpleRelayCommand(() => ZoomLevel -= 0.25);
-            ResetZoomCommand = new SimpleRelayCommand(ResetZoom);
-
             DataContext = this;
 
             _refreshTimer = new DispatcherTimer
@@ -108,11 +45,7 @@ namespace ACPAMS.Views.Faculty.Tabs
             _refreshTimer.Tick += async (s, e) => await RefreshDataAsync();
             _refreshTimer.Start();
 
-            Loaded += async (s, e) =>
-            {
-                await RefreshDataAsync();
-                StartLiveWebcamFeed();
-            };
+            Loaded += async (s, e) => await RefreshDataAsync();
         }
 
         private async Task RefreshDataAsync()
@@ -122,7 +55,11 @@ namespace ACPAMS.Views.Faculty.Tabs
                 using var context = new AppDbContext();
                 var monitoringService = new MonitoringService(Dispatcher);
 
-                ActiveStudents = await monitoringService.GetActiveStudentsAsync(_currentExamId);
+                ActiveStudents = (await monitoringService.GetActiveStudentsAsync(_currentExamId))
+                    .OrderByDescending(s => s.IsMaxRiskReached)
+                    .ThenByDescending(s => s.RiskScore)
+                    .ThenByDescending(s => s.FlagCount)
+                    .ToList();
                 RecentFlags = await monitoringService.GetRecentFlagsAsync(5);
                 Stats = await monitoringService.GetStatisticsAsync(_currentExamId);
 
@@ -136,6 +73,21 @@ namespace ACPAMS.Views.Faculty.Tabs
 
         private void UpdateUI()
         {
+            // Check for critical risk escalations
+            foreach (var student in ActiveStudents.Where(s => s.IsMaxRiskReached))
+            {
+                if (_notifiedCriticalStudents.Add(student.AttemptId))
+                {
+                    ToastNotification.Show(
+                        $"🚨 CRITICAL RISK ESCALATION: {student.StudentName} reached max risk (100/100)!",
+                        Application.Current.MainWindow,
+                        6,
+                        true
+                    );
+                }
+            }
+            _notifiedCriticalStudents.RemoveWhere(id => !ActiveStudents.Any(s => s.AttemptId == id && s.IsMaxRiskReached));
+
             // Update KPIs
             var activeKpi = FindName("ActiveStationsKpi") as TextBlock;
             if (activeKpi != null) activeKpi.Text = Stats.ActiveStudents.ToString();
@@ -493,8 +445,12 @@ namespace ACPAMS.Views.Faculty.Tabs
                     return;
                 }
 
-                // Delete all flags
-                context.AuditLogs.RemoveRange(flags);
+                // Soft-dismiss all flags
+                foreach (var flag in flags)
+                {
+                    flag.IsDismissed = true;
+                    flag.DismissalReason = "Dismissed by Instructor";
+                }
                 await context.SaveChangesAsync();
 
                 ToastNotification.Show(
@@ -531,6 +487,24 @@ namespace ACPAMS.Views.Faculty.Tabs
             }
         }
 
+        private async void DismissEventHistoryLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is Guid logId)
+            {
+                var result = MessageBox.Show(
+                    "Dismiss this flag as a false positive?",
+                    "Dismiss Flag",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question
+                );
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    await DismissSingleFlagAsync(logId);
+                }
+            }
+        }
+
         private async Task DismissSingleFlagAsync(Guid logId)
         {
             try
@@ -539,16 +513,71 @@ namespace ACPAMS.Views.Faculty.Tabs
                 var log = await context.AuditLogs.FindAsync(logId);
                 if (log != null)
                 {
-                    context.AuditLogs.Remove(log);
+                    log.IsDismissed = true;
+                    log.DismissalReason = "Marked False Positive by Instructor";
                     await context.SaveChangesAsync();
 
-                    ToastNotification.Show("Flag dismissed", Application.Current.MainWindow, 2);
+                    ToastNotification.Show("Flag marked as false positive", Application.Current.MainWindow, 2);
                     await RefreshDataAsync();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to dismiss flag: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ─── Per-Student Extra Time Extension ───
+        private void ExtraTimeBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (ExtraTimeBtn.ContextMenu != null)
+            {
+                ExtraTimeBtn.ContextMenu.PlacementTarget = ExtraTimeBtn;
+                ExtraTimeBtn.ContextMenu.IsOpen = true;
+            }
+        }
+
+        private async void AddExtraTime_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_selectedAttemptId.HasValue)
+            {
+                MessageBox.Show("Please select a student first.", "No Student Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (sender is MenuItem item && int.TryParse(item.Tag?.ToString(), out int mins))
+            {
+                await AddExtraTimeAsync(_selectedAttemptId.Value, mins);
+            }
+        }
+
+        private async Task AddExtraTimeAsync(Guid attemptId, int minutes)
+        {
+            try
+            {
+                using var context = new AppDbContext();
+                var attempt = await context.StudentExamAttempts.FindAsync(attemptId);
+                if (attempt != null)
+                {
+                    attempt.ExtraTimeMinutes = (attempt.ExtraTimeMinutes ?? 0) + minutes;
+                    await context.SaveChangesAsync();
+
+                    var name = FindName("SelectedStudentName") as TextBlock;
+                    string studentName = name?.Text ?? "Student";
+
+                    ToastNotification.Show(
+                        $"⏱ Added +{minutes}m extra time for {studentName}",
+                        Application.Current.MainWindow,
+                        3,
+                        false
+                    );
+
+                    await RefreshDataAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to add extra time: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -579,148 +608,16 @@ namespace ACPAMS.Views.Faculty.Tabs
             ToastNotification.Show("Data refreshed", Application.Current.MainWindow, 2);
         }
 
-        // ── DIGITAL ZOOM & PAN CONTROLS ─────────────────────────────────
-        public void ResetZoom()
-        {
-            _zoomLevel = 1.0;
-            _panOffsetX = 0.0;
-            _panOffsetY = 0.0;
-            OnPropertyChanged(nameof(ZoomLevel));
-            OnPropertyChanged(nameof(PanOffsetX));
-            OnPropertyChanged(nameof(PanOffsetY));
-            OnPropertyChanged(nameof(ZoomPercentageText));
-        }
-
-        private void CameraHost_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            e.Handled = true;
-            double delta = e.Delta > 0 ? 0.2 : -0.2;
-            ZoomLevel += delta;
-            if (sender is FrameworkElement host)
-            {
-                ClampPan(host);
-            }
-        }
-
-        private void CameraHost_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (ZoomLevel > 1.0 && (e.LeftButton == MouseButtonState.Pressed || e.MiddleButton == MouseButtonState.Pressed))
-            {
-                if (sender is FrameworkElement host)
-                {
-                    _isPanning = true;
-                    _lastMousePos = e.GetPosition(host);
-                    host.CaptureMouse();
-                    host.Cursor = Cursors.SizeAll;
-                    e.Handled = true;
-                }
-            }
-        }
-
-        private void CameraHost_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (_isPanning && _lastMousePos.HasValue && sender is FrameworkElement host)
-            {
-                Point currentPos = e.GetPosition(host);
-                Vector diff = currentPos - _lastMousePos.Value;
-
-                PanOffsetX += diff.X;
-                PanOffsetY += diff.Y;
-
-                ClampPan(host);
-
-                _lastMousePos = currentPos;
-                e.Handled = true;
-            }
-        }
-
-        private void CameraHost_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (_isPanning && sender is FrameworkElement host)
-            {
-                _isPanning = false;
-                _lastMousePos = null;
-                host.ReleaseMouseCapture();
-                host.Cursor = Cursors.Arrow;
-                e.Handled = true;
-            }
-        }
-
-        private void ClampPan(FrameworkElement? host)
-        {
-            if (ZoomLevel <= 1.0)
-            {
-                PanOffsetX = 0;
-                PanOffsetY = 0;
-                return;
-            }
-
-            double width = host?.ActualWidth > 0 ? host.ActualWidth : 360;
-            double height = host?.ActualHeight > 0 ? host.ActualHeight : 200;
-
-            double maxPanX = ((ZoomLevel - 1.0) * width) / 2.0;
-            double maxPanY = ((ZoomLevel - 1.0) * height) / 2.0;
-
-            PanOffsetX = Math.Clamp(PanOffsetX, -maxPanX, maxPanX);
-            PanOffsetY = Math.Clamp(PanOffsetY, -maxPanY, maxPanY);
-        }
-
-        // ── WEBCAM FEED LIFECYCLE ────────────────────────────────────────
-        private void StartLiveWebcamFeed()
-        {
-            try
-            {
-                if (_activeMonitoring == null)
-                {
-                    _activeMonitoring = new MonitoringService(Dispatcher);
-                    _activeMonitoring.FrameReady += frame => VideoFeedSource = frame;
-                    if (_activeMonitoring.Initialize(Guid.Empty))
-                    {
-                        _activeMonitoring.Start();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to start webcam monitor: {ex.Message}");
-            }
-        }
-
-        private void StopLiveWebcamFeed()
-        {
-            try
-            {
-                if (_activeMonitoring != null)
-                {
-                    _activeMonitoring.Stop();
-                    _activeMonitoring.Dispose();
-                    _activeMonitoring = null;
-                }
-            }
-            catch { }
-        }
-
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
-            StopLiveWebcamFeed();
             _refreshTimer?.Stop();
             _context?.Dispose();
         }
 
         private void BackToHome_Click(object sender, RoutedEventArgs e)
         {
-            StopLiveWebcamFeed();
             _refreshTimer?.Stop();
             MainWindow.NavigateToFacultyHomeStatic();
-        }
-
-        private class SimpleRelayCommand : ICommand
-        {
-            private readonly Action _execute;
-            public SimpleRelayCommand(Action execute) => _execute = execute;
-            public bool CanExecute(object? parameter) => true;
-            public void Execute(object? parameter) => _execute();
-            public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
     }
 }

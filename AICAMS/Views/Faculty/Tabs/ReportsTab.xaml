@@ -690,8 +690,12 @@
                                    Foreground="{StaticResource Text.Secondary}"/>
                     </Border>
                 </StackPanel>
-                <Button Grid.Column="1" Style="{StaticResource Btn.Outlined}" Content="📄 Export Class PDF"
-                        Padding="14,6" Click="ExportClassPdf_Click"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource Btn.Outlined}" Content="📄 Export Class PDF"
+                            Padding="14,6" Click="ExportClassPdf_Click"/>
+                    <Button Style="{StaticResource Btn.Primary}" Content="📊 Export Gradebook (CSV)"
+                            Padding="14,6" Margin="8,0,0,0" Click="ExportGradebookCsv_Click"/>
+                </StackPanel>
             </Grid>
 
             <Border Style="{StaticResource Card}" Padding="0">

@@ -1,6 +1,7 @@
 using ACPAMS.Data;
 using ACPAMS.Models;
 using ACPAMS.Services;
+using ACPAMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -20,10 +21,18 @@ namespace ACPAMS.Views.Student
     {
         private readonly ExamService _examService;
         private List<Question> _questions = new();
+        private List<ExamQuestionViewModel> _questionViewModels = new();
+        public ExamQuestionViewModel? CurrentQuestion => _currentIndex >= 0 && _currentIndex < _questionViewModels.Count ? _questionViewModels[_currentIndex] : null;
+
         private int _currentIndex = 0;
         private DispatcherTimer _timer = new();
+        private DispatcherTimer? _autoSaveTimer;
         private int _remainingSeconds = 0;
         private readonly HashSet<int> _answeredIndices = new();
+
+        // ── Submission Guard ──────────────────────────────────────────────
+        private bool _isSubmissionPromptActive = false;
+        private bool _isExamSubmitted = false;
 
         // ── Kiosk Proctor Warning Polling ─────────────────────────────────
         private DispatcherTimer? _warningPollTimer;
@@ -61,13 +70,30 @@ namespace ACPAMS.Views.Student
                 return;
             }
 
-            int duration = exam.DurationMinutes ?? 60;
-            _remainingSeconds = duration * 60;
+            _questionViewModels = _questions.Select((q, i) => new ExamQuestionViewModel(q, i)).ToList();
+            DataContext = this;
+
+            int totalDurationMinutes = (exam.DurationMinutes ?? 60) + (SessionManager.CurrentAttempt?.ExtraTimeMinutes ?? 0);
+            if (SessionManager.CurrentAttempt?.StartedAt != null)
+            {
+                var deadline = SessionManager.CurrentAttempt.StartedAt.Value.AddMinutes(totalDurationMinutes);
+                _remainingSeconds = Math.Max(0, (int)(deadline - DateTime.Now).TotalSeconds);
+            }
+            else
+            {
+                _remainingSeconds = totalDurationMinutes * 60;
+            }
+
             StartTimer();
             UpdateTimerDisplay();
             BuildNavPane();
             UpdateProgress();
             LoadQuestion(0);
+
+            // Debounced auto-save every 20 seconds
+            _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+            _autoSaveTimer.Tick += async (s, e) => await SaveCurrentAnswer();
+            _autoSaveTimer.Start();
 
             // Start monitoring
             InitializeMonitoring();
@@ -79,6 +105,8 @@ namespace ACPAMS.Views.Student
 
         private void OnPageUnloaded(object sender, RoutedEventArgs e)
         {
+            _autoSaveTimer?.Stop();
+            _autoSaveTimer = null;
             StopMonitoring();
             ACPAMS.MainWindow.ExitKioskFullscreenStatic();
         }
@@ -356,11 +384,12 @@ namespace ACPAMS.Views.Student
             try
             {
                 var currentUserId = SessionManager.CurrentUser?.UserId;
+                var currentAttemptId = SessionManager.CurrentAttempt?.AttemptId;
                 if (!currentUserId.HasValue) return;
 
                 var examIdStr = SessionManager.CurrentExam?.ExamId.ToString();
 
-                var unreadWarnings = await Task.Run(async () =>
+                var syncResult = await Task.Run(async () =>
                 {
                     using var context = new AppDbContext();
                     var query = context.Notifications
@@ -383,13 +412,38 @@ namespace ACPAMS.Views.Student
                         }
                         await context.SaveChangesAsync();
                     }
-                    return list;
+
+                    int? extraMinutes = null;
+                    if (currentAttemptId.HasValue)
+                    {
+                        extraMinutes = await context.StudentExamAttempts
+                            .Where(a => a.AttemptId == currentAttemptId.Value)
+                            .Select(a => a.ExtraTimeMinutes)
+                            .FirstOrDefaultAsync();
+                    }
+
+                    return (Warnings: list, ExtraMinutes: extraMinutes);
                 });
 
-                if (unreadWarnings.Count > 0)
+                if (syncResult.Warnings.Count > 0)
                 {
-                    var latest = unreadWarnings.Last();
+                    var latest = syncResult.Warnings.Last();
                     DisplayKioskWarning(latest.Message);
+                }
+
+                if (syncResult.ExtraMinutes.HasValue && SessionManager.CurrentAttempt != null && SessionManager.CurrentExam != null)
+                {
+                    int currentExtra = SessionManager.CurrentAttempt.ExtraTimeMinutes ?? 0;
+                    int newExtra = syncResult.ExtraMinutes.Value;
+                    if (newExtra != currentExtra)
+                    {
+                        SessionManager.CurrentAttempt.ExtraTimeMinutes = newExtra;
+                        int duration = SessionManager.CurrentExam.DurationMinutes ?? 60;
+                        var start = SessionManager.CurrentAttempt.StartedAt ?? DateTime.Now;
+                        var deadline = start.AddMinutes(duration + newExtra);
+                        _remainingSeconds = Math.Max(0, (int)(deadline - DateTime.Now).TotalSeconds);
+                        UpdateTimerDisplay();
+                    }
                 }
             }
             catch (Exception ex)
@@ -512,6 +566,7 @@ namespace ACPAMS.Views.Student
 
         private void OnWindowDeactivated(object? sender, EventArgs e)
         {
+            if (_isSubmissionPromptActive || _isExamSubmitted) return;
             _monitoring?.OnWindowFocusLost();
             ShowAlert("Window Focus Lost", "Please keep the exam window in focus at all times.");
         }
@@ -619,9 +674,31 @@ namespace ACPAMS.Views.Student
                     {
                         Width = 8,
                         Height = 8,
-                        Fill = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
-                        Margin = new Thickness(0, 0, 8, 0),
+                        Stroke = new SolidColorBrush(Color.FromRgb(148, 163, 184)),
+                        StrokeThickness = 1.5,
+                        Fill = Brushes.Transparent,
+                        HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Center
+                    };
+
+                    var flag = new TextBlock
+                    {
+                        Text = "⚑",
+                        FontSize = 11,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = new SolidColorBrush(Color.FromRgb(245, 158, 11)),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Visibility = Visibility.Collapsed
+                    };
+
+                    var indicatorGrid = new Grid
+                    {
+                        Width = 16,
+                        Height = 16,
+                        Margin = new Thickness(0, 0, 8, 0),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Children = { dot, flag }
                     };
 
                     var label = new TextBlock
@@ -635,7 +712,7 @@ namespace ACPAMS.Views.Student
                     var panel = new StackPanel
                     {
                         Orientation = Orientation.Horizontal,
-                        Children = { dot, label }
+                        Children = { indicatorGrid, label }
                     };
 
                     var btn = new Button
@@ -687,13 +764,42 @@ namespace ACPAMS.Views.Student
                             ? (Style)FindResource("Btn.NavItem.Active")
                             : (Style)FindResource("Btn.NavItem");
 
+                        var qVm = questionIndex < _questionViewModels.Count ? _questionViewModels[questionIndex] : null;
+
                         if (btn.Content is StackPanel panel &&
                             panel.Children.Count > 0 &&
-                            panel.Children[0] is Ellipse dot)
+                            panel.Children[0] is Grid indicatorGrid &&
+                            indicatorGrid.Children.Count >= 2 &&
+                            indicatorGrid.Children[0] is Ellipse dot &&
+                            indicatorGrid.Children[1] is TextBlock flag)
                         {
-                            dot.Fill = _answeredIndices.Contains(questionIndex)
-                                ? new SolidColorBrush(Color.FromRgb(25, 118, 210))
-                                : new SolidColorBrush(Color.FromRgb(203, 213, 225));
+                            if (qVm != null && qVm.IsFlaggedForReview)
+                            {
+                                flag.Visibility = Visibility.Visible;
+                                dot.Visibility = Visibility.Collapsed;
+                            }
+                            else
+                            {
+                                flag.Visibility = Visibility.Collapsed;
+                                dot.Visibility = Visibility.Visible;
+
+                                bool answered = (qVm != null && qVm.HasContent) || _answeredIndices.Contains(questionIndex);
+                                if (answered)
+                                {
+                                    // Answered: Solid green circle (#10B981)
+                                    var green = new SolidColorBrush(Color.FromRgb(16, 185, 129));
+                                    dot.Fill = green;
+                                    dot.Stroke = green;
+                                    dot.StrokeThickness = 1;
+                                }
+                                else
+                                {
+                                    // Unanswered: Muted hollow grey circle (#94A3B8)
+                                    dot.Fill = Brushes.Transparent;
+                                    dot.Stroke = new SolidColorBrush(Color.FromRgb(148, 163, 184));
+                                    dot.StrokeThickness = 1.5;
+                                }
+                            }
                         }
 
                         questionIndex++;
@@ -704,7 +810,9 @@ namespace ACPAMS.Views.Student
 
         private void UpdateProgress()
         {
-            int answered = _answeredIndices.Count;
+            int answered = _questionViewModels.Count > 0
+                ? _questionViewModels.Count(q => q.IsAnswered)
+                : _answeredIndices.Count;
             int total = _questions.Count;
             ProgressText.Text = $"{answered} / {total}";
             ProgressBar.Width = total > 0 && ProgressBarTrack.ActualWidth > 0
@@ -721,12 +829,32 @@ namespace ACPAMS.Views.Student
 
             _currentIndex = index;
             var question = _questions[index];
+            var qVm = _questionViewModels.Count > index ? _questionViewModels[index] : null;
+
+            QuestionTypeBadge.Text = (question.QuestionType ?? "Question").Replace("_", " ").ToUpper();
+            QuestionPointsBadge.Text = $"{question.Points ?? 1} pts";
+            QuestionIndexBadge.Text = $"Question {index + 1} of {_questions.Count}";
+            if (qVm != null)
+            {
+                MarkForReviewBtn.IsChecked = qVm.IsFlaggedForReview;
+            }
 
             var existingAnswer = SessionManager.CurrentAttempt != null
                 ? await _examService.GetAnswerAsync(
                     SessionManager.CurrentAttempt.AttemptId,
                     question.QuestionId)
                 : null;
+
+            if (existingAnswer != null && qVm != null)
+            {
+                if (string.IsNullOrEmpty(qVm.DraftText) && !string.IsNullOrEmpty(existingAnswer.AnswerText))
+                    qVm.DraftText = existingAnswer.AnswerText;
+                if (string.IsNullOrEmpty(qVm.DraftCode) && !string.IsNullOrEmpty(existingAnswer.SourceCode))
+                    qVm.DraftCode = existingAnswer.SourceCode;
+
+                if (qVm.HasContent)
+                    _answeredIndices.Add(index);
+            }
 
             UserControl canvas = question.QuestionType switch
             {
@@ -741,10 +869,59 @@ namespace ACPAMS.Views.Student
                 _ => new Canvas.TextInputCanvas(question, existingAnswer, index + 1, _questions.Count)
             };
 
+            // Display section instructions if configured for current section
+            var instructions = GetSectionInstructions(question);
+            if (!string.IsNullOrWhiteSpace(instructions))
+            {
+                SectionInstructionsText.Text = $"Instructions: {instructions.Trim()}";
+                SectionInstructionsCard.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                SectionInstructionsCard.Visibility = Visibility.Collapsed;
+            }
+
             ExamCanvasHost.Content = canvas;
             PreviousBtn.IsEnabled = index > 0;
             NextBtn.IsEnabled = index < _questions.Count - 1;
             UpdateNavPane();
+        }
+
+        private void MarkForReviewBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentQuestion != null)
+            {
+                CurrentQuestion.IsFlaggedForReview = MarkForReviewBtn.IsChecked == true;
+                UpdateNavPane();
+                UpdateProgress();
+            }
+        }
+
+        private string? GetSectionInstructions(Question question)
+        {
+            if (!string.IsNullOrWhiteSpace(question.SectionInstructions))
+                return question.SectionInstructions;
+
+            if (SessionManager.CurrentExam != null && !string.IsNullOrWhiteSpace(SessionManager.CurrentExam.Instructions))
+            {
+                try
+                {
+                    var map = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(SessionManager.CurrentExam.Instructions);
+                    if (map != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(question.SectionName) && map.TryGetValue(question.SectionName, out var inst))
+                            return inst;
+                        if (map.TryGetValue("General", out var genInst))
+                            return genInst;
+                    }
+                }
+                catch
+                {
+                    return SessionManager.CurrentExam.Instructions;
+                }
+            }
+
+            return null;
         }
 
         // ── ANSWER SAVING ─────────────────────────────────────────────────
@@ -777,6 +954,12 @@ namespace ACPAMS.Views.Student
                           || !string.IsNullOrWhiteSpace(sourceCode);
             if (hasAnswer) _answeredIndices.Add(_currentIndex);
             else _answeredIndices.Remove(_currentIndex);
+
+            if (CurrentQuestion != null)
+            {
+                CurrentQuestion.DraftText = answerText;
+                CurrentQuestion.DraftCode = sourceCode;
+            }
 
             await _examService.SaveAnswerAsync(
                 SessionManager.CurrentAttempt.AttemptId,
@@ -819,12 +1002,27 @@ namespace ACPAMS.Views.Student
 
         private async Task ProcessSubmitConfirmationAsync()
         {
-            var result = MessageBox.Show(
-                "Are you sure you want to submit your exam?\n\nThis action cannot be undone.",
-                "Submit Exam", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            _isSubmissionPromptActive = true;
+            try
+            {
+                var result = MessageBox.Show(
+                    "Are you sure you want to submit your exam?\n\nThis action cannot be undone.",
+                    "Submit Exam", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-            if (result != MessageBoxResult.Yes) return;
-            await SubmitExamAsync();
+                if (result != MessageBoxResult.Yes)
+                {
+                    _isSubmissionPromptActive = false;
+                    return;
+                }
+
+                _isExamSubmitted = true;
+                await SubmitExamAsync();
+            }
+            catch
+            {
+                _isSubmissionPromptActive = false;
+                throw;
+            }
         }
 
         // ── PRE-SUBMISSION PRIVACY CHECK ──────────────────────────────────
@@ -881,6 +1079,7 @@ namespace ACPAMS.Views.Student
         // ── SUBMIT ────────────────────────────────────────────────────────
         private async System.Threading.Tasks.Task SubmitExamAsync()
         {
+            _isExamSubmitted = true;
             _timer.Stop();
             StopMonitoring();
             await SaveCurrentAnswer();

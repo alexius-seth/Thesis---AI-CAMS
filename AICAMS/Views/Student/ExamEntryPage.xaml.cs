@@ -53,18 +53,47 @@ namespace ACPAMS.Views.Student
                 }
 
                 var existingAttempt = await context.StudentExamAttempts
+                    .OrderByDescending(a => a.StartedAt)
                     .FirstOrDefaultAsync(a =>
                         a.StudentId == SessionManager.CurrentStudent!.StudentId
-                        && a.ExamId == exam.ExamId
-                        && a.Status == "in_progress");
+                        && a.ExamId == exam.ExamId);
 
-                if (existingAttempt != null)
+                // Case A - Completed
+                if (existingAttempt != null && (existingAttempt.Status == "submitted" || existingAttempt.Status == "graded" || existingAttempt.SubmittedAt != null))
                 {
-                    MessageBox.Show("You already have an ongoing attempt for this exam.",
-                        "Existing Attempt", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("You have already submitted this exam.",
+                        "Exam Completed", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
+                // Case B - In-Progress (Crash Recovery / Resume)
+                if (existingAttempt != null && existingAttempt.Status == "in_progress" && existingAttempt.SubmittedAt == null)
+                {
+                    int totalDurationMinutes = (exam.DurationMinutes ?? 60) + (existingAttempt.ExtraTimeMinutes ?? 0);
+                    var deadline = (existingAttempt.StartedAt ?? DateTime.Now).AddMinutes(totalDurationMinutes);
+                    var remainingSeconds = (int)(deadline - DateTime.Now).TotalSeconds;
+
+                    if (remainingSeconds <= 0)
+                    {
+                        existingAttempt.Status = "submitted";
+                        existingAttempt.SubmittedAt = DateTime.Now;
+                        await context.SaveChangesAsync();
+
+                        MessageBox.Show("Your exam time has expired. This session has been closed.",
+                            "Time Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    // Resume existing session
+                    SessionManager.CurrentAttempt = existingAttempt;
+                    SessionManager.CurrentExam = exam;
+
+                    ACPAMS.MainWindow.EnterKioskFullscreenStatic();
+                    ACPAMS.MainWindow.Navigate(new StudentExamPage());
+                    return;
+                }
+
+                // Case C - Brand New Attempt
                 var attempt = new Models.StudentExamAttempt
                 {
                     AttemptId = Guid.NewGuid(),
@@ -73,6 +102,7 @@ namespace ACPAMS.Views.Student
                     ExamCodeUsed = examCode,
                     StartedAt = DateTime.Now,
                     Status = "in_progress",
+                    ExtraTimeMinutes = 0,
                     IpAddress = GetLocalIpAddress(),
                     DeviceInfo = Environment.MachineName
                 };

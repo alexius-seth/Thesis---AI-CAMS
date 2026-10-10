@@ -47,6 +47,30 @@ namespace ACPAMS
                     )
                     BEGIN
                         ALTER TABLE questions ADD section_name NVARCHAR(MAX) NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('student_exam_attempts') AND name = 'extra_time_minutes'
+                    )
+                    BEGIN
+                        ALTER TABLE student_exam_attempts ADD extra_time_minutes INT NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('audit_logs') AND name = 'is_dismissed'
+                    )
+                    BEGIN
+                        ALTER TABLE audit_logs ADD is_dismissed BIT NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('audit_logs') AND name = 'dismissal_reason'
+                    )
+                    BEGIN
+                        ALTER TABLE audit_logs ADD dismissal_reason NVARCHAR(255) NULL;
                     END");
 
                 // Initialize default data

@@ -161,17 +161,29 @@
                     </ComboBox>
                 </StackPanel>
 
-                <!-- Right: View Question button -->
-                <Button Grid.Column="1" Style="{StaticResource Btn.Ghost}"
-                        Click="ViewQuestionBtn_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE8A4;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="12" Margin="0,0,6,0"
-                                   Foreground="{StaticResource Accent.Primary}"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="View Question" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
+                <!-- Right: Reset to Starter Code + View Question button -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource Btn.Ghost}" Margin="0,0,8,0"
+                            Click="ResetStarterCodeBtn_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12" Margin="0,0,6,0"
+                                       Foreground="{StaticResource Accent.Primary}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="Reset to Starter Code" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Btn.Ghost}"
+                            Click="ViewQuestionBtn_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A4;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="12" Margin="0,0,6,0"
+                                       Foreground="{StaticResource Accent.Primary}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="View Question" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -281,7 +293,7 @@
                     x:Name="CodeEditor"
                     Grid.Row="1"
                     Margin="0,12,0,12"
-                    FontFamily="Consolas"
+                    FontFamily="Consolas, Cascadia Code, Courier New"
                     FontSize="13"
                     ShowLineNumbers="True"
                     Background="{StaticResource Bg.Code}"
@@ -289,6 +301,7 @@
                     LineNumbersForeground="#5A6374"
                     HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
+                    KeyboardNavigation.TabNavigation="None"
                     TextChanged="CodeEditor_TextChanged"/>
             </Grid>
         </Border>
@@ -306,10 +319,21 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0"
-                   Text="OUTPUT"
-                   FontFamily="Consolas" FontSize="10" FontWeight="Bold"
-                   Foreground="#475569" Margin="14,10,14,4"/>
+                <Grid Grid.Row="0" Margin="14,10,14,4">
+                    <TextBlock Text="OUTPUT"
+                               FontFamily="Consolas" FontSize="10" FontWeight="Bold"
+                               Foreground="#475569" VerticalAlignment="Center"/>
+                    <Button HorizontalAlignment="Right"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Click="ClearConsoleBtn_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                       Foreground="#64748B" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Clear Console" FontFamily="Segoe UI" FontSize="11"
+                                       Foreground="#94A3B8" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
 
                 <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"

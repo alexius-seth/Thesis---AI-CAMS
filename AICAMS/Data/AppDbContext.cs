@@ -180,8 +180,7 @@ namespace ACPAMS.Data
                 entity.HasKey(e => e.AttemptId);
                 entity.Property(e => e.AttemptId).HasDefaultValueSql("NEWID()");
                 entity.Property(e => e.TotalScore).HasPrecision(10, 2);
-                entity.HasKey(e => e.AttemptId);
-                entity.Property(e => e.AttemptId).HasDefaultValueSql("NEWID()");
+                entity.Property(e => e.ExtraTimeMinutes).HasDefaultValue(0);
                 entity.HasOne(e => e.Student)
                       .WithMany(s => s.ExamAttempts)
                       .HasForeignKey(e => e.StudentId)
@@ -300,6 +299,8 @@ namespace ACPAMS.Data
             {
                 entity.HasKey(e => e.LogId);
                 entity.Property(e => e.LogId).HasDefaultValueSql("NEWID()");
+                entity.Property(e => e.IsDismissed).HasDefaultValue(false);
+                entity.Property(e => e.DismissalReason).HasMaxLength(255);
                 entity.HasOne(e => e.User)
                       .WithMany()
                       .HasForeignKey(e => e.UserId)

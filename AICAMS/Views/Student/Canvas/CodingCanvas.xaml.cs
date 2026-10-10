@@ -15,6 +15,7 @@ namespace ACPAMS.Views.Student.Canvas
         private string _language = "C";
         private readonly CodeRunnerService _runner = new();
         private string? _lastExecutionOutput;
+        private Question? _question;
 
         // Custom VS Code Dark+ themed .xshd files, loaded once and cached.
         // These replace AvalonEdit's built-in highlighters, which use a
@@ -45,6 +46,7 @@ namespace ACPAMS.Views.Student.Canvas
         public CodingCanvas(Question question, StudentAnswer? existingAnswer = null)
         {
             InitializeComponent();
+            _question = question;
 
             QuestionText.Text = question.Text;
 
@@ -234,5 +236,33 @@ namespace ACPAMS.Views.Student.Canvas
         public string GetSourceCode() => CodeEditor?.Text ?? string.Empty;
         public string GetLanguage() => _language;
         public string? GetExecutionOutput() => _lastExecutionOutput;
+
+        private void ResetStarterCodeBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(
+                "Reset code to original starter template?",
+                "Reset Code",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                if (_question != null && !string.IsNullOrWhiteSpace(_question.StarterCode))
+                {
+                    CodeEditor.Text = _question.StarterCode;
+                }
+                else if (LanguageDefaults.TryGetValue(_language, out var def))
+                {
+                    CodeEditor.Text = def.Stub;
+                }
+            }
+        }
+
+        private void ClearConsoleBtn_Click(object sender, RoutedEventArgs e)
+        {
+            OutputCommandText.Text = string.Empty;
+            OutputResultText.Text = string.Empty;
+            _lastExecutionOutput = null;
+        }
     }
 }

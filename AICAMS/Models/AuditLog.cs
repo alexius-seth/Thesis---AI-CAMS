@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -39,6 +39,13 @@ namespace ACPAMS.Models
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("is_dismissed")]
+        public bool IsDismissed { get; set; } = false;
+
+        [MaxLength(255)]
+        [Column("dismissal_reason")]
+        public string? DismissalReason { get; set; }
 
         // Navigation
         [ForeignKey("UserId")]

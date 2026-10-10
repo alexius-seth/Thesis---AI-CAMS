@@ -7,6 +7,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 using ACPAMS.Data;
 using ACPAMS.Services;
 using ACPAMS.Views.Faculty;
@@ -496,6 +500,148 @@ namespace ACPAMS.Views.Faculty.Tabs
                 {
                     MessageBox.Show($"Failed to export PDF: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private async void ExportGradebookCsv_Click(object sender, RoutedEventArgs e)
+        {
+            if (!EffectiveExamId.HasValue)
+            {
+                MessageBox.Show("Please select an exam to export its gradebook.", "Export Gradebook", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var examId = EffectiveExamId.Value;
+                using var db = new AppDbContext();
+
+                var questions = await db.Questions
+                    .Where(q => q.ExamId == examId)
+                    .ToListAsync();
+
+                decimal totalMaxPoints = questions.Sum(q => q.Points ?? 0m);
+
+                var attempts = await db.StudentExamAttempts
+                    .Include(a => a.Student)
+                    .Include(a => a.Answers)
+                    .Where(a => a.ExamId == examId)
+                    .OrderBy(a => a.Student != null ? a.Student.LastName : "")
+                    .ThenBy(a => a.Student != null ? a.Student.FirstName : "")
+                    .ToListAsync();
+
+                if (attempts.Count == 0)
+                {
+                    MessageBox.Show("No student attempts found for this exam.", "Export Gradebook", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var attemptIdStrings = attempts.Select(a => a.AttemptId.ToString()).ToList();
+                var logs = await db.AuditLogs
+                    .Where(l => l.EntityType == "StudentExamAttempt" && attemptIdStrings.Contains(l.EntityId) && !l.IsDismissed)
+                    .ToListAsync();
+
+                var questionLookup = questions.ToDictionary(q => q.QuestionId, q => q.QuestionType?.ToLowerInvariant() ?? "");
+
+                var sb = new StringBuilder();
+                sb.AppendLine("Student ID,Full Name,Score,Total Points,Percentage,Coding Score,Essay Score,Objective Score,Flag Count,Final Risk Score,Status");
+
+                foreach (var a in attempts)
+                {
+                    string studentId = a.StudentId ?? "";
+                    string fullName = a.Student != null
+                        ? $"{a.Student.LastName}, {a.Student.FirstName}"
+                        : (studentId.Length > 0 ? studentId : "Unknown Student");
+
+                    decimal totalScore = a.TotalScore ?? 0m;
+                    string scoreStr = a.TotalScore.HasValue ? a.TotalScore.Value.ToString("0.##") : "0";
+                    string totalPtsStr = totalMaxPoints.ToString("0.##");
+                    string pctStr = totalMaxPoints > 0 && a.TotalScore.HasValue
+                        ? $"{(totalScore / totalMaxPoints * 100m):0.##}%"
+                        : "0%";
+
+                    decimal codingScore = 0m;
+                    decimal essayScore = 0m;
+                    decimal objectiveScore = 0m;
+
+                    foreach (var ans in a.Answers)
+                    {
+                        if (!ans.ObtainedPoints.HasValue || !ans.QuestionId.HasValue) continue;
+                        if (!questionLookup.TryGetValue(ans.QuestionId.Value, out var qType)) continue;
+
+                        if (qType == "coding" || qType == "code")
+                        {
+                            codingScore += ans.ObtainedPoints.Value;
+                        }
+                        else if (qType == "essay" || qType == "subjective")
+                        {
+                            essayScore += ans.ObtainedPoints.Value;
+                        }
+                        else
+                        {
+                            objectiveScore += ans.ObtainedPoints.Value;
+                        }
+                    }
+
+                    var attemptLogs = logs.Where(l => l.EntityId == a.AttemptId.ToString()).ToList();
+                    int flagCount = attemptLogs.Count;
+
+                    double riskScore = 0;
+                    var cheatingLog = attemptLogs.LastOrDefault(l => (l.Action ?? "").Contains("CheatingScore"));
+                    if (cheatingLog != null && !string.IsNullOrWhiteSpace(cheatingLog.Details))
+                    {
+                        var match = Regex.Match(cheatingLog.Details, @"Score:\s*([\d.]+)");
+                        if (match.Success && double.TryParse(match.Groups[1].Value, out double parsed))
+                        {
+                            riskScore = parsed;
+                        }
+                    }
+                    if (riskScore == 0 && flagCount > 0)
+                    {
+                        riskScore = Math.Min(100, flagCount * 15 + 5);
+                    }
+
+                    string status = a.Status ?? "unknown";
+
+                    static string Escape(string value)
+                    {
+                        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+                        {
+                            return $"\"{value.Replace("\"", "\"\"")}\"";
+                        }
+                        return value;
+                    }
+
+                    sb.AppendLine(string.Join(",",
+                        Escape(studentId),
+                        Escape(fullName),
+                        scoreStr,
+                        totalPtsStr,
+                        Escape(pctStr),
+                        codingScore.ToString("0.##"),
+                        essayScore.ToString("0.##"),
+                        objectiveScore.ToString("0.##"),
+                        flagCount.ToString(),
+                        riskScore.ToString("0.##"),
+                        Escape(status)
+                    ));
+                }
+
+                var saveDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "CSV Document (*.csv)|*.csv",
+                    FileName = $"{(string.IsNullOrWhiteSpace(_currentExamTitle) ? "Exam" : _currentExamTitle.Replace(" ", "_"))}_Gradebook.csv"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    await File.WriteAllTextAsync(saveDialog.FileName, sb.ToString(), Encoding.UTF8);
+                    MessageBox.Show("Gradebook exported successfully!", "Export Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to export gradebook: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
