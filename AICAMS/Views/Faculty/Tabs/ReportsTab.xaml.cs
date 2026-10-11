@@ -363,6 +363,27 @@ namespace ACPAMS.Views.Faculty.Tabs
                         MainWindow.Navigate(new StudentInformationTab(clickedStudentId, NavigationOrigin.Reports, _selectedGenericExamId));
                 };
                 namePanel.Children.Add(nameLink);
+                if (!r.IsActive)
+                {
+                    var inactiveBadge = new Border
+                    {
+                        Background = Brush("#F1F5F9"),
+                        BorderBrush = Brush("#64748B"),
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(10),
+                        Padding = new Thickness(6, 1, 6, 1),
+                        Margin = new Thickness(6, 0, 0, 0),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Child = new TextBlock
+                        {
+                            Text = "Inactive",
+                            FontSize = 10,
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = Brush("#64748B")
+                        }
+                    };
+                    namePanel.Children.Add(inactiveBadge);
+                }
                 Grid.SetColumn(namePanel, 0);
 
                 // AI Score / AI Conf — pending AI integration, honestly shown as "—"

@@ -79,6 +79,22 @@ namespace ACPAMS
                     )
                     BEGIN
                         ALTER TABLE students ALTER COLUMN program NVARCHAR(100) NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.students') AND name = 'is_active'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.students ADD is_active BIT NOT NULL DEFAULT 1;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.students') AND name = 'must_change_password'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.students ADD must_change_password BIT NOT NULL DEFAULT 0;
                     END");
 
                 // Initialize default data

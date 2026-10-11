@@ -41,6 +41,7 @@ namespace ACPAMS.Services
                 StudentName = $"{student.FirstName} {student.LastName}",
                 Program = student.Program ?? "N/A",
                 StudentId = student.StudentId,
+                IsActive = student.IsActive,
                 // Section isn't a tracked field in the current schema —
                 // StudentReportViewModel already hardcodes this same "N/A"
                 // for the same reason; kept consistent rather than inventing
@@ -131,6 +132,7 @@ namespace ACPAMS.Services
         public string Program { get; set; } = string.Empty;
         public string StudentId { get; set; } = string.Empty;
         public string Section { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
 
         public int TotalAssessments { get; set; }
         public bool HasOverallAverage { get; set; }

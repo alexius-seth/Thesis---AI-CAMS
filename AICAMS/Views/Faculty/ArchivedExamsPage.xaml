@@ -260,6 +260,7 @@
         </Style>
 
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
     </UserControl.Resources>
 
@@ -402,6 +403,7 @@
                     Height="64">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
@@ -414,7 +416,27 @@
                                    Foreground="{StaticResource Text.Primary}"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1"
+                    <!-- Date Filter Controls -->
+                    <StackPanel Grid.Column="1" Margin="24,0,16,0" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <TextBlock FontSize="13" FontWeight="Medium" Foreground="#64748B" Margin="0,0,8,0" Text="Date:" VerticalAlignment="Center"/>
+
+                        <ComboBox Height="32" SelectedValue="{Binding SelectedDateFilter, Mode=TwoWay}" SelectedValuePath="Content" VerticalContentAlignment="Center" Width="140">
+                            <ComboBoxItem Content="All Time" IsSelected="True"/>
+                            <ComboBoxItem Content="Last 7 Days"/>
+                            <ComboBoxItem Content="Last 30 Days"/>
+                            <ComboBoxItem Content="Last 90 Days"/>
+                            <ComboBoxItem Content="Custom Range"/>
+                        </ComboBox>
+
+                        <!-- Collapsible Date Pickers for Custom Range -->
+                        <StackPanel Margin="8,0,0,0" Orientation="Horizontal" Visibility="{Binding IsCustomRangeVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <DatePicker Height="32" Margin="0,0,4,0" SelectedDate="{Binding StartDate, Mode=TwoWay}" Width="125"/>
+                            <TextBlock Foreground="#64748B" Margin="0,0,4,0" Text="to" VerticalAlignment="Center"/>
+                            <DatePicker Height="32" SelectedDate="{Binding EndDate, Mode=TwoWay}" Width="125"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
                             Style="{StaticResource Btn.Outlined}"
                             VerticalAlignment="Center"
                             Click="NavigateToHome">
@@ -451,7 +473,7 @@
                     </Border>
 
                     <!-- Dynamic exam cards -->
-                    <ItemsControl ItemsSource="{Binding Exams}"
+                    <ItemsControl ItemsSource="{Binding FilteredArchivedExams}"
                                   Margin="0,0,0,32">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>

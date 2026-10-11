@@ -45,6 +45,18 @@ namespace ACPAMS.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
+        [Column("must_change_password")]
+        public bool MustChangePassword { get; set; } = false;
+
+        [NotMapped]
+        public string Id => StudentId;
+
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}".Trim();
+
         [Column("avatar_image")]
         public byte[]? AvatarImage { get; set; }
 

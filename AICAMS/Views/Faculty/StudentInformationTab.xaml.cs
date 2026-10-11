@@ -50,10 +50,141 @@ namespace ACPAMS.Views.Faculty
                 ApplyStandingBadge(StandingBadge2, StandingBadge2Text, "No Data");
             }
 
+            ApplyStatusBadge(_summary.IsActive);
+
             TrendCountBadge.Text = $"{_summary.PerformanceTrend.Count} Assessment{(_summary.PerformanceTrend.Count == 1 ? "" : "s")}";
             DrawTrend();
 
             BuildAssessmentRows();
+        }
+
+        private void ApplyStatusBadge(bool isActive)
+        {
+            if (isActive)
+            {
+                StudentStatusBadgeText.Text = "Active";
+                StudentStatusBadge.BorderBrush = new SolidColorBrush(Color.FromRgb(0x15, 0x80, 0x3D));
+                StudentStatusBadge.Background = new SolidColorBrush(Color.FromRgb(0xDC, 0xFC, 0xE7));
+                StudentStatusBadgeText.Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x80, 0x3D));
+                DeactivateStudentBtn.Content = "Remove / Deactivate";
+                DeactivateStudentBtn.Background = new SolidColorBrush(Color.FromRgb(0xFE, 0xF2, 0xF2));
+                DeactivateStudentBtn.Foreground = new SolidColorBrush(Color.FromRgb(0xC6, 0x28, 0x28));
+                DeactivateStudentBtn.BorderBrush = new SolidColorBrush(Color.FromRgb(0xFE, 0xCA, 0xCA));
+                DeactivateStudentBtn.IsEnabled = true;
+            }
+            else
+            {
+                StudentStatusBadgeText.Text = "Archived / Inactive";
+                StudentStatusBadge.BorderBrush = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B));
+                StudentStatusBadge.Background = new SolidColorBrush(Color.FromRgb(0xF1, 0xF5, 0xF9));
+                StudentStatusBadgeText.Foreground = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B));
+                DeactivateStudentBtn.Content = "Reactivate Account";
+                DeactivateStudentBtn.Background = new SolidColorBrush(Color.FromRgb(0xEC, 0xFD, 0xF5));
+                DeactivateStudentBtn.Foreground = new SolidColorBrush(Color.FromRgb(0x05, 0x96, 0x69));
+                DeactivateStudentBtn.BorderBrush = new SolidColorBrush(Color.FromRgb(0xA7, 0xF3, 0xD0));
+                DeactivateStudentBtn.IsEnabled = true;
+            }
+        }
+
+        private async void DeactivateStudentBtn_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var service = new StudentService();
+
+                // Reactivation flow when student is currently inactive
+                if (_summary != null && !_summary.IsActive)
+                {
+                    string studentName = _summary?.StudentName ?? "Student";
+                    string studentId = _summary?.StudentId ?? _studentId;
+
+                    var confirm = MessageBox.Show(
+                        $"Reactivate account for {studentName} ({studentId})? This will restore their access to log in and take scheduled exams.",
+                        "Confirm Reactivation",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (confirm != MessageBoxResult.Yes) return;
+
+                    DeactivateStudentBtn.IsEnabled = false;
+                    string reactivateMsg = await service.ReactivateStudentAsync(_studentId);
+                    MessageBox.Show(reactivateMsg, "Student Account Reactivated", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await LoadAsync();
+                    return;
+                }
+
+                // Deactivation / Safe delete logic for active student
+                bool hasAttempts = await service.HasExamAttemptsAsync(_studentId);
+
+                string confirmMessage = hasAttempts
+                    ? "This student has completed exam records. Deactivate this account to revoke login access while preserving historical grades?"
+                    : "This student has no recorded exam attempts. Permanently delete this account?";
+
+                var result = MessageBox.Show(
+                    confirmMessage,
+                    hasAttempts ? "Confirm Deactivation" : "Confirm Permanent Delete",
+                    MessageBoxButton.YesNo,
+                    hasAttempts ? MessageBoxImage.Warning : MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes) return;
+
+                DeactivateStudentBtn.IsEnabled = false;
+                string message = await service.DeleteOrDeactivateStudentAsync(_studentId);
+
+                MessageBox.Show(message, "Student Lifecycle Management", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                if (message.Contains("permanently removed", StringComparison.OrdinalIgnoreCase))
+                {
+                    BackButton_Click(sender, e);
+                }
+                else
+                {
+                    await LoadAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to process student status change: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                DeactivateStudentBtn.IsEnabled = true;
+            }
+        }
+
+        private async void ResetPasswordBtn_Click(object sender, RoutedEventArgs e)
+        {
+            string studentName = _summary?.StudentName ?? "Student";
+            string studentId = _summary?.StudentId ?? _studentId;
+
+            var confirm = MessageBox.Show(
+                $"Reset password for {studentName} ({studentId}) to default credentials?",
+                "Confirm Password Reset",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            try
+            {
+                ResetPasswordBtn.IsEnabled = false;
+                var service = new StudentService();
+                var (success, message, _) = await service.ResetPasswordAsync(studentId);
+
+                if (success)
+                {
+                    MessageBox.Show(message, "Reset Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show(message, "Reset Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to reset password: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                ResetPasswordBtn.IsEnabled = true;
+            }
         }
 
         private static void ApplyStandingBadge(Border badge, TextBlock text, string standing)

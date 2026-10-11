@@ -13,19 +13,29 @@ namespace ACPAMS.Services
             _context = new AppDbContext();
         }
 
-        public async Task<User?> LoginAsync(string usernameOrStudentId, string password)
+        public async Task<(User? User, string? ErrorMessage)> LoginWithStatusAsync(string usernameOrStudentId, string password)
         {
-            // Find user by username (faculty) or student ID (student)
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == usernameOrStudentId
-                                       && u.IsActive);
+                .Include(u => u.Student)
+                .FirstOrDefaultAsync(u => u.Username == usernameOrStudentId);
 
-            if (user == null) return null;
+            if (user == null) return (null, "Invalid username or password. Please try again.");
 
             // Verify password
             bool isValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-            if (!isValid) return null;
+            if (!isValid) return (null, "Invalid username or password. Please try again.");
 
+            if (!user.IsActive || (user.Role == "student" && user.Student != null && !user.Student.IsActive))
+            {
+                return (null, "This account has been deactivated. Contact your department administrator.");
+            }
+
+            return (user, null);
+        }
+
+        public async Task<User?> LoginAsync(string usernameOrStudentId, string password)
+        {
+            var (user, _) = await LoginWithStatusAsync(usernameOrStudentId, password);
             return user;
         }
 

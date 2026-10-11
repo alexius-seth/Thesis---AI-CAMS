@@ -84,6 +84,8 @@ namespace ACPAMS.Data
             {
                 entity.HasKey(e => e.StudentId);
                 entity.Property(e => e.Program).HasMaxLength(100);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.MustChangePassword).HasDefaultValue(false);
                 entity.HasOne(e => e.User)
                       .WithOne(u => u.Student)
                       .HasForeignKey<Student>(e => e.UserId)

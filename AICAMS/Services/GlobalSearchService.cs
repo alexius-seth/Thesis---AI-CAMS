@@ -39,14 +39,14 @@ namespace ACPAMS.Services
                 })
                 .ToListAsync();
 
-            // 2. Search Students (scoped to students with submission attempts on current instructor's exams)
+            // 2. Search Students (all registered students directly, regardless of exam history)
             var students = await db.Students
                 .AsNoTracking()
-                .Where(s => s.ExamAttempts.Any(a => a.Exam != null && a.Exam.InstructorId == currentInstructorId))
                 .Where(s => EF.Functions.Like(s.StudentId, $"%{term}%") ||
                             EF.Functions.Like(s.FirstName, $"%{term}%") ||
-                            EF.Functions.Like(s.LastName, $"%{term}%"))
-                .Take(5)
+                            EF.Functions.Like(s.LastName, $"%{term}%") ||
+                            EF.Functions.Like(s.FirstName + " " + s.LastName, $"%{term}%"))
+                .Take(10)
                 .Select(s => new SearchResultDto
                 {
                     Type = "Student",

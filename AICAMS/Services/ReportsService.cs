@@ -116,7 +116,8 @@ namespace ACPAMS.Services
                         : "—",
                     IsPassing = a.TotalScore.HasValue && maxPts > 0 && (a.TotalScore.Value / maxPts) >= (AppSettingsService.PassingGrade / 100m),
                     AnomalyCount = flagCount,
-                    RiskLevel = risk
+                    RiskLevel = risk,
+                    IsActive = a.Student?.IsActive ?? true
                 });
             }
 
@@ -285,6 +286,7 @@ namespace ACPAMS.Services
         public bool IsPassing { get; set; }
         public int AnomalyCount { get; set; }
         public string RiskLevel { get; set; } = "Low";
+        public bool IsActive { get; set; } = true;
     }
 
     public class SectionAverageDto

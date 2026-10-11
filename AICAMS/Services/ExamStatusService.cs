@@ -376,6 +376,8 @@ namespace ACPAMS.Services
         public int ActiveStudents { get; set; }
         public int TotalStudents { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime DateCreated => CreatedAt;
+        public DateTime? ArchivedDate { get; set; }
         public int DurationMinutes { get; set; }
         public decimal TotalPoints { get; set; }
         public bool HasAttempts { get; set; }

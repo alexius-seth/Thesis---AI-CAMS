@@ -40,12 +40,14 @@ namespace ACPAMS.Views.Auth
 
             try
             {
-                var user = await _authService.LoginAsync(username, password);
+                var (user, errorMessage) = await _authService.LoginWithStatusAsync(username, password);
 
                 if (user == null)
                 {
-                    MessageBox.Show("Invalid username or password. Please try again.",
-                        "Login Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(errorMessage ?? "Invalid username or password. Please try again.",
+                        errorMessage?.Contains("deactivated", StringComparison.OrdinalIgnoreCase) == true ? "Account Deactivated" : "Login Failed",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                     return;
                 }
 
@@ -54,8 +56,48 @@ namespace ACPAMS.Views.Auth
                 using var context = new AppDbContext();
                 if (user.Role == "student")
                 {
-                    SessionManager.CurrentStudent = await context.Students
+                    var student = await context.Students
                         .FirstOrDefaultAsync(s => s.UserId == user.UserId);
+
+                    if (student == null || !student.IsActive)
+                    {
+                        MessageBox.Show("This account has been deactivated. Contact your department administrator.",
+                            "Account Deactivated", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        SessionManager.CurrentUser = null;
+                        return;
+                    }
+
+                    if (student.MustChangePassword)
+                    {
+                        var dialog = new ChangePasswordDialog(student.StudentId)
+                        {
+                            Owner = Window.GetWindow(this)
+                        };
+                        var result = dialog.ShowDialog();
+
+                        if (result == true)
+                        {
+                            string newPassword = dialog.EnteredPassword;
+                            if (!string.IsNullOrEmpty(newPassword))
+                            {
+                                string newHash = BCrypt.Net.BCrypt.HashPassword(newPassword, 12);
+                                user.PasswordHash = newHash;
+                                if (student.User != null) student.User.PasswordHash = newHash;
+                            }
+                            student.MustChangePassword = false;
+                            await context.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            // Student cancelled; terminate login sequence
+                            MessageBox.Show("Password update required to access account.", "Password Update Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            SessionManager.CurrentUser = null;
+                            SessionManager.CurrentStudent = null;
+                            return;
+                        }
+                    }
+
+                    SessionManager.CurrentStudent = student;
                     SessionManager.RefreshAvatarCache();
 
                     ACPAMS.MainWindow.Resize(520, 480);
@@ -193,8 +235,11 @@ namespace ACPAMS.Views.Auth
 
         private void ForgotPasswordBtn_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Please contact your administrator to reset your password.",
-                "Forgot Password", MessageBoxButton.OK, MessageBoxImage.Information);
+            var dialog = new ForgotPasswordDialog
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialog.ShowDialog();
         }
 
         private void SignUpBtn_Click(object sender, RoutedEventArgs e)

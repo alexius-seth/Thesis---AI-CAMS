@@ -11,7 +11,7 @@ namespace ACPAMS.Views.Faculty
 {
     public partial class ArchivedExamsPage : UserControl, IRefreshableView
     {
-        private readonly FacultyHomePageViewModel _viewModel;
+        private readonly ArchivedExamsViewModel _viewModel;
         private readonly DispatcherTimer _autoRefreshTimer;
 
         public ArchivedExamsPage()
@@ -19,11 +19,11 @@ namespace ACPAMS.Views.Faculty
             InitializeComponent();
 
             var instructorId = SessionManager.CurrentInstructor?.InstructorId ?? string.Empty;
-            _viewModel = new FacultyHomePageViewModel(instructorId, isArchivedView: true);
+            _viewModel = new ArchivedExamsViewModel(instructorId);
             DataContext = _viewModel;
 
             _autoRefreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-            _autoRefreshTimer.Tick += async (s, e) => await _viewModel.LoadExamsAsync();
+            _autoRefreshTimer.Tick += async (s, e) => await _viewModel.LoadArchivedExamsAsync();
 
             Loaded += ArchivedExamsPage_Loaded;
             Unloaded += ArchivedExamsPage_Unloaded;
@@ -35,7 +35,7 @@ namespace ACPAMS.Views.Faculty
                 Application.Current.MainWindow.PreviewKeyDown += Window_PreviewKeyDown;
 
             _autoRefreshTimer.Start();
-            await _viewModel.LoadExamsAsync();
+            await _viewModel.LoadArchivedExamsAsync();
         }
 
         private void ArchivedExamsPage_Unloaded(object sender, RoutedEventArgs e)
