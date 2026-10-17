@@ -344,9 +344,9 @@ USB_Staging\
 ## 📄 License & Thesis Authors
 
 Developed as an undergraduate thesis project by the **ARNJ Tech** research team:
-- **Alexius Seth Alonzo**
-- **Rod Rigo**
-- **Neil**
-- **John**
+- **Alexius Seth**
+- **Rodrigo**
+- **Nathaniel**
+- **Jairus**
 
 Department of Computer Studies &copy; 2026. All rights reserved.
