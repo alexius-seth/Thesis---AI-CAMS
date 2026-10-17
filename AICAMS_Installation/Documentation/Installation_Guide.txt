@@ -1,0 +1,104 @@
+================================================================================
+AI-CAMS CENTRALIZED SYSTEM CONFIGURATION & DEPLOYMENT GUIDE
+================================================================================
+
+INFRASTRUCTURE OVERVIEW:
+- Database Host Server: DESKTOP-QD67JHP
+- SQL Instance:         DESKTOP-QD67JHP\SQLEXPRESS
+- Database Name:        aicamsdb
+- Client Machines:      Lab PCs connecting via Hostname resolution over LAN
+
+--------------------------------------------------------------------------------
+1. DATABASE SEEDING (EXECUTE ONCE ON HOST SERVER ONLY)
+--------------------------------------------------------------------------------
+Do NOT execute this on student lab PCs. Run only on DESKTOP-QD67JHP:
+
+1. Open PowerShell as Administrator on the Host PC.
+2. Run the seed script targeting the SQLEXPRESS instance:
+   sqlcmd -S ".\SQLEXPRESS" -d aicamsdb -i "E:\Database_Backups\aicams_seed_data.sql"
+
+3. Verify population:
+   sqlcmd -S ".\SQLEXPRESS" -d aicamsdb -Q "SELECT COUNT(*) AS StudentCount FROM dbo.students"
+   (Expected: >= 4 records)
+
+--------------------------------------------------------------------------------
+2. CLIENT WORKSTATION DEPLOYMENT
+--------------------------------------------------------------------------------
+On each student lab workstation:
+
+1. Ensure the client can resolve the host machine over LAN:
+   Test-NetConnection -ComputerName DESKTOP-QD67JHP -Port 1433
+   Ensure "TcpTestSucceeded : True" before proceeding.
+
+2. Install Prerequisites:
+   Run "Prerequisites\VC_redist.x64.exe" as Administrator.
+
+3. Install Application:
+   Run "AICAMS_Setup.exe" as Administrator.
+
+4. Verify Client appsettings.json Configuration:
+   Ensure the installed connection string in "C:\Program Files\AI-CAMS\appsettings.json" points to the host:
+   {
+     "ConnectionStrings": {
+       "DefaultConnection": "Server=DESKTOP-QD67JHP\\SQLEXPRESS;Database=aicamsdb;User Id=sa;Password=YourPasswordHere;TrustServerCertificate=True;"
+     }
+   }
+   NOTE: Ensure double backslashes (\\) are used in the server instance name.
+
+--------------------------------------------------------------------------------
+3. DEMO ACCOUNTS & CREDENTIALS
+--------------------------------------------------------------------------------
+Faculty / Proctor Account:
+  - Username: faculty_admin (or instructor)
+  - Password: (Configured during initial setup or via master key: Admin@1234)
+  - Master Recovery Key: AICAMS-ADMIN-2026
+
+Student Accounts:
+  - Active Student:
+      Student ID: 23-1111-111
+      Password:   Admin@1234
+      Status:     Active (Normal login)
+  - First-Time Login Student:
+      Student ID: 23-2222-222
+      Password:   Admin@1234
+      Status:     Will prompt student to set a new password on login
+  - Archived / Inactive Student:
+      Student ID: 23-3333-333
+      Status:     Account deactivated (testing access control)
+  - Active Student with Anomaly History:
+      Student ID: 23-4444-444
+      Password:   Admin@1234
+      Status:     Active (Associated with high-risk exam attempt)
+
+--------------------------------------------------------------------------------
+4. DEMO EXAMINATIONS
+--------------------------------------------------------------------------------
+- Active Exam Code:   CCS415-DEMO-LIVE
+  Title: Object-Oriented Programming Midterm Examination
+  Use this exam code to demonstrate real-time face tracking, gaze detection,
+  Alt+Tab locking, and submission workflow.
+
+- Archived Exam Code: CCS415-DEMO-ARCH
+  Title: Object-Oriented Programming Final Examination
+  Use this exam to showcase historical analytics, anomaly audit logs,
+  student attempt risk levels, and automated report generation.
+
+--------------------------------------------------------------------------------
+5. TROUBLESHOOTING
+--------------------------------------------------------------------------------
+- Issue: "Cannot connect to server DESKTOP-QD67JHP\SQLEXPRESS" on client machines.
+  Solution:
+    a. On Host Server (DESKTOP-QD67JHP):
+       - Ensure SQL Server (SQLEXPRESS) and SQL Server Browser services are running.
+       - In SQL Server Configuration Manager, ensure TCP/IP is Enabled under SQL Server Network Configuration.
+       - Ensure Windows Firewall allows inbound TCP traffic on port 1433 and UDP 1434.
+    b. On Client:
+       - Run: Test-NetConnection -ComputerName DESKTOP-QD67JHP -Port 1433
+
+- Issue: Camera feed is black or shows an error.
+  Solution: Check Windows Camera Privacy Settings ("Allow apps to access your
+  camera"). Ensure no other application (e.g. Zoom, Teams, Chrome) is using the webcam.
+
+- Issue: App crashes immediately on launch.
+  Solution: Re-run "Prerequisites\VC_redist.x64.exe" and choose "Repair".
+================================================================================

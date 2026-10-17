@@ -35,7 +35,14 @@ graphify-out
 [Tt]ools/
 AICAMS/Tools/
 
-# ── Standalone build and publish artifacts ─────────────────────────
+# ── Binary executables, libraries & logs ───────────────────────────
+*.exe
+*.dll
+*.msi
+*.log
+
+# ── Standalone build, publish & installer artifacts ────────────────
 publish/
 publish-*/
+installer-output/
 *.zip

@@ -1,284 +1,352 @@
-# AI-CAMS: AI-assisted Centralized Assessment Monitoring System
-> **Automated Code Proctoring, Real-Time Telemetry, and Intelligent Assessment Management for Computer Studies Laboratories**
+# AI-CAMS (AI-Assisted Computer Laboratory Proctoring System)
+
+> **Centralized proctoring, real-time computer vision telemetry, and automated code assessment platform designed for local computer laboratory environments.**
 
 [![.NET](https://img.shields.io/badge/.NET-8.0_LTS-512BD4?style=flat&logo=dotnet)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/C%23-12.0-239120?style=flat&logo=csharp)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![WPF](https://img.shields.io/badge/UI-WPF-0078D7?style=flat&logo=windows)](https://docs.microsoft.com/en-us/visualstudio/designers/getting-started-with-wpf)
 [![EF Core](https://img.shields.io/badge/ORM-EF_Core_8.0-512BD4?style=flat)](https://docs.microsoft.com/en-us/ef/core/)
-[![SQL Server](https://img.shields.io/badge/Database-SQL_Server-CC292B?style=flat&logo=microsoftsqlserver)](https://www.microsoft.com/sql-server)
+[![SQL Server](https://img.shields.io/badge/Database-SQL_Server_2025_Express-CC292B?style=flat&logo=microsoftsqlserver)](https://www.microsoft.com/sql-server)
 [![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini_3.5_Flash-4285F4?style=flat&logo=google)](https://ai.google.dev/)
 [![OpenCV](https://img.shields.io/badge/CV-OpenCvSharp4-5C3EE8?style=flat&logo=opencv)](https://github.com/shimat/opencvsharp)
+[![Dlib](https://img.shields.io/badge/Facial_Landmarks-DlibDotNet-00599C?style=flat)](https://github.com/takuya-takeuchi/DlibDotNet)
+[![Toolchain](https://img.shields.io/badge/Compiler-MinGW--w64_GCC-2962FF?style=flat)](https://www.mingw-w64.org/)
+[![Installer](https://img.shields.io/badge/Packaging-Inno_Setup_6-1B5E20?style=flat)](https://jrsoftware.org/isinfo.php)
 
 ---
 
 ## 📖 Table of Contents
-1. [Overview](#-overview)
-2. [Core Features](#-core-features)
-   - [Faculty & Instructor Portal](#faculty--instructor-portal)
-   - [Student Assessment Environment](#student-assessment-environment)
-   - [Academic Integrity & Telemetry Engine](#academic-integrity--telemetry-engine)
-3. [System Architecture](#-system-architecture)
-4. [Technology Stack](#-technology-stack)
-5. [System Requirements](#-system-requirements)
-6. [Database Configuration & Lab Network Setup](#-database-configuration--lab-network-setup)
-   - [Local Development (LocalDB)](#1-local-development-localdb)
-   - [Multi-PC Computer Lab Deployment (LAN Host)](#2-multi-pc-computer-lab-deployment-lan-host)
-   - [Default Seed Accounts](#3-default-seed-accounts)
-7. [Zero-Install Portable Compiler Toolchain](#-zero-install-portable-compiler-toolchain)
-8. [Installation & Getting Started](#-installation--getting-started)
-9. [Security Architecture](#-security-architecture)
+1. [Project Overview](#-project-overview)
+2. [System Architecture](#-system-architecture)
+   - [Client-Server Topology](#client-server-topology)
+   - [Subsystem Component Diagram](#subsystem-component-diagram)
+   - [Core Subsystem Layers](#core-subsystem-layers)
+3. [Key Features & Capabilities](#-key-features--capabilities)
+   - [Intelligent Vision Proctoring Engine](#1-intelligent-vision-proctoring-engine)
+   - [Automated Programming Execution Sandbox](#2-automated-programming-execution-sandbox)
+   - [Role-Based Workflows & Management](#3-role-based-workflows--management)
+   - [Kiosk Lockdown & Session Recovery](#4-kiosk-lockdown--session-recovery)
+4. [Technology Stack & Native Dependencies](#-technology-stack--native-dependencies)
+5. [Local Setup & Development](#-local-setup--development)
+   - [Prerequisites](#prerequisites)
+   - [Repository Build & EF Core Migrations](#repository-build--ef-core-migrations)
+   - [Centralized Database Configuration (`appsettings.json`)](#centralized-database-configuration-appsettingsjson)
+   - [Standalone Installer Compilation](#standalone-installer-compilation)
+6. [Distribution & Media Deployment (USB Staging)](#-distribution--media-deployment-usb-staging)
+   - [USB Directory Layout](#usb-directory-layout)
+   - [Host vs. Client Workstation Deployment](#host-vs-client-workstation-deployment)
+7. [Security & Administrative Bypass](#-security--administrative-bypass)
+8. [License & Thesis Authors](#-license--thesis-authors)
 
 ---
 
-## 🌟 Overview
+## 🌟 Project Overview
 
-**AI-CAMS (Automated Code Proctoring and Assessment Management System)** is an enterprise-grade, client-server desktop application engineered for academic institutions and computer science laboratory environments. It combines **dynamic assessment authoring**, **multi-language live code compilation**, **real-time on-device computer vision proctoring**, and **Google Gemini 3.5 Flash generative AI** to automate rubric evaluations and detect academic dishonesty over a local area network (LAN).
+**AI-CAMS (AI-Assisted Computer Laboratory Proctoring System)** is an integrated, client-server desktop application engineered specifically for academic computer laboratories. It provides a secure, monitored testing ecosystem where students complete objective, essay, and hands-on coding examinations while native computer vision algorithms continuously safeguard academic integrity on local workstation hardware.
 
-Designed with a **zero-install architecture**, student client machines execute programming assessments in C, Java, and Python without requiring individual compilers or runtime environments pre-installed on workstation operating systems.
-
----
-
-## 🚀 Core Features
-
-### Faculty & Instructor Portal
-* **Live Monitoring Hub**: Real-time grid of all active student workstations on the LAN, displaying live webcam video frames, gaze tracking status, active question index, device health, and instant anomaly alerts.
-* **Intelligent Assessment Canvas**:
-  * Rich authoring interface supporting 6 question modalities: **Multiple Choice**, **True or False**, **Identification**, **Enumeration**, **Essay**, and **Coding Problems**.
-  * Pre-populated edit workflows that load existing sections, questions, and test cases directly into the canvas.
-  * Test-case builder for programming challenges (input args, expected output, timeout thresholds).
-* **AI Rubric Matrix & Syllabus Import**:
-  * Generative rubric generator powered by Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`), constructing 4-tier evaluation matrices (*Excellent*, *Good*, *Fair*, *Poor*).
-  * Automated question extraction from instructor-uploaded syllabus or exam documents (PDF/DOCX).
-* **Global Search & Instant Command Bar**:
-  * 250ms debounced auto-suggest header searching both assessments and registered students.
-  * Direct deep-linking to hydrated performance reports (`ReportsTab`), bypassing empty live dashboards.
-* **Automated & Manual Grading**:
-  * Instant auto-grading for objective questions and automated test-case runner for coding answers.
-  * Gemini-assisted rubric grading for subjective and essay questions with manual instructor grade override and feedback locks.
-* **Class Performance & PDF Reporting**:
-  * Interactive KPI cards: Class Average, Completion Rate, and Integrity Index.
-  * Infraction breakdown charts (gaze deviation, window switching, clipboard access).
-  * One-click PDF report exporter via QuestPDF.
-* **Hardened Profile & Security Configuration**:
-  * Centralized avatar management storing cropped images directly in the database (`VARBINARY(MAX)`) with high-DPI scaling and fallback initials badges.
-  * Masked, write-only Gemini API key field (`••••••••••••••••••••••••••••••••`) backed by Windows Data Protection API (DPAPI) with right-click clipboard suppression.
-  * System-wide standardization to the *Department of Computer Studies*.
-
-### Student Assessment Environment
-* **Exclusive Kiosk Lockdown**:
-  * Dynamic transition from standard maximized window mode to an exclusive, borderless fullscreen kiosk upon exam verification.
-  * Overlays the entire monitor, including the Windows OS taskbar (`WindowStyle.None`, `Topmost = true`, `NoResize`).
-  * Win32 low-level keyboard hook (`WH_KEYBOARD_LL`) suppressing `Alt+Tab`, `Windows Key`, `Ctrl+Esc`, `Alt+F4`, and task-switching shortcuts.
-* **Integrated Code Editor (AvalonEdit)**:
-  * Dark-mode code editor with syntax highlighting for **C**, **Java**, and **Python**.
-  * Standard I/O redirection console allowing students to run code with custom inputs and view compiler output, standard out, and runtime stack traces in real time.
-* **Anti-Backtracking & Auto-Submission**:
-  * Enforced question navigation policies preventing post-submission modifications.
-  * Automatic submission upon timer expiration or proctor termination with immediate transition back to standard window dimensions.
-
-### Academic Integrity & Telemetry Engine
-* **Computer Vision Proctoring (OpenCvSharp4 & Dlib)**:
-  * Local Haar Cascade and 68-point facial landmark predictor tracking eye aspect ratios (EAR) and facial orientation.
-  * Flags rapid gaze diversion, head rotation away from display, and multiple/missing faces.
-* **Desktop Integrity Guard**:
-  * Global clipboard monitor intercepting external copy-paste attempts during live exams.
-  * Active window focus tracking logging application switching and task switching attempts.
-  * Real-time penalty score calculation feeding into the instructor's live dashboard.
+Operating over a Local Area Network (LAN), AI-CAMS eliminates the need for expensive cloud telemetry or constant external internet bandwidth:
+- **Client workstations** execute exams inside a locked-down, borderless kiosk with on-device computer vision and an embedded compiler sandbox.
+- **The Centralized Host Server** (`DESKTOP-QD67JHP\SQLEXPRESS`) aggregates audit telemetry, proctoring alerts, examination attempts, and grading reports into a centralized Microsoft SQL Server database (`aicamsdb`).
+- **Generative AI** powered by Google Gemini 3.5 Flash automates rubric synthesis and assists faculty in evaluating complex subjective responses.
 
 ---
 
 ## 🏗 System Architecture
 
+### Client-Server Topology
+
+In a typical university computer laboratory, the instructor workstation acts as the central database and telemetry server, while individual student workstations function as locked-down clients communicating over LAN TCP/IP:
+
 ```mermaid
-graph TD
-    subgraph Host / Instructor Workstation
-        A[Faculty Desktop App - WPF] --> B[AppDbContext - EF Core 8]
-        A --> C[Global Search & Notification Engine]
-        A --> D[Gemini 3.5 Flash AI Integration Service]
-        B --> E[(SQL Server Database / LocalDB)]
+flowchart TD
+    subgraph HostServer["Centralized Host Server: DESKTOP-QD67JHP"]
+        SQL[("SQL Server 2025 Express\nDatabase: aicamsdb\nPort: 1433")]
+        FacultyApp["AI-CAMS Faculty Portal (WPF)\n- Live Proctor Grid\n- Exam Authoring\n- PDF Report Generator"]
+        GeminiService["Gemini 3.5 Flash Integration\n(Rubric Generation & AI Grading)"]
     end
 
-    subgraph Student Workstation
-        F[Student Desktop App - WPF] --> G[Kiosk Window Controller]
-        F --> H[On-Device Vision Proctoring]
-        F --> I[Portable CodeRunner Engine]
-        G --> J[Win32 Keyboard Hook]
-        H --> K[OpenCV & Facial Landmarks]
-        I --> L[Embedded Toolchain: GCC / OpenJDK / Python]
+    subgraph Client1["Student Workstation 01"]
+        Kiosk1["AI-CAMS Kiosk Client\n- Win32 WH_KEYBOARD_LL\n- OpenCvSharp4 & Dlib\n- GCC/Java/Python Sandbox"]
     end
 
-    F -- LAN TCP/IP:1433 --> E
-    F -- Telemetry & State Sync --> B
-    D -- HTTPS REST / TLS 1.3 --> M[Google AI Studio API]
+    subgraph ClientN["Student Workstation N (Lab PCs)"]
+        KioskN["AI-CAMS Kiosk Client\n- Auto-Save Telemetry\n- Real-Time Anomaly Scoring\n- Focus Tracking"]
+    end
+
+    FacultyApp -->|EF Core 8 / ADO.NET| SQL
+    FacultyApp -->|HTTPS / TLS 1.3| GeminiService
+    Kiosk1 -->|LAN Hostname Resolution\nTCP: 1433| SQL
+    KioskN -->|LAN Hostname Resolution\nTCP: 1433| SQL
 ```
 
-### Architectural Highlights
-* **Presentation Layer**: MVVM pattern with data-bound WPF XAML controls, vector icons (`Segoe MDL2 Assets`), and reactive UI updates.
-* **Service Layer**: Dedicated singleton and scoped services (`CodeRunnerService`, `ReportsService`, `ExamStatusService`, `GlobalSearchService`, `NotificationService`, `AvatarService`).
-* **Data Access Layer**: EF Core 8 with Code-First migrations, SQL Server change tracking, and resilient connection execution strategies.
-* **AI Engine**: HTTP client integrated with Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`, configurable in `AICAMS/appsettings.json`) featuring exponential backoff, rate-limit retries, and strict JSON schema responses.
+### Subsystem Component Diagram
+
+```mermaid
+graph LR
+    subgraph Presentation["WPF Presentation Layer"]
+        Views["Views: StudentExamPage,\nDashboardPage, CreateExamPage,\nReportsTab, MonitoringTab"]
+        Controls["Controls: AvalonEdit Code Editor,\nGlobalSearchBar, FacultyUserWidget"]
+        Canvases["Canvases: CodingCanvas,\nOptionSelectorCanvas, TextInputCanvas,\nEnumerationCanvas"]
+    end
+
+    subgraph Domain["Application & Domain Services"]
+        Monitor["MonitoringService\n(Vision & Telemetry)"]
+        CodeRunner["CodeRunnerService\n(Compiler Sandbox)"]
+        Auth["AuthService & SessionManager\n(BCrypt, FixedTimeEquals)"]
+        ExamService["ExamService & ExamStatusService\n(State Tracking, Auto-Grading)"]
+        Reports["ReportsService & PdfExportService\n(QuestPDF Engine)"]
+    end
+
+    subgraph Native["Native Interop & Hardware"]
+        OpenCV["OpenCvSharpExtern.dll\n(Webcam, SolvePnP)"]
+        Dlib["DlibDotNet.dll\n(68-point Shape Predictor)"]
+        Win32Hooks["user32.dll / kernel32.dll\n(WH_KEYBOARD_LL, Clipboard)"]
+        Toolchains["Portable GCC, JDK, Python\n(Tools/ directory)"]
+    end
+
+    subgraph Storage["Data Access & Centralized Database"]
+        EF["Entity Framework Core 8\n(AppDbContext)"]
+        SQLDB[("DESKTOP-QD67JHP\\SQLEXPRESS\n[aicamsdb]")]
+    end
+
+    Presentation --> Domain
+    Domain --> Native
+    Domain --> Storage
+    Storage --> SQLDB
+```
+
+### Core Subsystem Layers
+
+1. **WPF Presentation Layer (MVVM & Data Binding)**:
+   - Built on .NET 8 WPF with hardware acceleration, responsive vector icons (`Segoe MDL2 Assets`), and modular UserControl canvases.
+   - Dedicated views for examination authoring, real-time proctor surveillance, student examinee kiosks, and rubric grading.
+
+2. **Proctoring & Computer Vision Pipeline (`MonitoringService.cs`)**:
+   - Captures 30 FPS video frames via `OpenCvSharp4.VideoCapture`.
+   - Executes dual-tier face detection (Haar Cascade primary classifier with Dlib frontal detector fallback).
+   - Solves Perspective-n-Point (`SolvePnP`) against 3D facial feature coordinates to compute 3-axis head rotation (Yaw, Pitch, Roll).
+   - Calibrates student Eye Aspect Ratio (EAR) to detect rapid gaze diversion and closed-eye episodes while ignoring normal blinks.
+
+3. **Compiler Execution Sandbox (`CodeRunnerService.cs`)**:
+   - Isolated sub-process execution model supporting **C (GCC)**, **Java (OpenJDK)**, and **Python (Embeddable)**.
+   - Executes inside dynamic temporary workspaces with standard I/O redirection, standard error capture, and a hard 5-second process timeout guard to prevent infinite loops or fork bombs.
+
+4. **Security, Authentication & Integrity Layer (`AuthService.cs`, `SessionManager.cs`)**:
+   - Salting and hashing via `BCrypt.Net-Next` with work factor 11/12.
+   - Constant-time string comparison (`CryptographicOperations.FixedTimeEquals`) for faculty onboarding verification codes.
+   - Windows DPAPI credential protection for sensitive configuration secrets.
+
+5. **Data Access Layer (`AppDbContext.cs`)**:
+   - Entity Framework Core 8 Code-First design with self-healing schema migrations (`AppInitializer.cs`).
+   - Resilient retry connections targeting Microsoft SQL Server Express over LAN.
 
 ---
 
-## 💻 Technology Stack
+## 🚀 Key Features & Capabilities
 
-| Layer | Technologies / Libraries |
-| :--- | :--- |
-| **Framework & Runtime** | .NET 8.0 LTS (C# 12.0), Windows Presentation Foundation (WPF) |
-| **Database & ORM** | Microsoft SQL Server (LocalDB / Express / Enterprise), Entity Framework Core 8.0 |
-| **Generative AI** | Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`), Google.GenAI REST Integration |
-| **Computer Vision** | OpenCvSharp4, OpenCvSharp4.runtime.win, DlibDotNet (Haar Cascades, Facial Landmarks) |
-| **Code Editor** | AvalonEdit 6.3 (Custom syntax definitions for C, Java, Python) |
-| **Portable Compilers** | Portable Python 3.11.9 (Embeddable), WinLibs MinGW-w64 GCC 13.2, OpenJDK 17/21 |
-| **Security & Crypto** | Windows DPAPI (`System.Security.Cryptography.ProtectedData`), BCrypt.Net-Next 4.2 |
-| **Document Generation** | QuestPDF 2026.9, Microsoft.Win32 SaveFileDialog |
+### 1. Intelligent Vision Proctoring Engine
+- **Face Absence Detection**: Flags candidate when no frontal face is recognized within a configurable frame window (`NoFaceFrameThreshold`).
+- **Multiple Face Detection**: Instantly logs an anomaly when secondary individuals appear in the camera's field of view.
+- **Head Pose & Yaw/Pitch Estimation**: Uses 6 3D facial anchor points (nose tip, chin, eye corners, mouth corners) via `Cv2.SolvePnP` to detect when a student turns their head away from the monitor.
+- **Adaptive Eye Aspect Ratio (EAR) Gaze Tracking**: Calibrates each student's baseline open EAR, maintaining an exponential decay model for clean behavior while penalizing sustained off-screen glances.
+- **Cheating Risk Score Accumulation**: Real-time score (0–100) calculated on client workstations that dynamically transitions UI indicator states (Green / Amber / Red) and syncs to faculty dashboards.
 
----
+### 2. Automated Programming Execution Sandbox
+- **Multi-Language Support**:
+  - **C**: Compiled via MinGW-w64 GCC (`main.c -o main.exe`), executed in an isolated working directory.
+  - **Java**: Automatic class extraction regex (`public class ([A-Za-z0-9_]+)`), compiled via `javac.exe`, executed via `java.exe -cp`.
+  - **Python**: Interpreted directly via isolated portable Python 3.11 embedded runtime.
+- **Zero-Install Client Execution**: Tools reside in the application directory (`Tools/MinGW`, `Tools/JDK`, `Tools/Python`), eliminating the need to set client system environment variables.
+- **Interactive Stdin Console**: Students can supply custom standard input streams during development and execution.
+- **Automated Test-Case Verification**: Compares output against hidden test cases with timeout enforcement.
 
-## ⚙️ System Requirements
+### 3. Role-Based Workflows & Management
+- **Faculty Portal**:
+  - **Assessment Authoring Canvas**: Supports 6 question modalities: Multiple Choice, True/False, Identification, Enumeration, Essay, and Coding.
+  - **Live Monitoring Hub**: Real-time tile grid of student workstations showing live webcam frames, risk scores, and current question indices.
+  - **AI-Assisted Grading**: Generative scoring using Gemini 3.5 Flash for essay and coding rubric matrices.
+  - **QuestPDF Performance Exporter**: One-click class-wide performance reports with infraction breakdowns.
+- **Student Workstation**:
+  - **First-Time Login Onboarding**: Automatic password change enforcement (`must_change_password = 1`).
+  - **Dark-Mode AvalonEdit Editor**: Syntax highlighting for C, Java, and Python with line numbering and folding.
+  - **Telemetry Feedback**: Non-intrusive risk meter and live proctor warning overlay notifications.
 
-### Instructor / Host PC
-* **Operating System**: Windows 10 / Windows 11 (64-bit)
-* **Processor**: Intel Core i5 / AMD Ryzen 5 or higher
-* **Memory**: Minimum 8 GB RAM (16 GB recommended for concurrent class monitoring)
-* **Network**: Ethernet LAN connection (Static IP or DHCP Reservation recommended)
-* **Runtime**: [.NET 8.0 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0)
-* **Database**: Microsoft SQL Server Express 2019+ or LocalDB
-
-### Student Workstation
-* **Operating System**: Windows 10 / Windows 11 (64-bit)
-* **Peripherals**: Standard USB / Integrated Webcam (required for proctoring)
-* **Memory**: Minimum 4 GB RAM
-* **Display**: 1366x768 minimum resolution (1080p recommended)
-* **Network**: Connected to the same Local Area Network (LAN) / Subnet as Host PC
-
----
-
-## 🗄 Database Configuration & Lab Network Setup
-
-### 1. Local Development (LocalDB)
-For single-machine development or evaluation, the system automatically uses Microsoft SQL Server LocalDB.
-The default connection string in `AICAMS/Data/AppDbContext.cs` is:
-```csharp
-Server=(localdb)\mssqllocaldb;Database=aicams;Trusted_Connection=True;TrustServerCertificate=True;
-```
-
-### 2. Multi-PC Computer Lab Deployment (LAN Host)
-In a computer laboratory, the **Instructor's PC** acts as the centralized database server, and **Student PCs** connect as clients over the local network.
-
-#### Step A: Configure SQL Server on Instructor PC
-1. Install **SQL Server Express** on the Instructor PC.
-2. Open **SQL Server Configuration Manager**:
-   * Navigate to `SQL Server Network Configuration` -> `Protocols for SQLEXPRESS`.
-   * Enable **TCP/IP**.
-   * Double-click **TCP/IP**, open the **IP Addresses** tab, scroll to `IPAll`, and set **TCP Port** to `1433`.
-3. Restart the `SQL Server (SQLEXPRESS)` service.
-4. In **SQL Server Management Studio (SSMS)**:
-   * Right-click server -> `Properties` -> `Security` -> Select **SQL Server and Windows Authentication mode**.
-   * Create a login for student workstations (e.g., User: `aicams_user`, Password: `LabPassword@123`).
-   * Grant `db_owner` role on database `aicams`.
-
-#### Step B: Open Windows Firewall Port on Instructor PC
-Execute in Administrator PowerShell on the Host PC:
-```powershell
-New-NetFirewallRule -DisplayName "AICAMS SQL Server (Port 1433)" -Direction Inbound -LocalPort 1433 -Protocol TCP -Action Allow
-```
-
-#### Step C: Update Connection String on Student Workstations
-In `AICAMS/Data/AppDbContext.cs`, set the host's LAN IP address:
-```csharp
-options.UseSqlServer("Server=192.168.1.100,1433;Database=aicams;User Id=aicams_user;Password=LabPassword@123;TrustServerCertificate=True;");
-```
-
-### 3. Default Seed Accounts
-Upon initial startup, `AppInitializer.cs` automatically executes EF Core migrations and provisions the default administrator account:
-* **Username**: `instructor`
-* **Password**: `Admin@1234`
-* **Role**: `instructor`
-* **Department**: `Department of Computer Studies`
+### 4. Kiosk Lockdown & Session Recovery
+- **Exclusive Fullscreen Overlay**: Window border stripping (`WindowStyle.None`), taskbar concealment, and `Topmost = true`.
+- **Low-Level Win32 Hook (`WH_KEYBOARD_LL`)**: Intercepts and swallows `Alt+Tab`, `Windows Key`, `Ctrl+Esc`, `Alt+F4`, and `Ctrl+Alt+Del` escape sequences.
+- **Clipboard Guard**: Monitors and clears clipboard content during active exam sessions.
+- **Fault-Tolerant Session Resumption**:
+  - Auto-saves responses every 20 seconds and on every question navigation event.
+  - In the event of a power outage or workstation reboot, students log back in to resume their session; remaining time is calculated against the database `started_at` timestamp plus any `extra_time_minutes` granted by the proctor.
 
 ---
 
-## 🛠 Zero-Install Portable Compiler Toolchain
+## 💻 Technology Stack & Native Dependencies
 
-AI-CAMS packages self-contained, portable compiler toolchains inside `AICAMS/Tools/` so student PCs require zero manual compiler installations.
-
-### Setup Portable Toolchains (Run Once on Build Machine)
-Run the included PowerShell script from the repository root:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\setup-portable-tools.ps1
-```
-
-The script configures the required directory hierarchy:
-```
-AICAMS/
-└── Tools/
-    ├── Python/          # Python 3.11 embeddable runtime
-    │   ├── python.exe
-    │   └── python311.dll
-    ├── MinGW/           # WinLibs MinGW GCC (C Compiler)
-    │   └── bin/
-    │       └── gcc.exe
-    └── JDK/             # Portable OpenJDK 17+ (Java Compiler & VM)
-        └── bin/
-            ├── javac.exe
-            └── java.exe
-```
-
-When building for deployment, these portable binaries are copied alongside the executable into the distribution package.
+| Component | Technology | Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Framework** | .NET (C# 12.0) | 8.0 LTS | Core runtime and application framework |
+| **UI Presentation** | Windows Presentation Foundation (WPF) | .NET 8 | Desktop presentation layer and MVVM data binding |
+| **Database** | Microsoft SQL Server Express | 2025 / 2022 | Centralized host database (`aicamsdb`) |
+| **ORM** | Entity Framework Core | 8.0.0 | Data access, migrations, and relationship mapping |
+| **Code Editor** | AvalonEdit | 6.3.1 | Syntax highlighting, line numbering, code editing |
+| **Computer Vision** | OpenCvSharp4 & OpenCvSharp4.runtime.win | 4.9.0 | Camera capture, frame processing, solvePnP head pose |
+| **Facial Landmarks** | DlibDotNet | 19.21.0 | 68-point facial landmark model inference |
+| **Generative AI** | Google Gemini REST API | `gemini-3.5-flash` | Automated rubric synthesis and essay grading |
+| **PDF Reporting** | QuestPDF | 2026.9 | Vector PDF generation for class reports |
+| **Cryptography** | BCrypt.Net-Next / Windows DPAPI | 4.2.0 | Password hashing and API key encryption |
+| **Compiler Toolchain** | MinGW-w64 GCC / OpenJDK / Python | 13.2 / 21 / 3.11 | Embedded portable execution sandbox |
+| **Installer Compiler** | Inno Setup | 6.7.3 | Standalone installer creation (`AICAMS_Setup.exe`) |
 
 ---
 
-## 📥 Installation & Getting Started
+## ⚙️ Local Setup & Development
 
 ### Prerequisites
-* [Visual Studio 2022](https://visualstudio.microsoft.com/) (Version 17.8 or higher with *.NET Desktop Development* workload)
-* [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-* SQL Server Express or LocalDB
+- Windows 10 or 11 (64-bit)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/) (Version 17.8+ with *.NET Desktop Development* workload)
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Microsoft SQL Server 2025/2022 Express or LocalDB
+- [Microsoft Visual C++ 2015–2022 x64 Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe)
 
-### Build Instructions
+### Repository Build & EF Core Migrations
+
 1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/alexius-seth/Thesis---AI-CAMS.git
+   ```powershell
+   git clone https://github.com/alexius-seth/Thesis---Acams.git
    cd Thesis---Acams
    ```
-2. **Restore dependencies**:
-   ```bash
-   dotnet restore AICAMS/AICAMS.csproj
-   ```
-3. **Apply EF Core Migrations**:
-   ```bash
-   dotnet ef database update --project AICAMS/AICAMS.csproj
-   ```
-4. **Build the project**:
-   ```bash
-   dotnet build AICAMS/AICAMS.csproj -c Release
-   ```
-5. **Run the application**:
-   ```bash
-   dotnet run --project AICAMS/AICAMS.csproj
+
+2. **Download Portable Compilers (Optional for full sandbox support)**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\setup-portable-tools.ps1
    ```
 
-### Gemini API Key Configuration
-1. Log in with the default instructor account (`instructor` / `Admin@1234`).
-2. Navigate to **Settings** -> **AI Integration**.
-3. Paste your API key from [Google AI Studio](https://aistudio.google.com/).
-4. Click **Test Connection** to verify live communication, then click **Save AI Settings**.
-5. The key is instantly encrypted with Windows DPAPI and stored securely.
+3. **Restore NuGet Packages**:
+   ```powershell
+   dotnet restore .\AICAMS\AICAMS.csproj
+   ```
+
+4. **Apply Entity Framework Core Database Migrations**:
+   ```powershell
+   dotnet ef database update --project .\AICAMS\AICAMS.csproj
+   ```
+
+5. **Build Release Executable**:
+   ```powershell
+   dotnet build .\AICAMS\AICAMS.csproj -c Release
+   ```
+
+### Centralized Database Configuration (`appsettings.json`)
+
+Configure `AICAMS/appsettings.json` (or the installed configuration in `C:\Program Files\AI-CAMS\appsettings.json`):
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=DESKTOP-QD67JHP\\SQLEXPRESS;Database=aicamsdb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Faculty": {
+    "RegistrationCodeHash": "008b03752008ca5ea06222865df3b8ecf36c453509107356dd255ec7c71edadb"
+  },
+  "Gemini": {
+    "Model": "gemini-3.5-flash"
+  },
+  "Security": {
+    "MasterRecoveryKey": "AICAMS-ADMIN-2026"
+  }
+}
+```
+
+> [!IMPORTANT]
+> When configuring the connection string, ensure the instance backslash is escaped with a double backslash (`DESKTOP-QD67JHP\\SQLEXPRESS`).
+
+### Standalone Installer Compilation
+
+To generate the distribution installer `AICAMS_Setup.exe`:
+
+1. **Publish self-contained 64-bit release**:
+   ```powershell
+   dotnet publish .\AICAMS\AICAMS.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o .\publish
+   ```
+
+2. **Compile with Inno Setup CLI**:
+   ```powershell
+   & "C:\Users\$env:USERNAME\AppData\Local\Programs\Inno Setup 6\iscc.exe" .\installer.iss
+   ```
+   *The generated setup file is output to `.\installer-output\AICAMS_Setup.exe` (~341 MB).*
 
 ---
 
-## 🔒 Security Architecture
+## 📦 Distribution & Media Deployment (USB Staging)
 
-* **Kiosk Hardening**: Window border stripping, taskbar concealment, and low-level keyboard hooks prevent student escapes during examination windows.
-* **DPAPI Credential Concealment**: Gemini API keys are never stored in plaintext on disk; they are encrypted via `ProtectedData.Protect` using machine and user-specific entropy scopes.
-* **Password Hashing**: User credentials use industry-standard salted BCrypt hashing with configurable work factors.
-* **Anti-Tamper Audit Trails**: Instructor actions, configuration modifications, and grade overrides generate immutable entries in the `AuditLogs` table.
-* **Offline Proctoring Fallback**: Vision tracking and code test verification run entirely locally on the student machine without streaming raw video over the network, minimizing bandwidth consumption on campus LANs.
+For deployment to offline computer laboratory workstations without an active internet connection, pre-packaged USB distribution files are staged in [`.\USB_Staging\`](file:///C:/Users/alonz/source/repos/alexius-seth/Thesis---Acams/USB_Staging):
+
+### USB Directory Layout
+
+```text
+USB_Staging\
+├── AICAMS_Setup.exe                       # Self-contained Windows installer (x64)
+├── README.txt                             # Quickstart deployment instructions
+├── Prerequisites\
+│   └── VC_redist.x64.exe                  # Microsoft Visual C++ 2015–2022 x64 Runtime
+├── Database_Backups\
+│   └── aicams_seed_data.sql               # Idempotent database seed script
+└── Documentation\
+    └── Installation_Guide.txt             # Comprehensive deployment & troubleshooting guide
+```
+
+### Host vs. Client Workstation Deployment
+
+#### On the Database Host Server (`DESKTOP-QD67JHP`)
+1. Ensure SQL Server (SQLEXPRESS) and SQL Server Browser services are running.
+2. In **SQL Server Configuration Manager**, enable TCP/IP protocol and bind port `1433`.
+3. Open Windows Firewall for incoming TCP 1433:
+   ```powershell
+   New-NetFirewallRule -DisplayName "AI-CAMS SQL Server (Port 1433)" -Direction Inbound -LocalPort 1433 -Protocol TCP -Action Allow
+   ```
+4. Seed the database with mock assessments and test students:
+   ```powershell
+   sqlcmd -S ".\SQLEXPRESS" -d aicamsdb -i "Database_Backups\aicams_seed_data.sql"
+   ```
+
+#### On Student Workstations
+1. Test connectivity to the host server:
+   ```powershell
+   Test-NetConnection -ComputerName DESKTOP-QD67JHP -Port 1433
+   ```
+2. Install `Prerequisites\VC_redist.x64.exe` as Administrator.
+3. Run `AICAMS_Setup.exe` as Administrator.
+4. Launch AI-CAMS from the Desktop shortcut.
 
 ---
 
-## 📄 License & Authors
-Developed as an academic thesis project by ARNJ Tech for automated assessment, intelligent rubric grading, and lab proctoring.
-All rights reserved.
+## 🔒 Security & Administrative Bypass
 
+- **Faculty Master Recovery Key**:
+  - In emergency lockout situations (e.g. keyboard hook failure, hardware failure), the proctor can bypass kiosk restrictions using the emergency master recovery key:
+    ```
+    AICAMS-ADMIN-2026
+    ```
+- **Faculty Onboarding Code**:
+  - Registering a new faculty account requires the pre-configured authorization secret:
+    ```
+    FACULTY-2026-SECRET
+    ```
+- **Seed Student Test Accounts**:
+  - `23-1111-111` (Active student, normal login, default password `Admin@1234`)
+  - `23-2222-222` (First-time student, prompts password reset on initial login)
+  - `23-3333-333` (Archived student, access disabled)
+  - `23-4444-444` (Examinee with high historical anomaly records)
+
+---
+
+## 📄 License & Thesis Authors
+
+Developed as an undergraduate thesis project by the **ARNJ Tech** research team:
+- **Alexius Seth Alonzo**
+- **Rod Rigo**
+- **Neil**
+- **John**
+
+Department of Computer Studies &copy; 2026. All rights reserved.
