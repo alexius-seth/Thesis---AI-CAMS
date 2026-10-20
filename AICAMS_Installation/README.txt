@@ -1,5 +1,5 @@
 ====================================================================
-AI-CAMS: AI-Assisted Computer Laboratory Proctoring System
+AI-CAMS: AI-assisted Centralized Assessment Monitoring System
 Setup & Demonstration Media
 ====================================================================
 

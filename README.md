@@ -1,4 +1,4 @@
-# AI-CAMS (AI-Assisted Computer Laboratory Proctoring System)
+# AI-assisted Centralized Assessment Monitoring System (AI-CAMS)
 
 > **Centralized proctoring, real-time computer vision telemetry, and automated code assessment platform designed for local computer laboratory environments.**
 
@@ -32,8 +32,8 @@
    - [Repository Build & EF Core Migrations](#repository-build--ef-core-migrations)
    - [Centralized Database Configuration (`appsettings.json`)](#centralized-database-configuration-appsettingsjson)
    - [Standalone Installer Compilation](#standalone-installer-compilation)
-6. [Distribution & Media Deployment (USB Staging)](#-distribution--media-deployment-usb-staging)
-   - [USB Directory Layout](#usb-directory-layout)
+6. [Distribution & Media Deployment (AICAMS_Installation)](#-distribution--media-deployment-aicams_installation)
+   - [Installation Media Directory Layout](#installation-media-directory-layout)
    - [Host vs. Client Workstation Deployment](#host-vs-client-workstation-deployment)
 7. [Security & Administrative Bypass](#-security--administrative-bypass)
 8. [License & Thesis Authors](#-license--thesis-authors)
@@ -42,7 +42,7 @@
 
 ## 🌟 Project Overview
 
-**AI-CAMS (AI-Assisted Computer Laboratory Proctoring System)** is an integrated, client-server desktop application engineered specifically for academic computer laboratories. It provides a secure, monitored testing ecosystem where students complete objective, essay, and hands-on coding examinations while native computer vision algorithms continuously safeguard academic integrity on local workstation hardware.
+**AI-assisted Centralized Assessment Monitoring System (AI-CAMS)** is an integrated, client-server desktop application engineered specifically for academic computer laboratories. It provides a secure, monitored testing ecosystem where students complete objective, essay, and hands-on coding examinations while native computer vision algorithms continuously safeguard academic integrity on local workstation hardware.
 
 Operating over a Local Area Network (LAN), AI-CAMS eliminates the need for expensive cloud telemetry or constant external internet bandwidth:
 - **Client workstations** execute exams inside a locked-down, borderless kiosk with on-device computer vision and an embedded compiler sandbox.
@@ -190,7 +190,7 @@ graph LR
 | **Database** | Microsoft SQL Server Express | 2025 / 2022 | Centralized host database (`aicamsdb`) |
 | **ORM** | Entity Framework Core | 8.0.0 | Data access, migrations, and relationship mapping |
 | **Code Editor** | AvalonEdit | 6.3.1 | Syntax highlighting, line numbering, code editing |
-| **Computer Vision** | OpenCvSharp4 & OpenCvSharp4.runtime.win | 4.9.0 | Camera capture, frame processing, solvePnP head pose |
+| **Computer Vision** | OpenCvSharp4 & OpenCvSharp4.runtime.win | 4.13.0 | Camera capture, frame processing, solvePnP head pose |
 | **Facial Landmarks** | DlibDotNet | 19.21.0 | 68-point facial landmark model inference |
 | **Generative AI** | Google Gemini REST API | `gemini-3.5-flash` | Automated rubric synthesis and essay grading |
 | **PDF Reporting** | QuestPDF | 2026.9 | Vector PDF generation for class reports |
@@ -278,14 +278,14 @@ To generate the distribution installer `AICAMS_Setup.exe`:
 
 ---
 
-## 📦 Distribution & Media Deployment (USB Staging)
+## 📦 Distribution & Media Deployment (AICAMS_Installation)
 
-For deployment to offline computer laboratory workstations without an active internet connection, pre-packaged USB distribution files are staged in [`.\USB_Staging\`](file:///C:/Users/alonz/source/repos/alexius-seth/Thesis---Acams/USB_Staging):
+For deployment to offline computer laboratory workstations without an active internet connection, pre-packaged USB distribution files are staged in [`.\AICAMS_Installation\`](file:///C:/Users/alonz/source/repos/alexius-seth/Thesis---Acams/AICAMS_Installation):
 
-### USB Directory Layout
+### Installation Media Directory Layout
 
 ```text
-USB_Staging\
+AICAMS_Installation\
 ├── AICAMS_Setup.exe                       # Self-contained Windows installer (x64)
 ├── README.txt                             # Quickstart deployment instructions
 ├── Prerequisites\
@@ -323,8 +323,11 @@ USB_Staging\
 
 ## 🔒 Security & Administrative Bypass
 
+- **Emergency Hardware Bypass Hotkey**:
+  - In emergency lockout situations (e.g., keyboard hook failure, hardware/driver crash), the proctor can physically override and minimize the topmost kiosk window using:
+    $$\mathbf{Ctrl} + \mathbf{Shift} + \mathbf{F12}$$
 - **Faculty Master Recovery Key**:
-  - In emergency lockout situations (e.g. keyboard hook failure, hardware failure), the proctor can bypass kiosk restrictions using the emergency master recovery key:
+  - Master administrative recovery key configured in `appsettings.json` for identity verification and administrative override:
     ```
     AICAMS-ADMIN-2026
     ```
