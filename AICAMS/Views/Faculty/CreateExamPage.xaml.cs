@@ -74,6 +74,15 @@ namespace ACPAMS.Views.Faculty
         private string? _editingCourseCode;
         private int? _editingTimeLimitMinutes;
         private bool? _editingRandomizeQuestions;
+        private string? _editingAcademicYear;
+        private string? _editingSemester;
+        private string? _editingSection;
+        private string? _editingClassSchedule;
+        private bool? _editingRequiresApproval;
+        private DateTime? _editingScheduledStartTime;
+        private DateTime? _editingScheduledEndTime;
+        private string? _editingAutoArchiveRule;
+        private int? _editingAutoArchiveBufferMinutes;
 
         public class ExamSection : INotifyPropertyChanged
         {
@@ -268,6 +277,15 @@ namespace ACPAMS.Views.Faculty
                 _editingCourseCode = exam.CourseCode;
                 _editingTimeLimitMinutes = exam.DurationMinutes;
                 _editingRandomizeQuestions = exam.RandomizeQuestions;
+                _editingAcademicYear = exam.AcademicYear;
+                _editingSemester = exam.Semester;
+                _editingSection = exam.Section;
+                _editingClassSchedule = exam.ClassSchedule;
+                _editingRequiresApproval = exam.RequiresApproval;
+                _editingScheduledStartTime = exam.ScheduledStartTime;
+                _editingScheduledEndTime = exam.ScheduledEndTime;
+                _editingAutoArchiveRule = exam.AutoArchiveRule;
+                _editingAutoArchiveBufferMinutes = exam.AutoArchiveBufferMinutes;
 
                 _sections.Clear();
                 _rubricData.Clear();
@@ -595,7 +613,16 @@ namespace ACPAMS.Views.Faculty
                 _editingExamName,
                 _editingCourseCode,
                 _editingTimeLimitMinutes,
-                _editingRandomizeQuestions);
+                _editingRandomizeQuestions,
+                _editingAcademicYear,
+                _editingSemester,
+                _editingSection,
+                _editingClassSchedule,
+                _editingRequiresApproval,
+                _editingScheduledStartTime,
+                _editingScheduledEndTime,
+                _editingAutoArchiveRule,
+                _editingAutoArchiveBufferMinutes);
             publishModal.Owner = Application.Current.MainWindow;
 
             if (publishModal.ShowDialog() == true)
@@ -662,7 +689,16 @@ namespace ACPAMS.Views.Faculty
                         rubricData,
                         instructorId,
                         publishModal.RandomizeQuestions,
-                        _editingExamId
+                        _editingExamId,
+                        publishModal.AcademicYear,
+                        publishModal.Semester,
+                        publishModal.Section,
+                        publishModal.ClassSchedule,
+                        publishModal.RequiresApproval,
+                        publishModal.ScheduledStartTime,
+                        publishModal.ScheduledEndTime,
+                        publishModal.AutoArchiveRule,
+                        publishModal.AutoArchiveBufferMinutes
                     );
 
                     ToastNotification.Show($"Exam '{exam.ExamName}' published successfully!",
@@ -2568,6 +2604,25 @@ namespace ACPAMS.Views.Faculty
 
         // ─── Import exam questions from a .txt file ──────────────────
         // Populates _sections asynchronously with real-time modal progress feedback.
+        
+        private async void ReuseArchivedQuestions_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var picker = new ArchivedExamPickerModal();
+                picker.Owner = Application.Current.MainWindow;
+                if (picker.ShowDialog() == true && picker.ClonedExam != null)
+                {
+                    await LoadExistingExamAsync(picker.ClonedExam.ExamId);
+                    ToastNotification.Show($"Cloned {picker.ClonedExam.Questions.Count} questions into draft exam!", Application.Current.MainWindow);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to reuse archived questions: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private async void ImportFromTxt_Click(object sender, RoutedEventArgs e)
         {
             await ExecuteImportFileAsync();
@@ -3536,6 +3591,15 @@ namespace ACPAMS.Views.Faculty
             _editingCourseCode = null;
             _editingTimeLimitMinutes = null;
             _editingRandomizeQuestions = null;
+            _editingAcademicYear = null;
+            _editingSemester = null;
+            _editingSection = null;
+            _editingClassSchedule = null;
+            _editingRequiresApproval = null;
+            _editingScheduledStartTime = null;
+            _editingScheduledEndTime = null;
+            _editingAutoArchiveRule = null;
+            _editingAutoArchiveBufferMinutes = null;
 
             MainWindow.NavigateToFacultyHomeStatic();
         }

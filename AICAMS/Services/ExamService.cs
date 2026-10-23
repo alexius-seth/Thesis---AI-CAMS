@@ -118,9 +118,6 @@ namespace ACPAMS.Services
             await new AutoCheckerService().AutoGradeAttemptAsync(attemptId);
 
             // Kick off AI grading for any essay/coding answers in this attempt.
-            // Runs in the background (AiJobProcessorService's poller) — this
-            // just enqueues, it does NOT wait for grading to finish, so
-            // submission stays instant for the student.
             await new AiJobService().EnqueueGradingJobsForAttemptAsync(attemptId);
         }
 
@@ -130,6 +127,13 @@ namespace ACPAMS.Services
             return await context.StudentAnswers
                 .FirstOrDefaultAsync(a => a.AttemptId == attemptId
                                        && a.QuestionId == questionId);
+        }
+
+        public async Task CheckAndAutoArchiveExpiredExamsAsync()
+        {
+            using var context = new AppDbContext();
+            var service = new ExamStatusService(context);
+            await service.CheckAndAutoArchiveExpiredExamsAsync();
         }
 
         public class ExamSectionData
@@ -171,7 +175,16 @@ namespace ACPAMS.Services
             Dictionary<string, RubricData> rubricData,
             string instructorId,
             bool randomizeQuestions = false,
-            Guid? existingExamId = null)
+            Guid? existingExamId = null,
+            string? academicYear = null,
+            string? semester = null,
+            string? section = null,
+            string? classSchedule = null,
+            bool requiresApproval = false,
+            DateTime? scheduledStartTime = null,
+            DateTime? scheduledEndTime = null,
+            string autoArchiveRule = "1HourAfter",
+            int autoArchiveBufferMinutes = 60)
         {
             using var context = new AppDbContext();
 
@@ -198,9 +211,22 @@ namespace ACPAMS.Services
                     exam = existing;
                     exam.ExamName = examName;
                     exam.CourseCode = courseCode;
+                    exam.ExamCode = generatedExamCode;
                     exam.DurationMinutes = timeLimitMinutes;
+                    exam.Status = "active";
+                    exam.CreatedAt = DateTime.Now;
                     exam.RandomizeQuestions = randomizeQuestions;
                     exam.Instructions = serializedInstructions;
+                    exam.AcademicYear = academicYear;
+                    exam.Semester = semester;
+                    exam.Section = section;
+                    exam.ClassSchedule = classSchedule;
+                    exam.RequiresApproval = requiresApproval;
+                    exam.ScheduledStartTime = scheduledStartTime;
+                    exam.ScheduledEndTime = scheduledEndTime;
+                    exam.ActivatedAt = DateTime.Now;
+                    exam.AutoArchiveRule = autoArchiveRule;
+                    exam.AutoArchiveBufferMinutes = autoArchiveBufferMinutes;
 
                     if (exam.Questions != null && exam.Questions.Any())
                     {
@@ -220,7 +246,17 @@ namespace ACPAMS.Services
                         Status = "active",
                         CreatedAt = DateTime.Now,
                         RandomizeQuestions = randomizeQuestions,
-                        Instructions = serializedInstructions
+                        Instructions = serializedInstructions,
+                        AcademicYear = academicYear,
+                        Semester = semester,
+                        Section = section,
+                        ClassSchedule = classSchedule,
+                        RequiresApproval = requiresApproval,
+                        ScheduledStartTime = scheduledStartTime,
+                        ScheduledEndTime = scheduledEndTime,
+                        ActivatedAt = DateTime.Now,
+                        AutoArchiveRule = autoArchiveRule,
+                        AutoArchiveBufferMinutes = autoArchiveBufferMinutes
                     };
                     context.Exams.Add(exam);
                 }
@@ -238,7 +274,17 @@ namespace ACPAMS.Services
                     Status = "active",
                     CreatedAt = DateTime.Now,
                     RandomizeQuestions = randomizeQuestions,
-                    Instructions = serializedInstructions
+                    Instructions = serializedInstructions,
+                    AcademicYear = academicYear,
+                    Semester = semester,
+                    Section = section,
+                    ClassSchedule = classSchedule,
+                    RequiresApproval = requiresApproval,
+                    ScheduledStartTime = scheduledStartTime,
+                    ScheduledEndTime = scheduledEndTime,
+                    ActivatedAt = DateTime.Now,
+                    AutoArchiveRule = autoArchiveRule,
+                    AutoArchiveBufferMinutes = autoArchiveBufferMinutes
                 };
                 context.Exams.Add(exam);
             }
@@ -246,9 +292,9 @@ namespace ACPAMS.Services
             int orderIndex = 1;
             var originalIdToQuestionId = new Dictionary<string, Guid>();
 
-            foreach (var section in sections)
+            foreach (var examSection in sections)
             {
-                foreach (var q in section.Questions)
+                foreach (var q in examSection.Questions)
                 {
                     var normalizedType = q.Type.ToLower() switch
                     {
@@ -267,13 +313,6 @@ namespace ACPAMS.Services
                         ExamId = exam.ExamId,
                         QuestionType = normalizedType,
                         Text = q.Text,
-                        // FIX: CorrectAnswer was only ever set from q.CorrectAnswer,
-                        // but that field is never actually populated for two question
-                        // types — true_false stores its answer in q.IsTrue (never read
-                        // here at all), and identification stores its answer in
-                        // q.ExpectedAnswer (which was instead being routed into
-                        // ExpectedOutput below, the field meant for coding questions).
-                        // Both auto-checking failures traced back to this one line.
                         CorrectAnswer = normalizedType switch
                         {
                             "true_false" => q.IsTrue == true ? "True"
@@ -287,8 +326,8 @@ namespace ACPAMS.Services
                         ProgrammingLanguage = q.ProgrammingLanguage,
                         StarterCode = q.StarterCode,
                         Points = (decimal)q.Points,
-                        SectionName = !string.IsNullOrWhiteSpace(section.Name) ? section.Name : (sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General"),
-                        SectionInstructions = !string.IsNullOrWhiteSpace(section.Instructions) ? section.Instructions : null,
+                        SectionName = !string.IsNullOrWhiteSpace(examSection.Name) ? examSection.Name : (sections.FirstOrDefault(s => s.Id == q.SectionId)?.Name ?? "General"),
+                        SectionInstructions = !string.IsNullOrWhiteSpace(examSection.Instructions) ? examSection.Instructions : null,
                         OrderIndex = orderIndex++,
                         GradingMethod = rubricData.ContainsKey(q.Id) ? "manual" : "objective",
                         RequiresRubric = rubricData.ContainsKey(q.Id)
@@ -301,11 +340,11 @@ namespace ACPAMS.Services
                     {
                         var options = new[]
                         {
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
-                    new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
-                };
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionA, OrderIndex = 1 },
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionB, OrderIndex = 2 },
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionC, OrderIndex = 3 },
+                            new QuestionOption { QuestionId = question.QuestionId, OptionText = q.OptionD, OrderIndex = 4 },
+                        };
                         context.QuestionOptions.AddRange(options);
                     }
                 }
@@ -314,17 +353,12 @@ namespace ACPAMS.Services
             await context.SaveChangesAsync();
 
             // ── Persist rubric data collected from AIRubricModal ──────────
-            // rubricData is keyed by the ORIGINAL client-side question ID
-            // (QuestionItemData.Id), not the freshly-generated Question.QuestionId
-            // above — originalIdToQuestionId bridges the two so each rubric
-            // (criteria, tiers, AI instructions, attachment) lands on the
-            // correct saved Question.
             var rubricService = new RubricService();
 
             foreach (var (originalQuestionId, rubric) in rubricData)
             {
                 if (!originalIdToQuestionId.TryGetValue(originalQuestionId, out var savedQuestionId))
-                    continue; // question wasn't found in this save (shouldn't normally happen)
+                    continue;
 
                 await rubricService.SaveRubricForQuestionAsync(
                     savedQuestionId,

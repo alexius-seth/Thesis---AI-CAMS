@@ -65,7 +65,17 @@ namespace ACPAMS.Views.Student
 
             var exam = SessionManager.CurrentExam;
             ExamTitleText.Text = $"{exam.CourseCode} — {exam.ExamName?.ToUpper() ?? "EXAM"}";
-            ExamSubtitleText.Text = !string.IsNullOrEmpty(exam.ExamCode) ? $"Code: {exam.ExamCode}" : string.Empty;
+
+            var subtitleParts = new List<string>();
+            if (!string.IsNullOrEmpty(exam.ExamCode)) subtitleParts.Add($"Code: {exam.ExamCode}");
+            if (!string.IsNullOrEmpty(exam.Section)) subtitleParts.Add($"Section: {exam.Section}");
+            if (!string.IsNullOrEmpty(exam.ClassSchedule)) subtitleParts.Add(exam.ClassSchedule);
+            if (!string.IsNullOrEmpty(exam.AcademicYear) || !string.IsNullOrEmpty(exam.Semester))
+            {
+                var acad = string.Join(" • ", new[] { exam.AcademicYear, exam.Semester }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                subtitleParts.Add(acad);
+            }
+            ExamSubtitleText.Text = string.Join("  |  ", subtitleParts);
 
             _questions = await _examService.GetQuestionsAsync(exam.ExamId, SessionManager.CurrentAttempt.AttemptId);
 

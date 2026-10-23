@@ -240,11 +240,20 @@ namespace ACPAMS.Views.Faculty
                 return;
             }
 
+            if (Report.IsGeneratingAssessment) return;
+
             if (sender is Button button) button.IsEnabled = false;
+
+            Report.IsGeneratingAssessment = true;
+            Report.GenerationStatusText = "Analyzing performance with Gemini AI...";
 
             try
             {
-                var result = await new PerformanceAssessmentService().GenerateAssessmentAsync(_attemptId);
+                var attemptId = _attemptId;
+                var result = await System.Threading.Tasks.Task.Run(async () =>
+                {
+                    return await new PerformanceAssessmentService().GenerateAssessmentAsync(attemptId);
+                });
 
                 Report.HasAssessment = true;
                 Report.Strengths = result.Strengths;
@@ -262,6 +271,7 @@ namespace ACPAMS.Views.Faculty
             }
             finally
             {
+                Report.IsGeneratingAssessment = false;
                 if (sender is Button btn) btn.IsEnabled = true;
             }
         }

@@ -28,6 +28,7 @@
         <SolidColorBrush x:Key="AI.Text"          Color="#5B21B6"/>
 
         <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <converters:RiskLevelToColorConverter x:Key="RiskLevelToColorConverter"/>
         <converters:InitialsConverter x:Key="InitialsConverter"/>
         <converters:PercentageToWidthConverter x:Key="PercentageToWidthConverter"/>
@@ -385,6 +386,34 @@
             <Border Style="{StaticResource Card}" Padding="18" Margin="0,0,0,24">
                 <StackPanel>
 
+                    <!-- AI Assessment Loading State -->
+                    <Border Background="#F8FAFC" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="1" CornerRadius="8" Padding="24,20" Margin="0,0,0,0"
+                            Visibility="{Binding Report.IsGeneratingAssessment, Converter={StaticResource BoolToVis}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <ProgressBar IsIndeterminate="True" Width="220" Height="4" Foreground="{StaticResource Accent.Primary}" Background="#E2E8F0" Margin="0,0,0,12"/>
+                            <TextBlock Text="{Binding Report.GenerationStatusText}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Primary}"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="Evaluating student code, rubrics, and conceptual answers with Gemini..."
+                                       FontSize="11" Foreground="{StaticResource Text.Muted}"
+                                       HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Content (Hidden while generating assessment) -->
+                    <StackPanel>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Report.IsGeneratingAssessment}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
                     <!-- Not finalized yet — no button available -->
                     <StackPanel>
                         <StackPanel.Style>
@@ -492,6 +521,8 @@
                                     Style="{StaticResource Btn.Outlined}"
                                     HorizontalAlignment="Left" Margin="0,14,0,0"/>
                         </StackPanel>
+                    </StackPanel>
+
                     </StackPanel>
 
                 </StackPanel>

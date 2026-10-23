@@ -256,6 +256,7 @@ namespace ACPAMS.Services
                 RubricUsedId = rubricEntity?.RubricId,
                 EvaluatedAt = DateTime.Now,
                 Score = scaledScore,
+                ConfidenceScore = result.AlignedWithAttachment == false ? 0.78m : 0.94m,
                 Feedback = result.OverallFeedback,
                 AiResponseRaw = result.RawResponseJson
             };

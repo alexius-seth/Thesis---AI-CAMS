@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Publish Exam"
-        Width="480"
+        Width="540"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
@@ -14,9 +14,7 @@
 
     <Window.Resources>
 
-        <!-- ═══════════════════════════
-             DESIGN TOKENS
-        ═══════════════════════════ -->
+        <!-- DESIGN TOKENS -->
         <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
         <SolidColorBrush x:Key="Bg.Base"          Color="#F4F5F7"/>
         <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
@@ -30,9 +28,6 @@
         <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
         <SolidColorBrush x:Key="Overlay.Bg"       Color="#1A202C"/>
 
-        <!-- ═══════════════════════════
-             SIMPLE INPUT STYLE - NO COMPLEX TRIGGERS
-        ═══════════════════════════ -->
         <Style x:Key="Input.Field" TargetType="TextBox">
             <Setter Property="FontFamily"               Value="Segoe UI"/>
             <Setter Property="FontSize"                 Value="13"/>
@@ -49,25 +44,19 @@
             <Setter Property="CaretBrush"               Value="#1976D2"/>
         </Style>
 
-        <!-- Generated code field — read-only -->
-        <Style x:Key="Input.GeneratedCode" TargetType="TextBox">
-            <Setter Property="FontFamily"               Value="Consolas"/>
-            <Setter Property="FontSize"                 Value="14"/>
-            <Setter Property="FontWeight"               Value="SemiBold"/>
-            <Setter Property="Foreground"               Value="#1976D2"/>
-            <Setter Property="Background"               Value="#EFF6FF"/>
-            <Setter Property="BorderBrush"              Value="#1976D2"/>
+        <Style x:Key="Input.ComboBox" TargetType="ComboBox">
+            <Setter Property="FontFamily"               Value="Segoe UI"/>
+            <Setter Property="FontSize"                 Value="13"/>
+            <Setter Property="Foreground"               Value="Black"/>
+            <Setter Property="Background"               Value="White"/>
+            <Setter Property="BorderBrush"              Value="#CBD5E1"/>
             <Setter Property="BorderThickness"          Value="1"/>
-            <Setter Property="Padding"                  Value="12,10"/>
+            <Setter Property="Padding"                  Value="10,0"/>
             <Setter Property="Height"                   Value="40"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="IsReadOnly"               Value="True"/>
-            <Setter Property="Focusable"                Value="False"/>
         </Style>
 
-        <!-- ═══════════════════════════
-             BUTTONS
-        ═══════════════════════════ -->
+        <!-- BUTTONS -->
         <Style x:Key="Btn.Primary" TargetType="Button">
             <Setter Property="Background"      Value="#1976D2"/>
             <Setter Property="Foreground"      Value="White"/>
@@ -100,12 +89,35 @@
             </Setter>
         </Style>
 
-        <!-- Copy to clipboard icon button -->
+        <Style x:Key="Btn.Close" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width"           Value="32"/>
+            <Setter Property="Height"          Value="32"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="Transparent"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="Btn.Copy" TargetType="Button">
             <Setter Property="Background"      Value="#1976D2"/>
-            <Setter Property="Foreground"      Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width"           Value="44"/>
+            <Setter Property="Width"           Value="40"/>
             <Setter Property="Height"          Value="40"/>
             <Setter Property="Cursor"          Value="Hand"/>
             <Setter Property="Template">
@@ -127,103 +139,74 @@
             </Setter>
         </Style>
 
-        <!-- Close button -->
-        <Style x:Key="Btn.Close" TargetType="Button">
-            <Setter Property="Background"      Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width"           Value="32"/>
-            <Setter Property="Height"          Value="32"/>
-            <Setter Property="Cursor"          Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
-                                CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#FEE2E2"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
     </Window.Resources>
 
-    <!-- ═══════════════════════════════════════
-         MODAL CARD
-    ═══════════════════════════════════════ -->
+    <!-- Outer card container with shadow -->
     <Border Background="{StaticResource Bg.Surface}"
             BorderBrush="{StaticResource Border.Subtle}"
             BorderThickness="1"
             CornerRadius="12"
-            Width="480"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center">
+            Margin="20">
+        <Border.Effect>
+            <DropShadowEffect Color="#0F172A"
+                              Opacity="0.22"
+                              BlurRadius="28"
+                              ShadowDepth="8"/>
+        </Border.Effect>
 
-        <StackPanel>
+        <ScrollViewer MaxHeight="680" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
 
-            <!-- ══════════════════
-                 MODAL HEADER
-            ══════════════════ -->
-            <Border BorderBrush="{StaticResource Border.Subtle}"
-                    BorderThickness="0,0,0,1"
-                    CornerRadius="12,12,0,0"
-                    Padding="28,20,20,20">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                <!-- HEADER -->
+                <Border BorderBrush="{StaticResource Border.Subtle}"
+                        BorderThickness="0,0,0,1"
+                        Padding="28,20,20,18">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
-                        <!-- Publish icon badge -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <Border Width="32" Height="32" CornerRadius="8"
-                                    Background="{StaticResource Accent.PrimaryBg}"
-                                    Margin="0,0,10,0">
-                                <TextBlock Text="&#xE72D;"
-                                           FontFamily="Segoe MDL2 Assets" FontSize="15"
-                                           Foreground="{StaticResource Accent.Primary}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Just a few more steps!"
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <Border Background="{StaticResource Accent.PrimaryBg}"
+                                        CornerRadius="6"
+                                        Padding="7,3"
+                                        Margin="0,0,10,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE72D;"
+                                               FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                               Foreground="{StaticResource Accent.Primary}"/>
+                                </Border>
+                                <TextBlock Text="Finalize &amp; Publish Exam"
                                            FontSize="17" FontWeight="Bold"
-                                           Foreground="{StaticResource Text.Primary}"/>
+                                           Foreground="{StaticResource Text.Primary}"
+                                           VerticalAlignment="Center"/>
                             </StackPanel>
+                            <TextBlock Text="Please review and complete the academic information before publishing."
+                                       FontSize="12"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
-                        <TextBlock Text="Please fill in the remaining information to publish this exam."
-                                   FontSize="12"
-                                   Foreground="{StaticResource Text.Muted}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
 
-                    <!-- Close -->
-                    <Button Grid.Column="1"
-                            x:Name="CloseBtn"
-                            Click="OnCloseModalClicked"
-                            Style="{StaticResource Btn.Close}"
-                            VerticalAlignment="Top">
-                        <TextBlock Text="&#xE711;"
-                                   FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                   Foreground="{StaticResource Text.Muted}"/>
-                    </Button>
+                        <!-- Close -->
+                        <Button Grid.Column="1"
+                                x:Name="CloseBtn"
+                                Click="OnCloseModalClicked"
+                                Style="{StaticResource Btn.Close}"
+                                VerticalAlignment="Top">
+                            <TextBlock Text="&#xE711;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{StaticResource Text.Muted}"/>
+                        </Button>
                     </Grid>
                 </Border>
 
-                <!-- ══════════════════
-                     FORM BODY - SIMPLIFIED TEXTBOXES
-                ══════════════════ -->
-                <StackPanel Margin="28,22,28,0">
+                <!-- FORM BODY -->
+                <StackPanel Margin="28,18,28,0">
 
                     <!-- Row 1: Course Code + Time Limit -->
-                    <Grid Margin="0,0,0,18">
+                    <Grid Margin="0,0,0,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="16"/>
@@ -237,7 +220,6 @@
                                        Foreground="{StaticResource Text.Secondary}"
                                        Margin="0,0,0,6"/>
                             <TextBox x:Name="CourseCodeBox"
-                                     Width="Auto"
                                      FontSize="13"
                                      Foreground="Black"
                                      Background="White"
@@ -246,9 +228,6 @@
                                      Padding="12,10"
                                      Height="40"
                                      VerticalContentAlignment="Center"
-                                     IsReadOnly="False"
-                                     IsEnabled="True"
-                                     Focusable="True"
                                      Text="CCS415"/>
                         </StackPanel>
 
@@ -273,12 +252,8 @@
                                          Padding="12,10"
                                          Height="40"
                                          VerticalContentAlignment="Center"
-                                         IsReadOnly="False"
-                                         IsEnabled="True"
-                                         Focusable="True"
                                          Text="60"
                                          TextAlignment="Center"/>
-                                <!-- "min" unit label inside a trailing tag -->
                                 <Border Grid.Column="1"
                                         Background="{StaticResource Bg.Base}"
                                         BorderBrush="{StaticResource Border.Medium}"
@@ -307,7 +282,6 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <!-- Code field -->
                             <Grid Grid.Column="0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -328,7 +302,6 @@
                                          IsReadOnly="True"
                                          Focusable="False"
                                          Text="Enter a course code to generate exam code"/>
-                                <!-- Read-only badge inside the field -->
                                 <Border Grid.Column="1"
                                         Background="{StaticResource Accent.Primary}"
                                         CornerRadius="0,5,5,0"
@@ -355,7 +328,7 @@
                     </StackPanel>
 
                     <!-- Generation note -->
-                    <Grid Margin="0,4,0,18">
+                    <Grid Margin="0,4,0,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -369,11 +342,11 @@
                                    FontSize="11"
                                    Foreground="{StaticResource Text.Muted}"
                                    TextWrapping="Wrap"
-                                   Text="Once the Course Code has been entered, the exam code will be generated. Please be patient."/>
+                                   Text="Exam code is automatically generated based on the course code."/>
                     </Grid>
 
                     <!-- Row 3: Exam Name -->
-                    <StackPanel Margin="0,0,0,16">
+                    <StackPanel Margin="0,0,0,14">
                         <TextBlock Text="Exam Name"
                                    FontSize="12" FontWeight="SemiBold"
                                    Foreground="{StaticResource Text.Secondary}"
@@ -387,19 +360,190 @@
                                  Padding="12,10"
                                  Height="40"
                                  VerticalContentAlignment="Center"
-                                 IsReadOnly="False"
-                                 IsEnabled="True"
-                                 Focusable="True"
                                  Text="Object-Oriented Programming Finals"/>
                     </StackPanel>
 
-                    <!-- Row 4: Randomize Question Order -->
+                    <!-- Row 4: Academic Year & Semester -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Academic Year -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Academic Year"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <TextBox x:Name="AcademicYearBox"
+                                     FontSize="13"
+                                     Foreground="Black"
+                                     Background="White"
+                                     BorderBrush="#CBD5E1"
+                                     BorderThickness="1"
+                                     Padding="12,10"
+                                     Height="40"
+                                     VerticalContentAlignment="Center"
+                                     Text="2026-2027"/>
+                        </StackPanel>
+
+                        <!-- Semester -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Semester"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <ComboBox x:Name="SemesterComboBox"
+                                      Style="{StaticResource Input.ComboBox}"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="1st Semester"/>
+                                <ComboBoxItem Content="2nd Semester"/>
+                                <ComboBoxItem Content="Summer"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Row 5: Section & Class Schedule -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Section -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Section"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <TextBox x:Name="SectionBox"
+                                     FontSize="13"
+                                     Foreground="Black"
+                                     Background="White"
+                                     BorderBrush="#CBD5E1"
+                                     BorderThickness="1"
+                                     Padding="12,10"
+                                     Height="40"
+                                     VerticalContentAlignment="Center"
+                                     Text="BSCS 3-A"/>
+                        </StackPanel>
+
+                        <!-- Class Schedule -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Class Schedule"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <TextBox x:Name="ClassScheduleBox"
+                                     FontSize="13"
+                                     Foreground="Black"
+                                     Background="White"
+                                     BorderBrush="#CBD5E1"
+                                     BorderThickness="1"
+                                     Padding="12,10"
+                                     Height="40"
+                                     VerticalContentAlignment="Center"
+                                     Text="MWF 10:30AM - 12:00PM"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Row 5b: Scheduled Start & End Time -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Scheduled Start Time -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Scheduled Start (Date &amp; Time)"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="70"/>
+                                </Grid.ColumnDefinitions>
+                                <DatePicker x:Name="ScheduledStartDatePicker"
+                                            Height="40"
+                                            VerticalContentAlignment="Center"
+                                            BorderBrush="#CBD5E1"/>
+                                <TextBox Grid.Column="2"
+                                         x:Name="ScheduledStartTimeBox"
+                                         FontSize="12"
+                                         Foreground="Black"
+                                         Background="White"
+                                         BorderBrush="#CBD5E1"
+                                         BorderThickness="1"
+                                         Padding="6,0"
+                                         Height="40"
+                                         VerticalContentAlignment="Center"
+                                         Text="09:00"
+                                         ToolTip="Start Time in 24h format (e.g. 09:00 or 14:30)"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Scheduled End Time -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Scheduled End (Date &amp; Time)"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="70"/>
+                                </Grid.ColumnDefinitions>
+                                <DatePicker x:Name="ScheduledEndDatePicker"
+                                            Height="40"
+                                            VerticalContentAlignment="Center"
+                                            BorderBrush="#CBD5E1"/>
+                                <TextBox Grid.Column="2"
+                                         x:Name="ScheduledEndTimeBox"
+                                         FontSize="12"
+                                         Foreground="Black"
+                                         Background="White"
+                                         BorderBrush="#CBD5E1"
+                                         BorderThickness="1"
+                                         Padding="6,0"
+                                         Height="40"
+                                         VerticalContentAlignment="Center"
+                                         Text="11:00"
+                                         ToolTip="End Time in 24h format (e.g. 11:00 or 16:30)"/>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Row 5c: Auto-Archive Policy -->
+                    <StackPanel Margin="0,0,0,14">
+                        <TextBlock Text="Auto-Archive Policy"
+                                   FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Text.Secondary}"
+                                   Margin="0,0,0,6"/>
+                        <ComboBox x:Name="AutoArchivePolicyComboBox"
+                                  Style="{StaticResource Input.ComboBox}"
+                                  SelectedIndex="0">
+                            <ComboBoxItem Content="1 Hour after scheduled end (Recommended)"/>
+                            <ComboBoxItem Content="2 Hours after scheduled end"/>
+                            <ComboBoxItem Content="End of the Day (11:59 PM)"/>
+                            <ComboBoxItem Content="Manual Archive Only (Do not auto-archive)"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Row 6: Randomize Question Order -->
                     <Border Background="{StaticResource Bg.Base}"
                             BorderBrush="{StaticResource Border.Subtle}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="14,10"
-                            Margin="0,0,0,24">
+                            Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -420,11 +564,36 @@
                         </Grid>
                     </Border>
 
+                    <!-- Row 7: Flexible Access Control (Whitelist & Approval Queue) -->
+                    <Border Background="{StaticResource Bg.Base}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="14,10"
+                            Margin="0,0,0,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Require Teacher Approval for Off-Schedule Students"
+                                           FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Text.Primary}"/>
+                                <TextBlock Text="Enforces whitelist and real-time proctor approval queue for irregular students"
+                                           FontSize="11" Foreground="{StaticResource Text.Muted}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1"
+                                      x:Name="RequiresApprovalCheckBox"
+                                      VerticalAlignment="Center"
+                                      Cursor="Hand"/>
+                        </Grid>
+                    </Border>
+
                 </StackPanel>
 
-                <!-- ══════════════════
-                     FOOTER
-                ══════════════════ -->
+                <!-- FOOTER -->
                 <Border BorderBrush="{StaticResource Border.Subtle}"
                         BorderThickness="0,1,0,0"
                         CornerRadius="0,0,12,12"
@@ -445,5 +614,6 @@
                 </Border>
 
             </StackPanel>
-        </Border>
+        </ScrollViewer>
+    </Border>
 </Window>

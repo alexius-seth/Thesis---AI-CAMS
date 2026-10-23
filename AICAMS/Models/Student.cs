@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -65,5 +65,6 @@ namespace ACPAMS.Models
         public User? User { get; set; }
         public ICollection<StudentExamAttempt> ExamAttempts { get; set; } = new List<StudentExamAttempt>();
         public ICollection<AiAssessment> AiAssessments { get; set; } = new List<AiAssessment>();
+        public ICollection<ExamAuthorizedStudent> ExamAuthorizations { get; set; } = new List<ExamAuthorizedStudent>();
     }
 }

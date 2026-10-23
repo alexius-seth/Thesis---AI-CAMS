@@ -44,6 +44,7 @@ namespace ACPAMS.Data
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<QuestionOption> QuestionOptions { get; set; }
         public DbSet<AppNotification> Notifications { get; set; }
+        public DbSet<ExamAuthorizedStudent> ExamAuthorizedStudents { get; set; }
 
         // ── Connection ──────────────────────────────────────
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -109,6 +110,13 @@ namespace ACPAMS.Data
                 entity.Property(e => e.ExamId).HasDefaultValueSql("NEWID()");
                 entity.Property(e => e.TotalPoints).HasPrecision(10, 2);
                 entity.Property(e => e.RandomizeQuestions).HasDefaultValue(false);
+                entity.Property(e => e.AcademicYear).HasMaxLength(20);
+                entity.Property(e => e.Semester).HasMaxLength(20);
+                entity.Property(e => e.Section).HasMaxLength(50);
+                entity.Property(e => e.ClassSchedule).HasMaxLength(50);
+                entity.Property(e => e.RequiresApproval).HasDefaultValue(false);
+                entity.Property(e => e.AutoArchiveRule).HasMaxLength(30).HasDefaultValue("1HourAfter");
+                entity.Property(e => e.AutoArchiveBufferMinutes).HasDefaultValue(60);
                 entity.HasIndex(e => e.ExamCode).IsUnique();
                 entity.HasOne(e => e.Instructor)
                       .WithMany(i => i.Exams)
@@ -330,6 +338,22 @@ namespace ACPAMS.Data
                       .WithMany(q => q.Options)
                       .HasForeignKey(e => e.QuestionId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ── ExamAuthorizedStudent ────────────────────────────
+            modelBuilder.Entity<ExamAuthorizedStudent>(entity =>
+            {
+                entity.HasKey(e => e.AuthorizationId);
+                entity.Property(e => e.AuthorizationId).HasDefaultValueSql("NEWID()");
+                entity.Property(e => e.Status).HasMaxLength(30).HasDefaultValue("PendingApproval");
+                entity.HasOne(e => e.Exam)
+                      .WithMany(ex => ex.AuthorizedStudents)
+                      .HasForeignKey(e => e.ExamId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Student)
+                      .WithMany(s => s.ExamAuthorizations)
+                      .HasForeignKey(e => e.StudentId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

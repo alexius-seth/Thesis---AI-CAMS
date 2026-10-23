@@ -35,6 +35,11 @@ namespace ACPAMS.Services
 
             var attempts = await context.StudentExamAttempts
                 .Include(a => a.Student)
+                .Include(a => a.Answers)
+                    .ThenInclude(ans => ans.Question)
+                .Include(a => a.Answers)
+                    .ThenInclude(ans => ans.AiEvaluations)
+                        .ThenInclude(ae => ae.Model)
                 .Where(a => examIds.Contains(a.ExamId ?? Guid.Empty))
                 .OrderByDescending(a => a.SubmittedAt ?? a.StartedAt)
                 .ToListAsync();
@@ -96,12 +101,116 @@ namespace ACPAMS.Services
                 result.IntegrityIndexPercent = Math.Round((decimal)integrity);
             }
 
+            // ── AI vs. Instructor Override Calculation ──
+            var allAiAnswers = finishedAttempts
+                .SelectMany(att => att.Answers)
+                .Where(ans => ans.AiEvaluations != null && ans.AiEvaluations.Any())
+                .ToList();
+
+            if (allAiAnswers.Count > 0)
+            {
+                result.HasAiData = true;
+                result.TotalAiGradedQuestions = allAiAnswers.Count;
+
+                int exactMatch = 0;
+                int overridden = 0;
+                decimal totalShift = 0m;
+
+                foreach (var ans in allAiAnswers)
+                {
+                    var latestEval = ans.AiEvaluations.OrderByDescending(e => e.EvaluatedAt).First();
+                    decimal aiScore = latestEval.Score ?? 0m;
+                    decimal finalScore = ans.ObtainedPoints ?? aiScore;
+
+                    if (Math.Abs(aiScore - finalScore) <= 0.01m)
+                    {
+                        exactMatch++;
+                    }
+                    else
+                    {
+                        overridden++;
+                        totalShift += (finalScore - aiScore);
+                    }
+                }
+
+                result.ExactMatchCount = exactMatch;
+                result.OverriddenCount = overridden;
+                result.AiAccuracyRatePercent = Math.Round((decimal)exactMatch / allAiAnswers.Count * 100m, 1);
+                result.AverageScoreShift = overridden > 0 ? Math.Round(totalShift / overridden, 2) : 0m;
+            }
+            else
+            {
+                // Fallback for objective auto-scored questions (system graded)
+                var allSystemAnswers = finishedAttempts
+                    .SelectMany(att => att.Answers)
+                    .Where(ans => ans.GradedBy == "system" || ans.IsManualGrade)
+                    .ToList();
+
+                if (allSystemAnswers.Count > 0)
+                {
+                    result.HasAiData = true;
+                    result.TotalAiGradedQuestions = allSystemAnswers.Count;
+                    int overridden = allSystemAnswers.Count(ans => ans.IsManualGrade && ans.GradedBy == "instructor");
+                    int exactMatch = allSystemAnswers.Count - overridden;
+
+                    result.ExactMatchCount = exactMatch;
+                    result.OverriddenCount = overridden;
+                    result.AiAccuracyRatePercent = Math.Round((decimal)exactMatch / allSystemAnswers.Count * 100m, 1);
+                    result.AverageScoreShift = 0m;
+                }
+            }
+
             // ── Per-attempt rows for the Detailed Performance Data table ──
             foreach (var a in finishedAttempts)
             {
                 examMaxPoints.TryGetValue(a.ExamId ?? Guid.Empty, out var maxPts);
                 int flagCount = relevantLogs.Count(l => l.EntityId == a.AttemptId.ToString());
                 string risk = flagCount >= 5 ? "High" : flagCount >= 2 ? "Medium" : "Low";
+
+                var aiEvaluatedAnswers = a.Answers
+                    .Where(ans => ans.AiEvaluations != null && ans.AiEvaluations.Any())
+                    .ToList();
+
+                string aiScoreText;
+                string aiConfText;
+
+                if (aiEvaluatedAnswers.Any())
+                {
+                    decimal aiSum = 0m;
+                    foreach (var ans in a.Answers)
+                    {
+                        var latestEval = ans.AiEvaluations?.OrderByDescending(e => e.EvaluatedAt).FirstOrDefault();
+                        if (latestEval?.Score != null)
+                        {
+                            aiSum += latestEval.Score.Value;
+                        }
+                        else if (ans.ObtainedPoints != null)
+                        {
+                            aiSum += ans.ObtainedPoints.Value;
+                        }
+                    }
+                    aiScoreText = maxPts > 0 ? $"{aiSum:0.##} / {maxPts:0.##}" : $"{aiSum:0.##}";
+
+                    var confList = aiEvaluatedAnswers
+                        .Select(ans => {
+                            var val = ans.AiEvaluations.OrderByDescending(e => e.EvaluatedAt).First().ConfidenceScore ?? 0.92m;
+                            return val <= 1.0m ? val * 100m : val;
+                        })
+                        .ToList();
+
+                    decimal avgConf = confList.Average();
+                    aiConfText = $"{avgConf:0.#}%";
+                }
+                else if (a.Answers.Any(ans => ans.GradedBy == "system"))
+                {
+                    aiScoreText = a.TotalScore.HasValue && maxPts > 0 ? $"{a.TotalScore.Value:0.##} / {maxPts:0.##}" : "Auto-Scored";
+                    aiConfText = "Auto-Scored";
+                }
+                else
+                {
+                    aiScoreText = "—";
+                    aiConfText = "—";
+                }
 
                 result.Rows.Add(new ReportRowDto
                 {
@@ -111,9 +220,11 @@ namespace ACPAMS.Services
                     Initials = a.Student != null && a.Student.FirstName.Length > 0 && a.Student.LastName.Length > 0
                         ? $"{a.Student.FirstName[0]}{a.Student.LastName[0]}".ToUpper()
                         : "??",
+                    AiScoreText = aiScoreText,
                     FinalScoreText = a.TotalScore.HasValue && maxPts > 0
                         ? $"{a.TotalScore.Value:0.##} / {maxPts:0.##}"
                         : "—",
+                    AiConfidenceText = aiConfText,
                     IsPassing = a.TotalScore.HasValue && maxPts > 0 && (a.TotalScore.Value / maxPts) >= (AppSettingsService.PassingGrade / 100m),
                     AnomalyCount = flagCount,
                     RiskLevel = risk,
@@ -273,6 +384,13 @@ namespace ACPAMS.Services
         public int ClipboardCount { get; set; }
         public int TotalInfractions { get; set; }
 
+        public bool HasAiData { get; set; }
+        public decimal AiAccuracyRatePercent { get; set; }
+        public int TotalAiGradedQuestions { get; set; }
+        public int ExactMatchCount { get; set; }
+        public int OverriddenCount { get; set; }
+        public decimal AverageScoreShift { get; set; }
+
         public List<ReportRowDto> Rows { get; set; } = new();
     }
 
@@ -282,7 +400,9 @@ namespace ACPAMS.Services
         public string StudentId { get; set; } = string.Empty;
         public string StudentName { get; set; } = string.Empty;
         public string Initials { get; set; } = string.Empty;
-        public string FinalScoreText { get; set; } = string.Empty;
+        public string AiScoreText { get; set; } = "—";
+        public string FinalScoreText { get; set; } = "—";
+        public string AiConfidenceText { get; set; } = "—";
         public bool IsPassing { get; set; }
         public int AnomalyCount { get; set; }
         public string RiskLevel { get; set; } = "Low";

@@ -13,6 +13,8 @@
         <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
         <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
         <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
+        <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
 
         <Style x:Key="Btn.Primary" TargetType="Button">
             <Setter Property="Background"      Value="{StaticResource Accent.Primary}"/>
@@ -36,6 +38,34 @@
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Bg" Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Secondary" TargetType="Button">
+            <Setter Property="Background"      Value="White"/>
+            <Setter Property="Foreground"      Value="#475569"/>
+            <Setter Property="BorderBrush"     Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="Height"          Value="40"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -88,58 +118,126 @@
         <Border Background="{StaticResource Bg.Surface}"
                 BorderBrush="{StaticResource Border.Subtle}"
                 BorderThickness="1" CornerRadius="12"
-                Width="400" VerticalAlignment="Center" HorizontalAlignment="Center">
+                Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
             <Border.Effect>
                 <DropShadowEffect Color="#94A3B8" Opacity="0.18" BlurRadius="32" ShadowDepth="6"/>
             </Border.Effect>
-            <StackPanel Margin="36,32,36,32">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
-                    <Image Source="/FINAL LOGO.ico" Width="36" Height="36" Margin="0,0,10,0"
-                           RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
-                    <TextBlock Text="AI-CAMS" FontSize="20" FontWeight="Bold"
-                               Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
-                </StackPanel>
-                <TextBlock FontSize="20" FontWeight="Bold"
-                           Foreground="{StaticResource Text.Primary}" Margin="0,0,0,4">
-                    <Run Text="Welcome, "/>
-                    <Run x:Name="StudentNameRun" Text="Student"
-                         Foreground="{StaticResource Accent.Primary}"/>
-                    <Run Text="!"/>
-                </TextBlock>
-                <TextBlock Text="Please enter the exam code provided by your instructor."
-                           FontSize="13" Foreground="{StaticResource Text.Muted}"
-                           TextWrapping="Wrap" Margin="0,0,0,24"/>
-                <TextBlock Text="Examination Code" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
-                <Border Background="{StaticResource Bg.Surface}"
-                        BorderBrush="{StaticResource Border.Medium}"
-                        BorderThickness="1" CornerRadius="8" Height="48" Margin="0,0,0,20">
-                    <TextBox x:Name="ExamCodeBox"
-                             Background="Transparent" BorderThickness="0"
-                             FontFamily="Consolas" FontSize="16" FontWeight="SemiBold"
-                             Foreground="{StaticResource Text.Primary}"
-                             Padding="14,0" VerticalContentAlignment="Center"/>
-                </Border>
-                <Button x:Name="ProceedBtn" Style="{StaticResource Btn.Primary}"
-                        HorizontalAlignment="Stretch" Margin="0,0,0,20"
-                        Click="ProceedButton_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE7FC;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14" Foreground="White"
-                                   Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Proceed to Exam" VerticalAlignment="Center"/>
+
+            <Grid Margin="32,28">
+                <!-- PANEL 1: STANDARD EXAM CODE INPUT -->
+                <StackPanel x:Name="InputPanel" Visibility="Visible">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <Image Source="/FINAL LOGO.ico" Width="36" Height="36" Margin="0,0,10,0"
+                               RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center"/>
+                        <TextBlock Text="AI-CAMS" FontSize="20" FontWeight="Bold"
+                                   Foreground="{StaticResource Text.Primary}" VerticalAlignment="Center"/>
                     </StackPanel>
-                </Button>
-                <Border Height="1" Background="{StaticResource Border.Subtle}" Margin="0,0,0,20"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="&#xE735;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="14" Foreground="{StaticResource Text.Muted}"
-                               Margin="0,0,7,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="Good luck with your examination!"
-                               FontSize="13" FontStyle="Italic"
-                               Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center"/>
+
+                    <TextBlock FontSize="20" FontWeight="Bold"
+                               Foreground="{StaticResource Text.Primary}" Margin="0,0,0,4">
+                        <Run Text="Welcome, "/>
+                        <Run x:Name="StudentNameRun" Text="Student"
+                             Foreground="{StaticResource Accent.Primary}"/>
+                        <Run Text="!"/>
+                    </TextBlock>
+                    <TextBlock Text="Please enter the exam code provided by your instructor."
+                               FontSize="13" Foreground="{StaticResource Text.Muted}"
+                               TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Examination Code" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource Text.Secondary}" Margin="0,0,0,6"/>
+                    <Border Background="{StaticResource Bg.Surface}"
+                            BorderBrush="{StaticResource Border.Medium}"
+                            BorderThickness="1" CornerRadius="8" Height="48" Margin="0,0,0,20">
+                        <TextBox x:Name="ExamCodeBox"
+                                 Background="Transparent" BorderThickness="0"
+                                 FontFamily="Consolas" FontSize="16" FontWeight="SemiBold"
+                                 Foreground="{StaticResource Text.Primary}"
+                                 Padding="14,0" VerticalContentAlignment="Center"/>
+                    </Border>
+
+                    <Button x:Name="ProceedBtn" Style="{StaticResource Btn.Primary}"
+                            HorizontalAlignment="Stretch" Margin="0,0,0,20"
+                            Click="ProceedButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7FC;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="14" Foreground="White"
+                                       Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Proceed to Exam" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Border Height="1" Background="{StaticResource Border.Subtle}" Margin="0,0,0,16"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE735;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14" Foreground="{StaticResource Text.Muted}"
+                                   Margin="0,0,7,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Good luck with your examination!"
+                                   FontSize="13" FontStyle="Italic"
+                                   Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center"/>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+
+                <!-- PANEL 2: WAITING FOR INSTRUCTOR APPROVAL (OFF-SCHEDULE / WHITELIST) -->
+                <StackPanel x:Name="WaitingApprovalPanel" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <Border Background="{StaticResource Status.WarningBg}"
+                                CornerRadius="8" Padding="12">
+                            <TextBlock Text="&#xE916;"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="28"
+                                       Foreground="{StaticResource Status.Warning}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock Text="Waiting for Instructor Approval"
+                               FontSize="18" FontWeight="Bold"
+                               Foreground="{StaticResource Text.Primary}"
+                               HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                    <TextBlock Text="Your off-schedule access request has been sent to the instructor. This screen will automatically unlock once approved."
+                               FontSize="12" Foreground="{StaticResource Text.Secondary}"
+                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,18"/>
+
+                    <!-- Exam Details Card -->
+                    <Border Background="#F8FAFC"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="1" CornerRadius="8"
+                            Padding="16,14" Margin="0,0,0,18">
+                        <StackPanel>
+                            <TextBlock x:Name="ApprovalExamTitle"
+                                       Text="CCS415 - Final Examination"
+                                       FontSize="14" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock x:Name="ApprovalExamDetails"
+                                       Text="Section: BSCS 3-A • MWF 10:30AM - 12:00PM"
+                                       FontSize="12" Foreground="{StaticResource Text.Secondary}"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="ApprovalAcademicPeriod"
+                                       Text="2026-2027 | 1st Semester"
+                                       FontSize="11" Foreground="{StaticResource Text.Muted}"
+                                       Margin="0,0,0,8"/>
+
+                            <Border Background="#FEF3C7" CornerRadius="4" Padding="8,4" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE897;" FontFamily="Segoe MDL2 Assets" FontSize="11" Foreground="#B45309" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Status: Pending Proctor Approval" FontSize="11" FontWeight="Bold" Foreground="#B45309" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Polling indicator -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,18">
+                        <ProgressBar IsIndeterminate="True" Width="160" Height="4" Foreground="{StaticResource Accent.Primary}" Background="#E2E8F0"/>
+                    </StackPanel>
+
+                    <Button Click="CancelRequest_Click"
+                            Content="Cancel Request"
+                            Style="{StaticResource Btn.Secondary}"
+                            HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>
+

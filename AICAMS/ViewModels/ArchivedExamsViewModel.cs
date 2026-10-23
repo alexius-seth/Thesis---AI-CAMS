@@ -34,6 +34,11 @@ namespace ACPAMS.ViewModels
             GradingStatusText = dto.GradingStatusText;
             GradingStatusIsWarning = dto.GradingStatusIsWarning;
             ArchivedDate = dto.ArchivedDate ?? dto.CreatedAt;
+            AcademicYear = dto.AcademicYear;
+            Semester = dto.Semester;
+            Section = dto.Section;
+            ClassSchedule = dto.ClassSchedule;
+            RequiresApproval = dto.RequiresApproval;
         }
     }
 

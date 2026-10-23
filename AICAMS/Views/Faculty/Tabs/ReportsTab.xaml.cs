@@ -208,6 +208,9 @@ namespace ACPAMS.Views.Faculty.Tabs
                 IntegrityIndexSub.Text = summary.IntegrityIndexPercent >= 80 ? "Low anomaly rate" : "Elevated anomaly rate";
             }
 
+            // ── KPI 3 & AI vs Instructor Override Chart ──
+            UpdateAiMetricsAndChart(summary);
+
             // ── Infraction Breakdown legend + center total (real counts; wedge shapes stay illustrative) ──
             InfractionTotalLabel.Text = summary.TotalInfractions.ToString();
             GazeDeviationCount.Text = summary.GazeDeviationCount.ToString();
@@ -306,6 +309,61 @@ namespace ACPAMS.Views.Faculty.Tabs
             rotate.Angle = -90 + (cumulativeFractionBefore * 360);
         }
 
+        private void UpdateAiMetricsAndChart(ReportsSummaryDto summary)
+        {
+            if (summary.HasAiData && summary.TotalAiGradedQuestions > 0)
+            {
+                AiAccuracyRateValue.Text = $"{summary.AiAccuracyRatePercent:0.#}%";
+                AiAccuracyRateSub.Text = $"{summary.ExactMatchCount} of {summary.TotalAiGradedQuestions} agreed";
+
+                OverrideEmptyState.Visibility = Visibility.Collapsed;
+                OverrideVisualContainer.Visibility = Visibility.Visible;
+
+                ExactMatchText.Text = $"{summary.ExactMatchCount} questions ({summary.AiAccuracyRatePercent:0.#}%)";
+                double overridePercent = 100.0 - (double)summary.AiAccuracyRatePercent;
+                OverriddenText.Text = $"{summary.OverriddenCount} questions ({overridePercent:0.#}%)";
+
+                if (summary.OverriddenCount == 0)
+                {
+                    AgreementStatusBadge.Background = Brush("#DCFCE7");
+                    AgreementStatusBadge.BorderBrush = Brush("#15803D");
+                    AgreementStatusIcon.Text = "\uE73E";
+                    AgreementStatusIcon.Foreground = Brush("#15803D");
+                    AgreementStatusText.Text = "100% Instructor Agreement (0 Overrides)";
+                    AgreementStatusText.Foreground = Brush("#15803D");
+
+                    ExactMatchCol.Width = new GridLength(1, GridUnitType.Star);
+                    OverriddenCol.Width = new GridLength(0);
+                    AvgShiftText.Text = "0.0 pts (Exact Match)";
+                }
+                else
+                {
+                    AgreementStatusBadge.Background = Brush("#FEF3C7");
+                    AgreementStatusBadge.BorderBrush = Brush("#B45309");
+                    AgreementStatusIcon.Text = "\uE7C1";
+                    AgreementStatusIcon.Foreground = Brush("#B45309");
+                    AgreementStatusText.Text = $"{summary.AiAccuracyRatePercent:0.#}% Agreement ({summary.OverriddenCount} Overridden)";
+                    AgreementStatusText.Foreground = Brush("#B45309");
+
+                    double exactRatio = Math.Max(0.01, (double)summary.ExactMatchCount);
+                    double overrideRatio = Math.Max(0.01, (double)summary.OverriddenCount);
+                    ExactMatchCol.Width = new GridLength(exactRatio, GridUnitType.Star);
+                    OverriddenCol.Width = new GridLength(overrideRatio, GridUnitType.Star);
+
+                    string sign = summary.AverageScoreShift > 0 ? "+" : "";
+                    AvgShiftText.Text = $"{sign}{summary.AverageScoreShift:0.##} pts avg shift";
+                }
+            }
+            else
+            {
+                AiAccuracyRateValue.Text = "—";
+                AiAccuracyRateSub.Text = "AI grading not yet integrated";
+
+                OverrideEmptyState.Visibility = Visibility.Visible;
+                OverrideVisualContainer.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void BuildReportRows(System.Collections.Generic.List<ReportRowDto> rows)
         {
             ReportRowsPanel.Children.Clear();
@@ -386,8 +444,14 @@ namespace ACPAMS.Views.Faculty.Tabs
                 }
                 Grid.SetColumn(namePanel, 0);
 
-                // AI Score / AI Conf — pending AI integration, honestly shown as "—"
-                var aiScore = new TextBlock { Text = "—", FontSize = 13, Foreground = Brushes.Gray, VerticalAlignment = VerticalAlignment.Center };
+                // AI Score / AI Conf
+                var aiScore = new TextBlock
+                {
+                    Text = r.AiScoreText,
+                    FontSize = 13,
+                    Foreground = r.AiScoreText != "—" && r.AiScoreText != "Auto-Scored" ? Brush("#7C3AED") : Brush("#64748B"),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
                 Grid.SetColumn(aiScore, 1);
 
                 var finalGrade = new TextBlock
@@ -400,7 +464,13 @@ namespace ACPAMS.Views.Faculty.Tabs
                 };
                 Grid.SetColumn(finalGrade, 2);
 
-                var aiConf = new TextBlock { Text = "—", FontSize = 13, Foreground = Brushes.Gray, VerticalAlignment = VerticalAlignment.Center };
+                var aiConf = new TextBlock
+                {
+                    Text = r.AiConfidenceText,
+                    FontSize = 13,
+                    Foreground = r.AiConfidenceText != "—" && r.AiConfidenceText != "Auto-Scored" ? Brush("#7C3AED") : Brush("#64748B"),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
                 Grid.SetColumn(aiConf, 3);
 
                 var (riskFg, riskBg) = RiskColors(r.RiskLevel);

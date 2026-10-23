@@ -508,7 +508,13 @@
                                         <TextBlock Text="{Binding CourseCode}"
                                                    FontSize="11"
                                                    Foreground="{StaticResource Text.Muted}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="0,0,0,4"/>
+
+                                        <!-- Academic Metadata -->
+                                        <StackPanel Margin="0,0,0,10" Visibility="{Binding HasAcademicMetadata, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding SectionScheduleDisplay}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Text.Secondary}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding AcademicPeriodDisplay}" FontSize="10" Foreground="{StaticResource Text.Muted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
 
                                         <Grid Margin="0,0,0,6">
                                             <Grid.ColumnDefinitions>
@@ -540,6 +546,12 @@
                                             <Button Style="{StaticResource Btn.Primary}"
                                                     Content="Unarchive / Restore"
                                                     Command="{Binding DataContext.UnarchiveExamCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Margin="0,0,8,8"/>
+
+                                            <Button Style="{StaticResource Btn.Outlined}"
+                                                    Content="Reuse Questions"
+                                                    Command="{Binding DataContext.ReuseQuestionsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Margin="0,0,8,8"/>
 

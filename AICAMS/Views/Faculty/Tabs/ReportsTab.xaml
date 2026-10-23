@@ -408,17 +408,16 @@
                     </StackPanel>
                 </Border>
 
-                <!-- KPI 3: AI Accuracy Rate — PENDING: requires an AI-generated baseline
-                     score to compare against instructor grades, which doesn't exist yet. -->
+                <!-- KPI 3: AI Accuracy Rate -->
                 <Border Grid.Column="4" Style="{StaticResource Card.Kpi.Purple}">
                     <StackPanel>
                         <TextBlock Text="AI Accuracy Rate"
                                    Style="{StaticResource T.KpiLabel}"
                                    Margin="0,0,0,6"/>
-                        <TextBlock Text="—"
+                        <TextBlock x:Name="AiAccuracyRateValue" Text="—"
                                    Style="{StaticResource T.KpiNumber}"
                                    Foreground="{StaticResource AI.Text}"/>
-                        <TextBlock Text="AI grading not yet integrated"
+                        <TextBlock x:Name="AiAccuracyRateSub" Text="AI grading not yet integrated"
                                    FontSize="11"
                                    Foreground="{StaticResource AI.Text}"
                                    Margin="0,5,0,0"/>
@@ -468,6 +467,72 @@
                         <TextBlock Text="Grade shifts made by instructor vs. AI baseline"
                                    Style="{StaticResource T.CardSubtitle}"
                                    Margin="0,0,0,16"/>
+
+                        <!-- Visual representation when comparison data is available -->
+                        <StackPanel x:Name="OverrideVisualContainer" Visibility="Collapsed" MinHeight="170">
+                            <!-- Overall Agreement Status Pill / Rate -->
+                            <Border x:Name="AgreementStatusBadge"
+                                    Background="{StaticResource Status.SuccessBg}"
+                                    BorderBrush="{StaticResource Status.Success}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,7"
+                                    Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="AgreementStatusIcon" Text="&#xE73E;"
+                                               FontFamily="Segoe MDL2 Assets" FontSize="13"
+                                               Foreground="{StaticResource Status.Success}"
+                                               Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="AgreementStatusText" Text="100% Instructor Agreement (0 Overrides)"
+                                               FontSize="11" FontWeight="Bold"
+                                               Foreground="{StaticResource Status.Success}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Breakdown Stacked Bar -->
+                            <Grid Height="10" Margin="0,0,0,12">
+                                <Border Background="{StaticResource Bg.Base}" CornerRadius="5"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition x:Name="ExactMatchCol" Width="*"/>
+                                        <ColumnDefinition x:Name="OverriddenCol" Width="0"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource Status.Success}" CornerRadius="5,0,0,5"/>
+                                    <Border Grid.Column="1" Background="{StaticResource Status.Warning}" CornerRadius="0,5,5,0"/>
+                                </Grid>
+                            </Grid>
+
+                            <!-- Metrics Breakdown List -->
+                            <StackPanel>
+                                <Grid Margin="0,0,0,4">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="8" Height="8" Fill="{StaticResource Status.Success}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Accepted AI Scores:" FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="ExactMatchText" Text="0 questions (100%)" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Text.Primary}" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,4">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="8" Height="8" Fill="{StaticResource Status.Warning}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Manual Overrides:" FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="OverriddenText" Text="0 questions (0%)" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Text.Primary}" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE7C1;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="{StaticResource Text.Muted}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Average Score Shift:" FontSize="11" Foreground="{StaticResource Text.Secondary}"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="AvgShiftText" Text="0.0 pts" FontSize="11" FontWeight="SemiBold"
+                                               Foreground="{StaticResource Text.Secondary}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
 
                         <!-- Empty state when comparison baseline data is unavailable -->
                         <Border x:Name="OverrideEmptyState"
@@ -717,11 +782,11 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="STUDENT"
                                        Style="{StaticResource T.TableHeader}"/>
-                            <TextBlock Grid.Column="1" Text="AI SCORE (PENDING)"
+                            <TextBlock Grid.Column="1" Text="AI SCORE"
                                        Style="{StaticResource T.TableHeader}"/>
                             <TextBlock Grid.Column="2" Text="FINAL GRADE"
                                        Style="{StaticResource T.TableHeader}"/>
-                            <TextBlock Grid.Column="3" Text="AI CONF. (PENDING)"
+                            <TextBlock Grid.Column="3" Text="AI CONF."
                                        Style="{StaticResource T.TableHeader}"/>
                             <TextBlock Grid.Column="4" Text="ANOMALIES"
                                        Style="{StaticResource T.TableHeader}"/>

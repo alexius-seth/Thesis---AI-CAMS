@@ -1,0 +1,430 @@
+<Window x:Class="ACPAMS.Views.Faculty.ExamAccessModal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Student Access Control &amp; Whitelist"
+        Width="780"
+        Height="580"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <SolidColorBrush x:Key="Bg.Surface"       Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Bg.Base"          Color="#F8FAFC"/>
+        <SolidColorBrush x:Key="Border.Subtle"    Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="Border.Medium"    Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="Text.Primary"     Color="#0F172A"/>
+        <SolidColorBrush x:Key="Text.Secondary"   Color="#475569"/>
+        <SolidColorBrush x:Key="Text.Muted"       Color="#94A3B8"/>
+        <SolidColorBrush x:Key="Accent.Primary"   Color="#1976D2"/>
+        <SolidColorBrush x:Key="Accent.PrimaryBg" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="Status.Success"   Color="#15803D"/>
+        <SolidColorBrush x:Key="Status.SuccessBg" Color="#DCFCE7"/>
+        <SolidColorBrush x:Key="Status.Warning"   Color="#B45309"/>
+        <SolidColorBrush x:Key="Status.WarningBg" Color="#FEF3C7"/>
+        <SolidColorBrush x:Key="Status.Danger"    Color="#DC2626"/>
+        <SolidColorBrush x:Key="Status.DangerBg"  Color="#FEE2E2"/>
+
+        <Style x:Key="Btn.Primary" TargetType="Button">
+            <Setter Property="Background"      Value="#1976D2"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontSize"        Value="13"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height"          Value="36"/>
+            <Setter Property="Padding"         Value="16,0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.SmallApprove" TargetType="Button">
+            <Setter Property="Background"      Value="#DCFCE7"/>
+            <Setter Property="Foreground"      Value="#15803D"/>
+            <Setter Property="BorderBrush"     Value="#86EFAC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize"        Value="11"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="Height"          Value="26"/>
+            <Setter Property="Padding"         Value="10,0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#BBF7D0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.SmallDeny" TargetType="Button">
+            <Setter Property="Background"      Value="#FEE2E2"/>
+            <Setter Property="Foreground"      Value="#DC2626"/>
+            <Setter Property="BorderBrush"     Value="#FCA5A5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize"        Value="11"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="Height"          Value="26"/>
+            <Setter Property="Padding"         Value="10,0"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#FECACA"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Btn.Close" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width"           Value="32"/>
+            <Setter Property="Height"          Value="32"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#F1F5F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{StaticResource Bg.Surface}"
+            BorderBrush="{StaticResource Border.Subtle}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Margin="16">
+        <Border.Effect>
+            <DropShadowEffect Color="#0F172A"
+                              Opacity="0.22"
+                              BlurRadius="28"
+                              ShadowDepth="8"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- HEADER -->
+            <Border Grid.Row="0"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1"
+                    Padding="24,16,18,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <Border Background="{StaticResource Accent.PrimaryBg}"
+                                    CornerRadius="6"
+                                    Padding="6,3"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="&#xE72E;"
+                                           FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="{StaticResource Accent.Primary}"/>
+                            </Border>
+                            <TextBlock x:Name="HeaderTitleText"
+                                       Text="Student Access Control &amp; Whitelist"
+                                       FontSize="16" FontWeight="Bold"
+                                       Foreground="{StaticResource Text.Primary}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock x:Name="HeaderSubtitleText"
+                                   Text="Pre-approve irregular or off-schedule students, or manage real-time access requests."
+                                   FontSize="12"
+                                   Foreground="{StaticResource Text.Muted}"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Click="OnCloseClicked"
+                            Style="{StaticResource Btn.Close}"
+                            VerticalAlignment="Top">
+                        <TextBlock Text="&#xE711;"
+                                   FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   Foreground="{StaticResource Text.Muted}"/>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ADD STUDENT TO WHITELIST BAR -->
+            <Border Grid.Row="1"
+                    Background="#F8FAFC"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,0,0,1"
+                    Padding="24,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Add Student ID to Whitelist (Pre-Approve Off-Schedule Access)"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Text.Secondary}"
+                                   Margin="0,0,0,4"/>
+                        <Grid>
+                            <TextBox x:Name="StudentIdInputBox"
+                                     Height="36"
+                                     FontSize="13"
+                                     Padding="10,0"
+                                     VerticalContentAlignment="Center"
+                                     BorderBrush="{StaticResource Border.Medium}"
+                                     BorderThickness="1"
+                                     Background="White"
+                                     TextChanged="StudentIdInputBox_TextChanged"
+                                     KeyDown="StudentIdInputBox_KeyDown"
+                                     ToolTip="Enter student ID or name to search"/>
+
+                            <!-- Autocomplete Suggestions Popup -->
+                            <Popup x:Name="SuggestionsPopup"
+                                   PlacementTarget="{Binding ElementName=StudentIdInputBox}"
+                                   Placement="Bottom"
+                                   IsOpen="False"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   Width="{Binding ActualWidth, ElementName=StudentIdInputBox}">
+                                <Border Background="White"
+                                        BorderBrush="{StaticResource Border.Medium}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        MaxHeight="220"
+                                        Margin="0,3,0,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#0F172A" Opacity="0.12" BlurRadius="12" ShadowDepth="4" Direction="270"/>
+                                    </Border.Effect>
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox x:Name="SuggestionsListBox"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 PreviewMouseLeftButtonUp="SuggestionsListBox_PreviewMouseLeftButtonUp"
+                                                 PreviewKeyDown="SuggestionsListBox_PreviewKeyDown">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="12,8" Background="Transparent" CornerRadius="4">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding StudentId}"
+                                                                       FontWeight="Bold"
+                                                                       FontSize="12"
+                                                                       Foreground="{StaticResource Text.Primary}"
+                                                                       VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding DisplaySubtext}"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource Text.Secondary}"
+                                                                       HorizontalAlignment="Right"
+                                                                       VerticalAlignment="Center"
+                                                                       Margin="12,0,0,0"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="Padding" Value="0"/>
+                                                    <Setter Property="Margin" Value="2,1"/>
+                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ListBoxItem">
+                                                                <Border x:Name="ItemBorder" Background="Transparent" CornerRadius="4">
+                                                                    <ContentPresenter/>
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="ItemBorder" Property="Background" Value="#F1F5F9"/>
+                                                                    </Trigger>
+                                                                    <Trigger Property="IsSelected" Value="True">
+                                                                        <Setter TargetName="ItemBorder" Property="Background" Value="#EFF6FF"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                        </ListBox>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            x:Name="AddWhitelistBtn"
+                            Click="AddWhitelistBtn_Click"
+                            Content="+ Pre-Approve Student"
+                            Style="{StaticResource Btn.Primary}"
+                            VerticalAlignment="Bottom"/>
+                </Grid>
+            </Border>
+
+            <!-- ACCESS AUTHORIZATION LIST -->
+            <Grid Grid.Row="2" Margin="24,12">
+                <!-- Empty State -->
+                <TextBlock x:Name="EmptyListText"
+                           Text="No students have requested or been granted off-schedule access yet."
+                           FontSize="12" FontStyle="Italic"
+                           Foreground="{StaticResource Text.Muted}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="AuthorizationsItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="White"
+                                        BorderBrush="{StaticResource Border.Subtle}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="14,10"
+                                        Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="16"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Student Info -->
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                                <TextBlock Text="{Binding StudentId}"
+                                                           FontWeight="Bold" FontSize="13"
+                                                           Foreground="{StaticResource Text.Primary}"
+                                                           Margin="0,0,8,0"/>
+                                                <TextBlock Text="{Binding StudentName}"
+                                                           FontSize="13"
+                                                           Foreground="{StaticResource Text.Secondary}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding StudentDetails}"
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource Text.Muted}"/>
+                                        </StackPanel>
+
+                                        <!-- Status Badge -->
+                                        <Border Grid.Column="1"
+                                                Background="{Binding StatusBgBrush}"
+                                                CornerRadius="4"
+                                                Padding="8,3"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Status}"
+                                                       FontWeight="Bold" FontSize="10"
+                                                       Foreground="{Binding StatusFgBrush}"/>
+                                        </Border>
+
+                                        <!-- Actions -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Click="ApproveBtn_Click"
+                                                    Tag="{Binding AuthorizationId}"
+                                                    Content="Approve"
+                                                    Style="{StaticResource Btn.SmallApprove}"
+                                                    Margin="0,0,6,0"
+                                                    Visibility="{Binding CanApprove, Converter={StaticResource BoolToVis}}"/>
+
+                                            <Button Click="DenyBtn_Click"
+                                                    Tag="{Binding AuthorizationId}"
+                                                    Content="Deny"
+                                                    Style="{StaticResource Btn.SmallDeny}"
+                                                    Margin="0,0,6,0"
+                                                    Visibility="{Binding CanDeny, Converter={StaticResource BoolToVis}}"/>
+
+                                            <Button Click="RemoveBtn_Click"
+                                                    Tag="{Binding AuthorizationId}"
+                                                    Content="Remove"
+                                                    Style="{StaticResource Btn.SmallDeny}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- FOOTER -->
+            <Border Grid.Row="3"
+                    BorderBrush="{StaticResource Border.Subtle}"
+                    BorderThickness="0,1,0,0"
+                    Padding="24,12"
+                    Background="White">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="FooterStatsText"
+                               Text="Loading authorizations..."
+                               FontSize="12" Foreground="{StaticResource Text.Muted}"
+                               VerticalAlignment="Center"/>
+
+                    <Button Grid.Column="1"
+                            Click="OnCloseClicked"
+                            Content="Done"
+                            Style="{StaticResource Btn.Primary}"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
+

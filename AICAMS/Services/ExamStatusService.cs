@@ -17,6 +17,93 @@ namespace ACPAMS.Services
             _context = context;
         }
 
+        public async Task CheckAndAutoArchiveExpiredExamsAsync()
+        {
+            try
+            {
+                var now = DateTime.Now;
+                var candidateExams = await _context.Exams
+                    .Include(e => e.Attempts)
+                    .Where(e => e.Status == "active" || e.Status == "upcoming")
+                    .ToListAsync();
+
+                bool hasChanges = false;
+                foreach (var exam in candidateExams)
+                {
+                    // 1. Never archive if ManualOnly
+                    if (string.Equals(exam.AutoArchiveRule, "ManualOnly", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    // 2. Never archive an upcoming exam that hasn't arrived at its scheduled start time yet
+                    if (exam.ScheduledStartTime.HasValue && now < exam.ScheduledStartTime.Value)
+                        continue;
+
+                    // 3. Guard condition: Never archive if any student is actively taking the exam
+                    bool hasActiveAttempts = exam.Attempts != null && exam.Attempts.Any(a => a.Status == "in_progress");
+                    if (hasActiveAttempts)
+                        continue;
+
+                    int bufferMinutes = exam.AutoArchiveBufferMinutes > 0 ? exam.AutoArchiveBufferMinutes : 60;
+                    if (string.Equals(exam.AutoArchiveRule, "2HoursAfter", StringComparison.OrdinalIgnoreCase))
+                        bufferMinutes = 120;
+                    else if (string.Equals(exam.AutoArchiveRule, "1HourAfter", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(exam.AutoArchiveRule, "OnScheduleEnd", StringComparison.OrdinalIgnoreCase))
+                        bufferMinutes = 60;
+
+                    bool isExpired = false;
+
+                    // 4. If ScheduledEndTime is specified:
+                    if (exam.ScheduledEndTime.HasValue)
+                    {
+                        if (string.Equals(exam.AutoArchiveRule, "EndOfDay", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var endOfDay = exam.ScheduledEndTime.Value.Date.AddDays(1).AddSeconds(-1);
+                            isExpired = now >= endOfDay;
+                        }
+                        else
+                        {
+                            isExpired = now >= exam.ScheduledEndTime.Value.AddMinutes(bufferMinutes);
+                        }
+                    }
+                    // 5. If no ScheduledEndTime, but ActivatedAt is set (live exam activation):
+                    else if (exam.ActivatedAt.HasValue)
+                    {
+                        int duration = exam.DurationMinutes ?? 60;
+                        if (string.Equals(exam.AutoArchiveRule, "EndOfDay", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var endOfDay = exam.ActivatedAt.Value.Date.AddDays(1).AddSeconds(-1);
+                            isExpired = now >= endOfDay;
+                        }
+                        else
+                        {
+                            isExpired = now >= exam.ActivatedAt.Value.AddMinutes(duration + bufferMinutes);
+                        }
+                    }
+                    // 6. Fallback: if active without explicit schedule/activation
+                    else if (exam.Status == "active")
+                    {
+                        int duration = exam.DurationMinutes ?? 60;
+                        isExpired = now >= exam.CreatedAt.AddMinutes(duration + bufferMinutes);
+                    }
+
+                    if (isExpired)
+                    {
+                        exam.Status = "archived";
+                        hasChanges = true;
+                    }
+                }
+
+                if (hasChanges)
+                {
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Auto-archive check failed: {ex.Message}");
+            }
+        }
+
         public async Task<List<ExamStatusDto>> GetExamsWithStatusAsync(string instructorId, bool archivedOnly = false)
         {
             var query = _context.Exams
@@ -154,7 +241,12 @@ namespace ACPAMS.Services
                     ReadyToFinalizeCount = readyToFinalizeCount,
                     ActionLabel = actionLabel,
                     GradingStatusText = gradingStatusText,
-                    GradingStatusIsWarning = gradingStatusIsWarning
+                    GradingStatusIsWarning = gradingStatusIsWarning,
+                    AcademicYear = exam.AcademicYear,
+                    Semester = exam.Semester,
+                    Section = exam.Section,
+                    ClassSchedule = exam.ClassSchedule,
+                    RequiresApproval = exam.RequiresApproval
                 });
             }
 
@@ -167,7 +259,6 @@ namespace ACPAMS.Services
                 .Where(a => a.ExamId == examId && a.Status == "in_progress")
                 .CountAsync();
         }
-
 
         public async Task ArchiveExamAsync(Guid examId)
         {
@@ -382,6 +473,22 @@ namespace ACPAMS.Services
         public decimal TotalPoints { get; set; }
         public bool HasAttempts { get; set; }
         public List<StudentExamAttempt> Attempts { get; set; } = new();
+
+        // ── Extended Subject & Section Metadata ──────────────────
+        public string? AcademicYear { get; set; }
+        public string? Semester { get; set; }
+        public string? Section { get; set; }
+        public string? ClassSchedule { get; set; }
+        public bool RequiresApproval { get; set; }
+
+        public string SectionScheduleDisplay => 
+            string.Join(" • ", new[] { Section, ClassSchedule }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        public string AcademicPeriodDisplay => 
+            string.Join(" | ", new[] { AcademicYear, Semester }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        public bool HasAcademicMetadata => 
+            !string.IsNullOrWhiteSpace(Section) || !string.IsNullOrWhiteSpace(ClassSchedule) || !string.IsNullOrWhiteSpace(AcademicYear);
 
         // ── Grading progress (populated for "done" exams) ──────
         public bool HasSubjectiveQuestions { get; set; }

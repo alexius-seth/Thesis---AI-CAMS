@@ -39,7 +39,7 @@ namespace ACPAMS
                 // Ensure database is created
                 _dbContext.Database.Migrate();
 
-                // Self-healing schema check for questions.section_name
+                // Self-healing schema checks
                 _dbContext.Database.ExecuteSqlRaw(@"
                     IF NOT EXISTS (
                         SELECT 1 FROM sys.columns 
@@ -95,6 +95,104 @@ namespace ACPAMS
                     )
                     BEGIN
                         ALTER TABLE dbo.students ADD must_change_password BIT NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'academic_year'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD academic_year NVARCHAR(20) NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'semester'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD semester NVARCHAR(20) NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'section'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD section NVARCHAR(50) NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'class_schedule'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD class_schedule NVARCHAR(50) NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'requires_approval'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD requires_approval BIT NOT NULL DEFAULT 0;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'scheduled_start_time'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD scheduled_start_time DATETIME2 NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'scheduled_end_time'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD scheduled_end_time DATETIME2 NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'activated_at'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD activated_at DATETIME2 NULL;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'auto_archive_rule'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD auto_archive_rule NVARCHAR(30) NOT NULL DEFAULT '1HourAfter';
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'auto_archive_buffer_minutes'
+                    )
+                    BEGIN
+                        ALTER TABLE dbo.exams ADD auto_archive_buffer_minutes INT NOT NULL DEFAULT 60;
+                    END
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.tables 
+                        WHERE name = 'exam_authorized_students'
+                    )
+                    BEGIN
+                        CREATE TABLE dbo.exam_authorized_students (
+                            authorization_id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
+                            exam_id UNIQUEIDENTIFIER NOT NULL,
+                            student_id NVARCHAR(50) NOT NULL,
+                            status NVARCHAR(30) NOT NULL DEFAULT 'PendingApproval',
+                            requested_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                            valid_until DATETIME2 NULL,
+                            approved_by_instructor_id NVARCHAR(50) NULL,
+                            CONSTRAINT FK_exam_authorized_students_exams FOREIGN KEY (exam_id) REFERENCES dbo.exams(exam_id) ON DELETE CASCADE,
+                            CONSTRAINT FK_exam_authorized_students_students FOREIGN KEY (student_id) REFERENCES dbo.students(student_id) ON DELETE NO ACTION
+                        );
                     END");
 
                 // Initialize default data

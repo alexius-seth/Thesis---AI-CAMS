@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using ACPAMS.Data;
 using ACPAMS.Services;
 using ACPAMS.Views.Faculty;
@@ -21,6 +22,7 @@ namespace ACPAMS.ViewModels
 
         // Guards against overlapping loads (e.g. if Loaded fires more than once).
         private bool _isLoadInFlight;
+        private readonly DispatcherTimer? _autoArchiveTimer;
 
         private ObservableCollection<ExamStatusDto> _exams;
         private ExamStatusDto _selectedExam;
@@ -36,6 +38,8 @@ namespace ACPAMS.ViewModels
         public ICommand ViewReportCommand { get; set; }
         public ICommand ViewDashboardCommand { get; set; }
         public ICommand ViewScoresCommand { get; set; }
+        public ICommand ManageAccessCommand { get; set; }
+        public ICommand ReuseQuestionsCommand { get; set; }
 
         public bool IsArchivedView => _isArchivedView;
 
@@ -132,6 +136,35 @@ namespace ACPAMS.ViewModels
             {
                 if (param is ExamStatusDto exam) await DeleteExamAsync(exam.ExamId);
             });
+            ManageAccessCommand = new RelayCommand(param =>
+            {
+                if (param is ExamStatusDto exam)
+                {
+                    var modal = new ExamAccessModal(exam.ExamId, exam.Title, exam.ExamCode);
+                    modal.Owner = Application.Current.MainWindow;
+                    modal.ShowDialog();
+                }
+            });
+            ReuseQuestionsCommand = new RelayCommand(param =>
+            {
+                Guid? preselectedId = (param as ExamStatusDto)?.ExamId;
+                var modal = new ArchivedExamPickerModal(preselectedId);
+                modal.Owner = Application.Current.MainWindow;
+                if (modal.ShowDialog() == true && modal.ClonedExam != null)
+                {
+                    MainWindow.Navigate(new CreateExamPage(modal.ClonedExam.ExamId));
+                }
+            });
+
+            if (!isArchivedView)
+            {
+                _autoArchiveTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMinutes(5)
+                };
+                _autoArchiveTimer.Tick += async (s, e) => await LoadExamsAsync();
+                _autoArchiveTimer.Start();
+            }
         }
 
         // ── Each operation below opens its own short-lived AppDbContext. ──
@@ -151,6 +184,7 @@ namespace ACPAMS.ViewModels
 
                 using var context = new AppDbContext();
                 var examStatusService = new ExamStatusService(context);
+                await examStatusService.CheckAndAutoArchiveExpiredExamsAsync();
                 var exams = await examStatusService.GetExamsWithStatusAsync(_instructorId, archivedOnly: _isArchivedView);
 
                 Application.Current.Dispatcher.Invoke(() =>

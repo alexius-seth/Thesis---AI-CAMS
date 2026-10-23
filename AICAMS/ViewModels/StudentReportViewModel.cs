@@ -30,12 +30,61 @@ namespace ACPAMS.ViewModels
         // ── Performance assessment (Strengths/Weaknesses/Summary) ────────
         // Gates the "Generate Assessment" button — should only run once
         // grading is actually finalized, not on still-pending AI-suggested scores.
-        public bool IsFinalized { get; set; }
-        public bool HasAssessment { get; set; }
-        public List<string> Strengths { get; set; } = new();
-        public List<string> Weaknesses { get; set; } = new();
-        public string AssessmentSummary { get; set; } = string.Empty;
-        public DateTime? AssessmentGeneratedAt { get; set; }
+        private bool _isFinalized;
+        public bool IsFinalized
+        {
+            get => _isFinalized;
+            set { _isFinalized = value; OnPropertyChanged(); }
+        }
+
+        private bool _hasAssessment;
+        public bool HasAssessment
+        {
+            get => _hasAssessment;
+            set { _hasAssessment = value; OnPropertyChanged(); }
+        }
+
+        private List<string> _strengths = new();
+        public List<string> Strengths
+        {
+            get => _strengths;
+            set { _strengths = value; OnPropertyChanged(); }
+        }
+
+        private List<string> _weaknesses = new();
+        public List<string> Weaknesses
+        {
+            get => _weaknesses;
+            set { _weaknesses = value; OnPropertyChanged(); }
+        }
+
+        private string _assessmentSummary = string.Empty;
+        public string AssessmentSummary
+        {
+            get => _assessmentSummary;
+            set { _assessmentSummary = value; OnPropertyChanged(); }
+        }
+
+        private DateTime? _assessmentGeneratedAt;
+        public DateTime? AssessmentGeneratedAt
+        {
+            get => _assessmentGeneratedAt;
+            set { _assessmentGeneratedAt = value; OnPropertyChanged(); }
+        }
+
+        private bool _isGeneratingAssessment;
+        public bool IsGeneratingAssessment
+        {
+            get => _isGeneratingAssessment;
+            set { _isGeneratingAssessment = value; OnPropertyChanged(); }
+        }
+
+        private string _generationStatusText = "Analyzing performance with Gemini AI...";
+        public string GenerationStatusText
+        {
+            get => _generationStatusText;
+            set { _generationStatusText = value; OnPropertyChanged(); }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
