@@ -1,11 +1,15 @@
 -- ====================================================================
--- AI-CAMS Idempotent Seed Data Script
--- Purpose: Populates test accounts, assessments, attempts, and anomaly logs.
--- Target Engine: Microsoft SQL Server 2025 Express
--- Host Instance: DESKTOP-QD67JHP\SQLEXPRESS | Database: aicamsdb
+-- AI-CAMS Idempotent Schema Migration & Seed Data Script
+-- Purpose: Ensures post-defense schema alignment, populates test accounts,
+--          sample assessments with section metadata, attempts, access controls,
+--          and anomaly proctoring logs.
+-- Engine: Microsoft SQL Server (2019 / 2022 / Express / LocalDB)
 -- ====================================================================
 
-USE [aicamsdb];
+IF DB_ID('aicams') IS NOT NULL
+    USE [aicams];
+ELSE IF DB_ID('aicamsdb') IS NOT NULL
+    USE [aicamsdb];
 GO
 
 SET ANSI_NULLS ON;
@@ -13,9 +17,84 @@ SET QUOTED_IDENTIFIER ON;
 SET NOCOUNT ON;
 
 -- --------------------------------------------------------------------
+-- 0. SELF-HEALING SCHEMA VALIDATION (ANSI IDEMPOTENT GUARDS)
+-- --------------------------------------------------------------------
+
+-- Ensure table: exam_authorized_students
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'exam_authorized_students')
+BEGIN
+    EXEC('CREATE TABLE [dbo].[exam_authorized_students] (
+        [authorization_id] UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
+        [exam_id] UNIQUEIDENTIFIER NOT NULL,
+        [student_id] NVARCHAR(50) NOT NULL,
+        [status] NVARCHAR(30) NOT NULL DEFAULT ''PendingApproval'',
+        [requested_at] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        [valid_until] DATETIME2 NULL,
+        [approved_by_instructor_id] NVARCHAR(50) NULL,
+        CONSTRAINT [FK_exam_authorized_students_exams] FOREIGN KEY ([exam_id]) 
+            REFERENCES [dbo].[exams] ([exam_id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_exam_authorized_students_students] FOREIGN KEY ([student_id]) 
+            REFERENCES [dbo].[students] ([student_id]) ON DELETE NO ACTION
+    )');
+END
+
+-- Ensure columns on: exams
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'academic_year')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [academic_year] NVARCHAR(20) NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'semester')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [semester] NVARCHAR(20) NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'section')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [section] NVARCHAR(50) NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'class_schedule')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [class_schedule] NVARCHAR(50) NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'requires_approval')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [requires_approval] BIT NOT NULL DEFAULT 0');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'scheduled_start_time')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [scheduled_start_time] DATETIME2 NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'scheduled_end_time')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [scheduled_end_time] DATETIME2 NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'activated_at')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [activated_at] DATETIME2 NULL');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'auto_archive_rule')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [auto_archive_rule] NVARCHAR(30) NOT NULL DEFAULT ''1HourAfter''');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'auto_archive_buffer_minutes')
+    EXEC('ALTER TABLE [dbo].[exams] ADD [auto_archive_buffer_minutes] INT NOT NULL DEFAULT 60');
+
+-- Ensure columns on: students
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'is_active')
+    EXEC('ALTER TABLE [dbo].[students] ADD [is_active] BIT NOT NULL DEFAULT 1');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'must_change_password')
+    EXEC('ALTER TABLE [dbo].[students] ADD [must_change_password] BIT NOT NULL DEFAULT 0');
+
+-- Ensure columns on: student_exam_attempts
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'student_exam_attempts' AND COLUMN_NAME = 'extra_time_minutes')
+    EXEC('ALTER TABLE [dbo].[student_exam_attempts] ADD [extra_time_minutes] INT NOT NULL DEFAULT 0');
+
+-- Ensure columns on: audit_logs
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'is_dismissed')
+    EXEC('ALTER TABLE [dbo].[audit_logs] ADD [is_dismissed] BIT NOT NULL DEFAULT 0');
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'dismissal_reason')
+    EXEC('ALTER TABLE [dbo].[audit_logs] ADD [dismissal_reason] NVARCHAR(255) NULL');
+
+-- Ensure columns on: questions
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'questions' AND COLUMN_NAME = 'section_name')
+    EXEC('ALTER TABLE [dbo].[questions] ADD [section_name] NVARCHAR(MAX) NULL');
+
+
+-- --------------------------------------------------------------------
 -- 1. FACULTY / INSTRUCTOR ACCOUNTS
 -- --------------------------------------------------------------------
--- Faculty Admin User
 -- Default password: "Admin@1234" (BCrypt hash)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[users] WHERE [username] = 'faculty_admin')
 BEGIN
@@ -80,7 +159,7 @@ BEGIN
     );
 END
 
--- Student 2: First-Time Login Student (Must change password on first login) (23-2222-222)
+-- Student 2: Pending First-Time Login / Password Reset (23-2222-222)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[users] WHERE [username] = '23-2222-222')
 BEGIN
     INSERT INTO [dbo].[users] ([user_id], [role], [username], [password_hash], [created_at], [is_active])
@@ -100,18 +179,18 @@ BEGIN
     VALUES (
         '23-2222-222',
         (SELECT [user_id] FROM [dbo].[users] WHERE [username] = '23-2222-222'),
-        'Maria',
-        'Santos',
-        'L',
+        'Samantha',
+        'Cruz',
+        'B',
         'BS Information Technology',
         '2nd Year',
         GETDATE(),
         1,
-        1
+        1 -- Forces password change on first login
     );
 END
 
--- Student 3: Inactive / Archived Student (23-3333-333)
+-- Student 3: Archived / Deactivated Student (23-3333-333)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[users] WHERE [username] = '23-3333-333')
 BEGIN
     INSERT INTO [dbo].[users] ([user_id], [role], [username], [password_hash], [created_at], [is_active])
@@ -121,7 +200,7 @@ BEGIN
         '23-3333-333',
         '$2a$11$6NaDqREz7xKvvtfSUUNhbeORJPO3FnkYXF.NqqzCiryrjmARUpx2C',
         GETDATE(),
-        0
+        0 -- Inactive User
     );
 END
 
@@ -131,26 +210,26 @@ BEGIN
     VALUES (
         '23-3333-333',
         (SELECT [user_id] FROM [dbo].[users] WHERE [username] = '23-3333-333'),
-        'Juan',
-        'Dela Cruz',
-        'P',
+        'Marco',
+        'Reyes',
+        'C',
         'BS Computer Science',
         '4th Year',
         GETDATE(),
-        0,
+        0, -- Inactive Student
         0
     );
 END
 
--- Student 4: Active Student (23-4444-444)
+-- Student 4: Active Student with Exam Attempt History (23-4444-444)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[users] WHERE [username] = '23-4444-444')
 BEGIN
     INSERT INTO [dbo].[users] ([user_id], [role], [username], [password_hash], [created_at], [is_active])
     VALUES (
-        '6E22C832-FC98-4639-BB60-F166AEA311B4',
+        'E4444444-4444-4444-4444-444444444444',
         'student',
         '23-4444-444',
-        '$2a$12$O8xR3iTkM1ablTIbpsLgUOs3Zfo4E2pbwlafuf.ovKbLYuyVLpLg6',
+        '$2a$11$6NaDqREz7xKvvtfSUUNhbeORJPO3FnkYXF.NqqzCiryrjmARUpx2C',
         GETDATE(),
         1
     );
@@ -162,10 +241,10 @@ BEGIN
     VALUES (
         '23-4444-444',
         (SELECT [user_id] FROM [dbo].[users] WHERE [username] = '23-4444-444'),
-        'Rod',
-        'Rigo',
-        'B',
-        'BS Computer Science',
+        'Angelo',
+        'Aquino',
+        'D',
+        'BS Information Technology',
         '3rd Year',
         GETDATE(),
         1,
@@ -174,13 +253,19 @@ BEGIN
 END
 
 -- --------------------------------------------------------------------
--- 3. MOCK ASSESSMENTS (1 Active, 1 Archived)
+-- 3. MOCK ASSESSMENTS (1 Active with Whitelist, 1 Archived)
 -- --------------------------------------------------------------------
 
 -- Assessment 1: ACTIVE EXAM (CCS415-DEMO-LIVE)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[exams] WHERE [exam_code] = 'CCS415-DEMO-LIVE')
 BEGIN
-    INSERT INTO [dbo].[exams] ([exam_id], [instructor_id], [course_code], [exam_code], [exam_name], [created_at], [duration_minutes], [total_points], [status], [instructions], [randomize_questions])
+    INSERT INTO [dbo].[exams] (
+        [exam_id], [instructor_id], [course_code], [exam_code], [exam_name],
+        [created_at], [duration_minutes], [total_points], [status],
+        [instructions], [randomize_questions],
+        [academic_year], [semester], [section], [class_schedule],
+        [requires_approval], [auto_archive_rule], [auto_archive_buffer_minutes]
+    )
     VALUES (
         'A1111111-AAAA-AAAA-AAAA-111111111111',
         'INST-ADMIN-01',
@@ -192,7 +277,14 @@ BEGIN
         50.00,
         'active',
         'Ensure your face remains directly visible to the webcam. Navigating away, switching windows, or opening third-party tools will be recorded in the audit log.',
-        0
+        0,
+        '2026-2027',
+        '1st Semester',
+        'BSCS 3-A',
+        'MWF 09:00 - 10:30',
+        0,
+        'OnScheduleEnd',
+        60
     );
 
     -- Question 1 for Active Exam (Multiple Choice)
@@ -236,10 +328,49 @@ BEGIN
     );
 END
 
+-- Pre-approved / Whitelisted Students for Active Exam
+IF NOT EXISTS (SELECT 1 FROM [dbo].[exam_authorized_students] WHERE [exam_id] = 'A1111111-AAAA-AAAA-AAAA-111111111111' AND [student_id] = '23-1111-111')
+BEGIN
+    INSERT INTO [dbo].[exam_authorized_students] (
+        [authorization_id], [exam_id], [student_id], [status], [requested_at], [valid_until], [approved_by_instructor_id]
+    )
+    VALUES (
+        'F1111111-1111-1111-1111-111111111111',
+        'A1111111-AAAA-AAAA-AAAA-111111111111',
+        '23-1111-111',
+        'Approved',
+        GETUTCDATE(),
+        DATEADD(DAY, 7, GETUTCDATE()),
+        'INST-ADMIN-01'
+    );
+END
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[exam_authorized_students] WHERE [exam_id] = 'A1111111-AAAA-AAAA-AAAA-111111111111' AND [student_id] = '23-2222-222')
+BEGIN
+    INSERT INTO [dbo].[exam_authorized_students] (
+        [authorization_id], [exam_id], [student_id], [status], [requested_at], [valid_until], [approved_by_instructor_id]
+    )
+    VALUES (
+        'F2222222-2222-2222-2222-222222222222',
+        'A1111111-AAAA-AAAA-AAAA-111111111111',
+        '23-2222-222',
+        'PendingApproval',
+        GETUTCDATE(),
+        NULL,
+        NULL
+    );
+END
+
 -- Assessment 2: ARCHIVED EXAM WITH COMPLETED LOGS (CCS415-DEMO-ARCH)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[exams] WHERE [exam_code] = 'CCS415-DEMO-ARCH')
 BEGIN
-    INSERT INTO [dbo].[exams] ([exam_id], [instructor_id], [course_code], [exam_code], [exam_name], [created_at], [duration_minutes], [total_points], [status], [instructions], [randomize_questions])
+    INSERT INTO [dbo].[exams] (
+        [exam_id], [instructor_id], [course_code], [exam_code], [exam_name],
+        [created_at], [duration_minutes], [total_points], [status],
+        [instructions], [randomize_questions],
+        [academic_year], [semester], [section], [class_schedule],
+        [requires_approval], [auto_archive_rule], [auto_archive_buffer_minutes]
+    )
     VALUES (
         'B2222222-BBBB-BBBB-BBBB-222222222222',
         'INST-ADMIN-01',
@@ -251,7 +382,14 @@ BEGIN
         100.00,
         'archived',
         'Comprehensive assessment covering polymorphism, design patterns, and multithreading.',
-        0
+        0,
+        '2025-2026',
+        '2nd Semester',
+        'BSCS 3-B',
+        'TTH 13:00 - 14:30',
+        0,
+        'ManualOnly',
+        60
     );
 
     -- Question 1 for Archived Exam
@@ -482,4 +620,5 @@ BEGIN
     );
 END
 
-PRINT 'AI-CAMS seed data populated successfully.';
+PRINT 'AI-CAMS schema validated and seed data populated successfully.';
+

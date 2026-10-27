@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -13,95 +13,95 @@ namespace ACPAMS.Migrations
         {
             migrationBuilder.Sql(@"
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('students') AND name = 'is_active'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'is_active'
                 )
                 BEGIN
-                    ALTER TABLE students ADD is_active BIT NOT NULL DEFAULT 1;
+                    EXEC('ALTER TABLE dbo.students ADD is_active BIT NOT NULL DEFAULT 1');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('students') AND name = 'must_change_password'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'must_change_password'
                 )
                 BEGIN
-                    ALTER TABLE students ADD must_change_password BIT NOT NULL DEFAULT 0;
+                    EXEC('ALTER TABLE dbo.students ADD must_change_password BIT NOT NULL DEFAULT 0');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('student_exam_attempts') AND name = 'extra_time_minutes'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'student_exam_attempts' AND COLUMN_NAME = 'extra_time_minutes'
                 )
                 BEGIN
-                    ALTER TABLE student_exam_attempts ADD extra_time_minutes INT NOT NULL DEFAULT 0;
+                    EXEC('ALTER TABLE dbo.student_exam_attempts ADD extra_time_minutes INT NOT NULL DEFAULT 0');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('exams') AND name = 'academic_year'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'academic_year'
                 )
                 BEGIN
-                    ALTER TABLE exams ADD academic_year NVARCHAR(20) NULL;
+                    EXEC('ALTER TABLE dbo.exams ADD academic_year NVARCHAR(20) NULL');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('exams') AND name = 'semester'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'semester'
                 )
                 BEGIN
-                    ALTER TABLE exams ADD semester NVARCHAR(20) NULL;
+                    EXEC('ALTER TABLE dbo.exams ADD semester NVARCHAR(20) NULL');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('exams') AND name = 'section'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'section'
                 )
                 BEGIN
-                    ALTER TABLE exams ADD section NVARCHAR(50) NULL;
+                    EXEC('ALTER TABLE dbo.exams ADD section NVARCHAR(50) NULL');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('exams') AND name = 'class_schedule'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'class_schedule'
                 )
                 BEGIN
-                    ALTER TABLE exams ADD class_schedule NVARCHAR(50) NULL;
+                    EXEC('ALTER TABLE dbo.exams ADD class_schedule NVARCHAR(50) NULL');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('exams') AND name = 'requires_approval'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'requires_approval'
                 )
                 BEGIN
-                    ALTER TABLE exams ADD requires_approval BIT NOT NULL DEFAULT 0;
+                    EXEC('ALTER TABLE dbo.exams ADD requires_approval BIT NOT NULL DEFAULT 0');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('audit_logs') AND name = 'dismissal_reason'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'dismissal_reason'
                 )
                 BEGIN
-                    ALTER TABLE audit_logs ADD dismissal_reason NVARCHAR(255) NULL;
+                    EXEC('ALTER TABLE dbo.audit_logs ADD dismissal_reason NVARCHAR(255) NULL');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('audit_logs') AND name = 'is_dismissed'
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'is_dismissed'
                 )
                 BEGIN
-                    ALTER TABLE audit_logs ADD is_dismissed BIT NOT NULL DEFAULT 0;
+                    EXEC('ALTER TABLE dbo.audit_logs ADD is_dismissed BIT NOT NULL DEFAULT 0');
                 END
 
                 IF NOT EXISTS (
-                    SELECT 1 FROM sys.tables 
-                    WHERE name = 'exam_authorized_students'
+                    SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
+                    WHERE TABLE_NAME = 'exam_authorized_students'
                 )
                 BEGIN
-                    CREATE TABLE dbo.exam_authorized_students (
+                    EXEC('CREATE TABLE dbo.exam_authorized_students (
                         authorization_id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
                         exam_id UNIQUEIDENTIFIER NOT NULL,
                         student_id NVARCHAR(50) NOT NULL,
-                        status NVARCHAR(30) NOT NULL DEFAULT 'PendingApproval',
+                        status NVARCHAR(30) NOT NULL DEFAULT ''PendingApproval'',
                         requested_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
                         valid_until DATETIME2 NULL,
                         approved_by_instructor_id NVARCHAR(50) NULL,
@@ -110,7 +110,7 @@ namespace ACPAMS.Migrations
                     );
 
                     CREATE INDEX IX_exam_authorized_students_exam_id ON dbo.exam_authorized_students(exam_id);
-                    CREATE INDEX IX_exam_authorized_students_student_id ON dbo.exam_authorized_students(student_id);
+                    CREATE INDEX IX_exam_authorized_students_student_id ON dbo.exam_authorized_students(student_id);');
                 END
             ");
         }

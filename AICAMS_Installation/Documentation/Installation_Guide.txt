@@ -1,104 +1,151 @@
 ================================================================================
 AI-CAMS CENTRALIZED SYSTEM CONFIGURATION & DEPLOYMENT GUIDE
+AI-Assisted Centralized Assessment Monitoring System
+University of Luzon - College of Computer Studies
 ================================================================================
 
-INFRASTRUCTURE OVERVIEW:
-- Database Host Server: DESKTOP-QD67JHP
-- SQL Instance:         DESKTOP-QD67JHP\SQLEXPRESS
-- Database Name:        aicamsdb
-- Client Machines:      Lab PCs connecting via Hostname resolution over LAN
+INFRASTRUCTURE ARCHITECTURE:
+- Host Server:          Central computer in testing laboratory running SQL Server
+- SQL Server Instance:  <HOST_PC_OR_IP>\SQLEXPRESS (e.g., 192.168.1.100\SQLEXPRESS)
+- Database Name:        aicams (or aicamsdb)
+- Client Workstations:  Student PCs connected over local lab LAN / Wi-Fi subnet
 
 --------------------------------------------------------------------------------
-1. DATABASE SEEDING (EXECUTE ONCE ON HOST SERVER ONLY)
+1. HOST SERVER SETUP & DATABASE INITIALIZATION (ONCE PER LAB)
 --------------------------------------------------------------------------------
-Do NOT execute this on student lab PCs. Run only on DESKTOP-QD67JHP:
+Execute these configuration steps on the dedicated Instructor Host PC only:
 
-1. Open PowerShell as Administrator on the Host PC.
-2. Run the seed script targeting the SQLEXPRESS instance:
-   sqlcmd -S ".\SQLEXPRESS" -d aicamsdb -i "E:\Database_Backups\aicams_seed_data.sql"
+A. SQL Server Network Configuration:
+   1. Open "SQL Server Configuration Manager".
+   2. Expand "SQL Server Network Configuration" -> "Protocols for SQLEXPRESS".
+   3. Ensure "TCP/IP" is set to ENABLED.
+   4. Double-click "TCP/IP", switch to the "IP Addresses" tab, scroll down to "IPAll":
+      - Set "TCP Port" to: 1433
+      - Clear any value in "TCP Dynamic Ports".
+   5. Expand "SQL Server Services", right-click "SQL Server (SQLEXPRESS)", and restart it.
+   6. Ensure the "SQL Server Browser" service is running and set to Automatic startup
+      (required for client machines to resolve named instances over the network).
 
-3. Verify population:
-   sqlcmd -S ".\SQLEXPRESS" -d aicamsdb -Q "SELECT COUNT(*) AS StudentCount FROM dbo.students"
-   (Expected: >= 4 records)
+B. Windows Firewall Inbound Rules:
+   Open PowerShell as Administrator on the Host PC and run:
+   New-NetFirewallRule -DisplayName "SQL Server (TCP 1433)" -Direction Inbound -Protocol TCP -LocalPort 1433 -Action Allow
+   New-NetFirewallRule -DisplayName "SQL Browser (UDP 1434)" -Direction Inbound -Protocol UDP -LocalPort 1434 -Action Allow
+
+C. Database Seeding:
+   1. Open PowerShell or Command Prompt on the Host PC.
+   2. Run the idempotent seed script targeting the local SQL instance:
+      sqlcmd -S ".\SQLEXPRESS" -d aicams -i "Database_Backups\aicams_seed_data.sql"
+   3. Verify database population:
+      sqlcmd -S ".\SQLEXPRESS" -d aicams -Q "SELECT COUNT(*) AS StudentCount FROM dbo.students;"
+      (Expected: >= 4 records)
 
 --------------------------------------------------------------------------------
 2. CLIENT WORKSTATION DEPLOYMENT
 --------------------------------------------------------------------------------
-On each student lab workstation:
+Deploy the client software on each student laboratory workstation:
 
-1. Ensure the client can resolve the host machine over LAN:
-   Test-NetConnection -ComputerName DESKTOP-QD67JHP -Port 1433
-   Ensure "TcpTestSucceeded : True" before proceeding.
+A. Install the Application:
+   1. Copy "AICAMS_Setup.exe" to the workstation or run it from a shared network drive.
+   2. Right-click "AICAMS_Setup.exe" and select "Run as administrator".
+   3. Follow the wizard. The installer automatically checks for the Microsoft Visual C++
+      2015-2022 x64 Redistributable and silently installs it if missing.
+   4. The application is installed to "C:\Program Files\AI-CAMS" with a desktop shortcut.
 
-2. Install Prerequisites:
-   Run "Prerequisites\VC_redist.x64.exe" as Administrator.
+B. First-Time Setup Wizard (Interactive Configuration):
+   When launching AI-CAMS for the first time (or if the database connection fails),
+   the interactive Setup Wizard launches automatically:
 
-3. Install Application:
-   Run "AICAMS_Setup.exe" as Administrator.
+   Step 1: Database & Workstation Role
+     - Workstation Role: Select "Student Workstation (Client)"
+     - SQL Server Host: Enter "<HOST_PC_OR_IP>\SQLEXPRESS" (e.g., "192.168.1.100\SQLEXPRESS")
+     - Database Name: "aicams" (or "aicamsdb")
+     - Authentication: Select "Windows Authentication" (if on domain) or "SQL Server Authentication"
+     - Certificate: Ensure "Trust Server Certificate" is checked
+     - Diagnostics: Click "Test Connection"
+       * A green badge displays table count upon successful verification.
+       * If connection fails, actionable hints (Firewall 1433, TCP/IP, or credentials) are displayed.
+     - Click "Next: Review Policies ->"
 
-4. Verify Client appsettings.json Configuration:
-   Ensure the installed connection string in "C:\Program Files\AI-CAMS\appsettings.json" points to the host:
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Server=DESKTOP-QD67JHP\\SQLEXPRESS;Database=aicamsdb;User Id=sa;Password=YourPasswordHere;TrustServerCertificate=True;"
-     }
-   }
-   NOTE: Ensure double backslashes (\\) are used in the server instance name.
+   Step 2: Operational Policies & Academic Compliance Agreement
+     - Review the three mandatory institutional policies:
+       1. Vision Monitoring & Privacy Safeguards (face detection, gaze tracking, presence logging;
+          no continuous video saved to cloud; metrics and anomaly snapshots stored locally).
+       2. Kiosk-Mode Lockdown & OS Controls (task-switching suppression like Alt+Tab, Alt+F4, WinKey;
+          clipboard restrictions; low-level keyboard hooks authorization).
+       3. Local Network & AI Data Transmission (all records remain on local host DB; outbound internet
+          used strictly for encrypted AI evaluation assistance; instructor retains final grade authority).
+     - Check all three compliance check boxes (or click "Toggle / Accept All").
+     - Click "Save & Launch AI-CAMS".
+
+C. Manual Reconfiguration Anytime:
+   To change the host address or review policies after initial setup, click the
+   "Database Setup" gear button located at the top-right corner of the login screen.
 
 --------------------------------------------------------------------------------
 3. DEMO ACCOUNTS & CREDENTIALS
 --------------------------------------------------------------------------------
 Faculty / Proctor Account:
-  - Username: faculty_admin (or instructor)
-  - Password: (Configured during initial setup or via master key: Admin@1234)
+  - Username: faculty_admin
+  - Password: Admin@1234
   - Master Recovery Key: AICAMS-ADMIN-2026
 
-Student Accounts:
-  - Active Student:
+Student Test Accounts:
+  - Active Student (Pre-approved / Whitelisted):
       Student ID: 23-1111-111
       Password:   Admin@1234
-      Status:     Active (Normal login)
-  - First-Time Login Student:
+      Status:     Active (Whitelisted for active demo exam)
+  - First-Time Login / Password Reset Student:
       Student ID: 23-2222-222
       Password:   Admin@1234
-      Status:     Will prompt student to set a new password on login
-  - Archived / Inactive Student:
+      Status:     Active (Prompts student to choose a new password upon login; pending whitelist)
+  - Archived / Deactivated Student:
       Student ID: 23-3333-333
-      Status:     Account deactivated (testing access control)
+      Status:     Deactivated (Demonstrates access control rejection)
   - Active Student with Anomaly History:
       Student ID: 23-4444-444
       Password:   Admin@1234
-      Status:     Active (Associated with high-risk exam attempt)
+      Status:     Active (Associated with flagged historical attempts in archived reports)
 
 --------------------------------------------------------------------------------
 4. DEMO EXAMINATIONS
 --------------------------------------------------------------------------------
-- Active Exam Code:   CCS415-DEMO-LIVE
-  Title: Object-Oriented Programming Midterm Examination
-  Use this exam code to demonstrate real-time face tracking, gaze detection,
-  Alt+Tab locking, and submission workflow.
+- Active Exam Code: CCS415-DEMO-LIVE
+    Title:          Object-Oriented Programming Midterm Examination
+    Academic Year:  2026-2027
+    Semester:       1st Semester
+    Section:        BSCS 3-A
+    Schedule:       MWF 09:00 - 10:30
+    Features:       Demonstrates live webcam tracking, gaze monitoring, Alt+Tab lockdown,
+                    off-schedule access whitelist verification, and auto-archive scheduling.
 
 - Archived Exam Code: CCS415-DEMO-ARCH
-  Title: Object-Oriented Programming Final Examination
-  Use this exam to showcase historical analytics, anomaly audit logs,
-  student attempt risk levels, and automated report generation.
+    Title:          Object-Oriented Programming Final Examination
+    Academic Year:  2025-2026
+    Semester:       2nd Semester
+    Section:        BSCS 3-B
+    Features:       Demonstrates completed attempts, AI vs. Instructor score comparison,
+                    anomaly timeline inspection, question reusability, and PDF reports.
 
 --------------------------------------------------------------------------------
 5. TROUBLESHOOTING
 --------------------------------------------------------------------------------
-- Issue: "Cannot connect to server DESKTOP-QD67JHP\SQLEXPRESS" on client machines.
-  Solution:
-    a. On Host Server (DESKTOP-QD67JHP):
-       - Ensure SQL Server (SQLEXPRESS) and SQL Server Browser services are running.
-       - In SQL Server Configuration Manager, ensure TCP/IP is Enabled under SQL Server Network Configuration.
-       - Ensure Windows Firewall allows inbound TCP traffic on port 1433 and UDP 1434.
-    b. On Client:
-       - Run: Test-NetConnection -ComputerName DESKTOP-QD67JHP -Port 1433
+- Issue: Setup Wizard reports "Cannot connect to server <HOST_PC_OR_IP>\SQLEXPRESS".
+  Resolution:
+    a. On Host PC: Ensure SQL Server (SQLEXPRESS) and SQL Server Browser are Running.
+    b. On Host PC: Confirm inbound firewall ports TCP 1433 and UDP 1434 are allowed.
+    c. On Client: In PowerShell, test network reachability:
+       Test-NetConnection -ComputerName "<HOST_PC_OR_IP>" -Port 1433
+       If "TcpTestSucceeded" is False, check physical Ethernet cables and subnet routing.
 
-- Issue: Camera feed is black or shows an error.
-  Solution: Check Windows Camera Privacy Settings ("Allow apps to access your
-  camera"). Ensure no other application (e.g. Zoom, Teams, Chrome) is using the webcam.
+- Issue: Camera feed is black or reports an initialization error.
+  Resolution:
+    a. Check Windows Camera Privacy Settings ("Settings" -> "Privacy & Security" -> "Camera").
+    b. Ensure "Let desktop apps access your camera" is toggled ON.
+    c. Ensure no third-party background applications (Zoom, Teams, Chrome) have exclusive webcam locks.
 
-- Issue: App crashes immediately on launch.
-  Solution: Re-run "Prerequisites\VC_redist.x64.exe" and choose "Repair".
+- Issue: Application crashes immediately on launch.
+  Resolution:
+    Re-run "VC_redist.x64.exe" from the "Prerequisites" folder and choose "Repair" to
+    ensure MSVCP140.dll and VCRUNTIME140.dll are properly registered.
 ================================================================================
+

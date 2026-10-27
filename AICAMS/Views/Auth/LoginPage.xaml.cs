@@ -259,5 +259,14 @@ namespace ACPAMS.Views.Auth
                 ACPAMS.MainWindow.Navigate(new FacultySignUpPage());
             }
         }
+
+        private void OpenSetupWizard_Click(object sender, RoutedEventArgs e)
+        {
+            var wizard = new SetupWizardWindow
+            {
+                Owner = Window.GetWindow(this)
+            };
+            wizard.ShowDialog();
+        }
     }
 }

@@ -119,6 +119,23 @@
     </UserControl.Resources>
 
     <Grid Background="{StaticResource Bg.Window}">
+        <!-- Setup Wizard / Connection Settings Trigger -->
+        <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,20,20,0"
+                Click="OpenSetupWizard_Click"
+                Background="Transparent" BorderThickness="0" Cursor="Hand"
+                ToolTip="Configure Database Connection &amp; Workstation Settings">
+            <Border Background="#FFFFFF" BorderBrush="{StaticResource Border.Subtle}" BorderThickness="1"
+                    CornerRadius="6" Padding="10,6">
+                <Border.Effect>
+                    <DropShadowEffect Color="#CBD5E1" Opacity="0.4" BlurRadius="6" ShadowDepth="2"/>
+                </Border.Effect>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⚙" FontSize="14" Foreground="{StaticResource Text.Secondary}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Database Setup" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Text.Secondary}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Button>
+
         <Border Background="{StaticResource Bg.Surface}"
                 BorderBrush="{StaticResource Border.Subtle}"
                 BorderThickness="1" CornerRadius="12"

@@ -42,157 +42,157 @@ namespace ACPAMS
                 // Self-healing schema checks
                 _dbContext.Database.ExecuteSqlRaw(@"
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('questions') AND name = 'section_name'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'questions' AND COLUMN_NAME = 'section_name'
                     )
                     BEGIN
-                        ALTER TABLE questions ADD section_name NVARCHAR(MAX) NULL;
+                        EXEC('ALTER TABLE dbo.questions ADD section_name NVARCHAR(MAX) NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('student_exam_attempts') AND name = 'extra_time_minutes'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'student_exam_attempts' AND COLUMN_NAME = 'extra_time_minutes'
                     )
                     BEGIN
-                        ALTER TABLE student_exam_attempts ADD extra_time_minutes INT NOT NULL DEFAULT 0;
+                        EXEC('ALTER TABLE dbo.student_exam_attempts ADD extra_time_minutes INT NOT NULL DEFAULT 0');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('audit_logs') AND name = 'is_dismissed'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'is_dismissed'
                     )
                     BEGIN
-                        ALTER TABLE audit_logs ADD is_dismissed BIT NOT NULL DEFAULT 0;
+                        EXEC('ALTER TABLE dbo.audit_logs ADD is_dismissed BIT NOT NULL DEFAULT 0');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('audit_logs') AND name = 'dismissal_reason'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'audit_logs' AND COLUMN_NAME = 'dismissal_reason'
                     )
                     BEGIN
-                        ALTER TABLE audit_logs ADD dismissal_reason NVARCHAR(255) NULL;
+                        EXEC('ALTER TABLE dbo.audit_logs ADD dismissal_reason NVARCHAR(255) NULL');
                     END
 
                     IF EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('students') AND name = 'program' AND max_length < 200 AND max_length > 0
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'program' AND CHARACTER_MAXIMUM_LENGTH < 100 AND CHARACTER_MAXIMUM_LENGTH > 0
                     )
                     BEGIN
-                        ALTER TABLE students ALTER COLUMN program NVARCHAR(100) NULL;
+                        EXEC('ALTER TABLE dbo.students ALTER COLUMN program NVARCHAR(100) NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.students') AND name = 'is_active'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'is_active'
                     )
                     BEGIN
-                        ALTER TABLE dbo.students ADD is_active BIT NOT NULL DEFAULT 1;
+                        EXEC('ALTER TABLE dbo.students ADD is_active BIT NOT NULL DEFAULT 1');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.students') AND name = 'must_change_password'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'students' AND COLUMN_NAME = 'must_change_password'
                     )
                     BEGIN
-                        ALTER TABLE dbo.students ADD must_change_password BIT NOT NULL DEFAULT 0;
+                        EXEC('ALTER TABLE dbo.students ADD must_change_password BIT NOT NULL DEFAULT 0');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'academic_year'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'academic_year'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD academic_year NVARCHAR(20) NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD academic_year NVARCHAR(20) NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'semester'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'semester'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD semester NVARCHAR(20) NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD semester NVARCHAR(20) NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'section'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'section'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD section NVARCHAR(50) NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD section NVARCHAR(50) NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'class_schedule'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'class_schedule'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD class_schedule NVARCHAR(50) NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD class_schedule NVARCHAR(50) NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'requires_approval'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'requires_approval'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD requires_approval BIT NOT NULL DEFAULT 0;
+                        EXEC('ALTER TABLE dbo.exams ADD requires_approval BIT NOT NULL DEFAULT 0');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'scheduled_start_time'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'scheduled_start_time'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD scheduled_start_time DATETIME2 NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD scheduled_start_time DATETIME2 NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'scheduled_end_time'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'scheduled_end_time'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD scheduled_end_time DATETIME2 NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD scheduled_end_time DATETIME2 NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'activated_at'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'activated_at'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD activated_at DATETIME2 NULL;
+                        EXEC('ALTER TABLE dbo.exams ADD activated_at DATETIME2 NULL');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'auto_archive_rule'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'auto_archive_rule'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD auto_archive_rule NVARCHAR(30) NOT NULL DEFAULT '1HourAfter';
+                        EXEC('ALTER TABLE dbo.exams ADD auto_archive_rule NVARCHAR(30) NOT NULL DEFAULT ''1HourAfter''');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.columns 
-                        WHERE object_id = OBJECT_ID('dbo.exams') AND name = 'auto_archive_buffer_minutes'
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_NAME = 'exams' AND COLUMN_NAME = 'auto_archive_buffer_minutes'
                     )
                     BEGIN
-                        ALTER TABLE dbo.exams ADD auto_archive_buffer_minutes INT NOT NULL DEFAULT 60;
+                        EXEC('ALTER TABLE dbo.exams ADD auto_archive_buffer_minutes INT NOT NULL DEFAULT 60');
                     END
 
                     IF NOT EXISTS (
-                        SELECT 1 FROM sys.tables 
-                        WHERE name = 'exam_authorized_students'
+                        SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
+                        WHERE TABLE_NAME = 'exam_authorized_students'
                     )
                     BEGIN
-                        CREATE TABLE dbo.exam_authorized_students (
+                        EXEC('CREATE TABLE dbo.exam_authorized_students (
                             authorization_id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
                             exam_id UNIQUEIDENTIFIER NOT NULL,
                             student_id NVARCHAR(50) NOT NULL,
-                            status NVARCHAR(30) NOT NULL DEFAULT 'PendingApproval',
+                            status NVARCHAR(30) NOT NULL DEFAULT ''PendingApproval'',
                             requested_at DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
                             valid_until DATETIME2 NULL,
                             approved_by_instructor_id NVARCHAR(50) NULL,
                             CONSTRAINT FK_exam_authorized_students_exams FOREIGN KEY (exam_id) REFERENCES dbo.exams(exam_id) ON DELETE CASCADE,
                             CONSTRAINT FK_exam_authorized_students_students FOREIGN KEY (student_id) REFERENCES dbo.students(student_id) ON DELETE NO ACTION
-                        );
+                        )');
                     END");
 
                 // Initialize default data
