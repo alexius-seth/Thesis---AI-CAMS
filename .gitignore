@@ -1,16 +1,36 @@
+# ====================================================================
+# Git Ignore Configuration for AI-CAMS
+# ====================================================================
+
+# Build & Publish Outputs
 bin/
 obj/
-.vs/
+publish/
+publish-*/
+publish-selfcontained/
+installer-output/
 *.user
-*.vsidx
 *.suo
+*.vsidx
+.vs/
+*.log
+
+# Installers & Redistributables (Should be hosted on GitHub Releases, not git tree)
+AICAMS_Installation/*.exe
+AICAMS_Installation/Prerequisites/*.exe
+AICAMS_Installation/Output/
+*.exe
+*.dll
+*.msi
+*.zip
+
+# Database & Storage
+*.mdf
+*.ldf
 *.db
 *.opendb
-# ── Secrets & environment files (defense in depth) ──────────────
-# We use .NET User Secrets (stored outside the repo, in %APPDATA%),
-# so nothing here should ever actually contain a real key — but this
-# blocks anything that might accidentally hold one if someone adds a
-# config file later.
+
+# Secrets & Environment Files (Defense in Depth)
 .env
 .env.*
 !.env.example
@@ -19,30 +39,13 @@ appsettings.*.local.json
 secrets.json
 *.pfx
 *.key
-# ── SQL Server LocalDB (per-machine, not shared) ─────────────────
-*.mdf
-*.ldf
 
-# ── Runtime-created rubric attachment storage ────────────────────
-# Populated at runtime by RubricService when instructors attach a
-# reference PDF via AIRubricModal — not something to commit.
+# Runtime Rubric Attachments
 RubricAttachments/
 
-# ── Secrets & environment files (defense in depth) ──────────────
+# Codebase Analysis Cache
 graphify-out
 
-# ── Portable compiler and runtime binaries ────────────────────────
+# Portable Compiler & Runtime Binaries (setup via setup-portable-tools.ps1)
 [Tt]ools/
 AICAMS/Tools/
-
-# ── Binary executables, libraries & logs ───────────────────────────
-*.exe
-*.dll
-*.msi
-*.log
-
-# ── Standalone build, publish & installer artifacts ────────────────
-publish/
-publish-*/
-installer-output/
-*.zip

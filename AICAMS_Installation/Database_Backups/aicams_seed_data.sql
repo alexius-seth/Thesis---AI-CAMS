@@ -148,8 +148,8 @@ BEGIN
     VALUES (
         '23-1111-111',
         (SELECT [user_id] FROM [dbo].[users] WHERE [username] = '23-1111-111'),
-        'Alexius',
-        'Seth',
+        'Alexander',
+        'Cole',
         'A',
         'BS Computer Science',
         '3rd Year',
